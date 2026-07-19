@@ -8,7 +8,9 @@ import { spots } from "@/lib/data";
 export default function MapView() {
   return (
     <Screen>
-      <DarkMap circle pinScale={1.7} className="absolute inset-0" />
+      <div className="absolute inset-0 bg-[#161a26]">
+        <DarkMap circle pinScale={2.2} className="absolute inset-x-0 top-0 h-[65%]" />
+      </div>
       <div className="relative flex h-full flex-col">
         <header className="m-3 flex items-center justify-around rounded-full bg-[#101014]/90 px-5 py-4 backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>

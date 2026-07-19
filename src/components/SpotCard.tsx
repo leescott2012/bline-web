@@ -29,9 +29,8 @@ export default function SpotCard({ spot }: { spot: Spot }) {
         <div>
           <h3 className="text-lg font-bold">{spot.name}</h3>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-zinc-400">
-            <ThumbsUp size={14} /> {spot.loved}% loved · {spot.area}
+            <ThumbsUp size={14} /> {spot.loved}% · {spot.area}
           </p>
-          <p className="text-sm text-zinc-500">{spot.category}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-zinc-400">{spot.ratings} ratings</p>

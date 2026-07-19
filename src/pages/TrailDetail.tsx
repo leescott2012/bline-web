@@ -22,16 +22,16 @@ export default function TrailDetail() {
             <path d="M0 30 H100 M0 55 H100 M25 0 V80 M60 0 V80 M85 0 V80" />
           </g>
           <path d="M8 18 C 25 22, 40 26, 52 34 C 60 40, 64 48, 64 60 L 64 80"
-            stroke="#a83bd6" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <circle cx="8" cy="18" r="2.6" fill="#2f7cf6" stroke="white" strokeWidth="1" />
-          <text x="18" y="34" fill="#b07b28" fontSize="4" fontWeight="600">Ponce City Market</text>
-          <text x="38" y="46" fill="#3f9c4e" fontSize="4" fontWeight="600">Historic Fourth Ward Park</text>
-          <text x="42" y="68" fill="#b07b28" fontSize="4" fontWeight="600">Krog Street Market</text>
+            stroke="#a83bd6" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+          <circle cx="8" cy="18" r="1.8" fill="#2f7cf6" stroke="white" strokeWidth="1" />
+          <text x="18" y="34" fill="#b07b28" fontSize="2.5" fontWeight="600">Ponce City Market</text>
+          <text x="38" y="46" fill="#3f9c4e" fontSize="2.5" fontWeight="600">Historic Fourth Ward Park</text>
+          <text x="42" y="68" fill="#b07b28" fontSize="2.5" fontWeight="600">Krog Street Market</text>
           {/* amenity pins */}
           {[[30, 22, "🖌"], [40, 30, "💧"], [48, 34, "🚻"], [58, 44, "📷"], [62, 62, "🛝"]].map(([x, y, e], i) => (
             <g key={i}>
-              <circle cx={x as number} cy={y as number} r="4" fill="#1b2043" />
-              <text x={x as number} y={(y as number) + 1.6} fontSize="4.5" textAnchor="middle">{e as string}</text>
+              <circle cx={x as number} cy={y as number} r="2.6" fill="#1b2043" />
+              <text x={x as number} y={(y as number) + 1.1} fontSize="3" textAnchor="middle">{e as string}</text>
             </g>
           ))}
         </svg>

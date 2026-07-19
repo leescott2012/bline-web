@@ -12,7 +12,7 @@ const tabs = [
 export default function TabBar() {
   const [loc] = useLocation();
   return (
-    <nav className="absolute inset-x-0 bottom-0 z-20 flex items-start justify-around border-t border-line bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+    <nav className="sticky bottom-0 z-20 flex items-start justify-around border-t border-line bg-ink/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">
       {tabs.map(({ icon: Icon, label, href }) => {
         const active = loc === href;
         return (
