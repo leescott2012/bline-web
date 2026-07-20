@@ -26,7 +26,7 @@ export default function SpotCard({ spot, photoH = "h-56", autoPhotos = false }: 
       </div>
       <div className="flex items-start justify-between gap-3 p-4">
         <div className="min-w-0">
-          <h3 className="text-[22px] font-bold leading-tight">{spot.name}</h3>
+          <h3 className="text-[20px] font-bold leading-tight">{spot.name}</h3>
           <p className="mt-2 flex items-center gap-2 text-[15px] text-zinc-300">
             <ThumbsUp size={15} /> {spot.loved}% | {spot.area}
           </p>

@@ -78,29 +78,33 @@ export default function Home() {
       </header>
 
       {/* bottom stack: sheet + banner + tabs */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex max-h-full flex-col justify-end">
-        {/* grab handle — swipe up for list, down for single cards */}
-        <motion.div
-          className="flex h-10 cursor-grab touch-none select-none items-center justify-center"
-          drag="y"
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={0.08}
-          onDragEnd={(_, info) => {
-            if (info.offset.y > 24 || info.velocity.y > 250) setSheet("cards");
-            else if (info.offset.y < -24 || info.velocity.y < -250) setSheet("list");
-          }}
-          onClick={() => setSheet(mode === "list" ? "cards" : "list")}
-        >
-          <span className="h-1.5 w-12 rounded-full bg-white/70 shadow" />
-        </motion.div>
-
-        {mode === "list" ? (
-          <div className="max-h-[62vh] space-y-4 overflow-y-auto px-3 pb-3">
+      {/* LIST MODE — cards rest low so the map breathes, then scroll up over it */}
+      {mode === "list" && (
+        <div className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain">
+          {/* transparent spacer keeps the map open above the first card (HT-style) */}
+          <div className="h-[33vh] shrink-0" />
+          <div className="min-h-full space-y-3 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
+            <div className="flex cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")}>
+              <span className="h-1.5 w-12 rounded-full bg-zinc-500" />
+            </div>
             {spots.map((s) => (
               <SpotCard key={s.id} spot={s} />
             ))}
           </div>
-        ) : (
+        </div>
+      )}
+
+      {/* CARD MODE — one card at a time, map pans to the active pin */}
+      {mode === "cards" && (
+        <div className="absolute inset-x-0 bottom-0 z-10 pb-[92px]">
+          <motion.div
+            className="flex h-9 cursor-grab touch-none select-none items-center justify-center"
+            drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.08}
+            onDragEnd={(_, info) => { if (info.offset.y < -24 || info.velocity.y < -250) setSheet("list"); }}
+            onClick={() => setSheet("list")}
+          >
+            <span className="h-1.5 w-12 rounded-full bg-white/70 shadow" />
+          </motion.div>
           <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3"
             onScroll={onCardScroll}>
             {spots.map((s) => (
@@ -109,8 +113,11 @@ export default function Home() {
               </div>
             ))}
           </div>
-        )}
+        </div>
+      )}
 
+      {/* fixed bottom chrome */}
+      <div className="absolute inset-x-0 bottom-0 z-20">
         <div className="flex items-center justify-center gap-2 bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium">
           <Gift size={16} /> New perk: earn trail rewards every check-in
         </div>
