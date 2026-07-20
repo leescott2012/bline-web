@@ -1,6 +1,7 @@
 import { ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import type { Spot } from "@/lib/data";
+import PhotoCarousel from "@/components/PhotoCarousel";
 
 const badgeColor = (b: string) =>
   b === "DEAL" || b === "PERKS" ? "bg-accent" : "bg-[#7c3aed]";
@@ -9,7 +10,7 @@ export default function SpotCard({ spot }: { spot: Spot }) {
   return (
     <Link href={`/spot/${spot.id}`} className="block overflow-hidden rounded-2xl bg-card">
       <div className="relative h-48">
-        <img src={spot.img} alt={spot.name} className="h-full w-full object-cover" loading="lazy" />
+        <PhotoCarousel imgs={spot.imgs} alt={spot.name} className="h-full w-full" />
         <button
           aria-label="Save"
           className="absolute right-3 top-3 rounded-full bg-black/40 p-2 text-white"

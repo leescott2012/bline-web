@@ -2,14 +2,14 @@ import { Search, SlidersHorizontal, Gift } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
-import DarkMap from "@/components/DarkMap";
+import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
 import { spots } from "@/lib/data";
 
 export default function Home() {
   return (
     <Screen>
-      <DarkMap circle className="absolute inset-x-0 top-0 h-80" />
+      <RealMap interactive={false} zoom={11.6} className="absolute inset-x-0 top-0 h-80" />
       <div className="relative">
         <header className="m-2 rounded-2xl bg-[#101014]/95 p-3 shadow-lg backdrop-blur">
           <div className="flex items-center gap-3">

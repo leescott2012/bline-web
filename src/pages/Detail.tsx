@@ -2,6 +2,7 @@ import { ChevronLeft, Share, Heart, Star, ChevronRight } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { spots, menuPicks } from "@/lib/data";
+import PhotoCarousel from "@/components/PhotoCarousel";
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
@@ -9,7 +10,7 @@ export default function Detail() {
   return (
     <Screen className="pb-28">
       <div className="relative h-80">
-        <img src={spot.img} alt={spot.name} className="h-full w-full object-cover" />
+        <PhotoCarousel imgs={[...spot.imgs].reverse()} alt={spot.name} className="h-full w-full" />
         <Link href="/" aria-label="Back"
           className="absolute left-4 top-4 grid size-11 place-items-center rounded-full bg-black/50 text-white">
           <ChevronLeft size={22} />

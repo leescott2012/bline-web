@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import { spots } from "@/lib/data";
+import PhotoCarousel from "@/components/PhotoCarousel";
 
 export default function Saved() {
   const favs = spots.slice(0, 2);
@@ -30,7 +31,7 @@ export default function Saved() {
           {favs.map((s) => (
             <Link key={s.id} href={`/spot/${s.id}`} className="block overflow-hidden rounded-2xl bg-card">
               <div className="relative h-52">
-                <img src={s.img} alt={s.name} className="h-full w-full object-cover" loading="lazy" />
+                <PhotoCarousel imgs={s.imgs} alt={s.name} className="h-full w-full" />
                 <span className="absolute right-3 top-3 grid size-10 place-items-center rounded-lg bg-black/50">
                   <Heart size={20} className="text-hot" fill="currentColor" />
                 </span>

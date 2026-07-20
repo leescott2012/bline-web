@@ -45,7 +45,7 @@ export default function Filters() {
             className="mt-4 w-full accent-accent" aria-label="Distance from trail" />
           <p className="mt-1 text-zinc-400">Within {Math.round(dist / 6)}-min walk</p>
 
-          <img src={spots[1].img} alt="" className="mt-5 h-40 w-full rounded-2xl object-cover" loading="lazy" />
+          <img src="/photos/ponce-wide.png" alt="" className="mt-5 h-40 w-full rounded-2xl object-cover" loading="lazy" />
 
           <h2 className="mt-6 text-xl font-semibold">Minimum rating</h2>
           <div className="mt-3 flex overflow-hidden rounded-full bg-[#3a3a42] text-center">

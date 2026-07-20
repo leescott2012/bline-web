@@ -9,6 +9,7 @@ export type Spot = {
   openTill: string;
   badges: string[];
   img: string;
+  imgs: string[];
   address: string;
   walk: string;
 };
@@ -25,7 +26,8 @@ export const spots: Spot[] = [
     ratings: "1,412",
     openTill: "12a",
     badges: ["TRAIL PICK", "DEAL"],
-    img: "https://images.unsplash.com/photo-1600093463592-8e36ae95ef56?w=900&q=60",
+    img: "/photos/new-realm-card.png",
+    imgs: ["/photos/new-realm-card.png", "/photos/new-realm-mural.png", "/photos/new-realm-hero.png"],
     address: "550 Somerset Ter NE",
     walk: "3 min walk from Ponce City Market",
   },
@@ -39,7 +41,8 @@ export const spots: Spot[] = [
     ratings: "2,504",
     openTill: "11p",
     badges: ["LOCAL FAVE", "PERKS"],
-    img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=900&q=60",
+    img: "/photos/ponce-card.png",
+    imgs: ["/photos/ponce-card.png", "/photos/ponce-wide.png"],
     address: "675 Ponce De Leon Ave NE",
     walk: "On the Eastside Trail",
   },
@@ -54,6 +57,7 @@ export const spots: Spot[] = [
     openTill: "10p",
     badges: ["TRAIL PICK"],
     img: "https://images.unsplash.com/photo-1567129937968-cdad8f07e2f8?w=900&q=60",
+    imgs: ["https://images.unsplash.com/photo-1567129937968-cdad8f07e2f8?w=900&q=60"],
     address: "99 Krog St NE",
     walk: "1 min walk from Eastside Trail",
   },
@@ -68,15 +72,16 @@ export const spots: Spot[] = [
     openTill: "11p",
     badges: ["DEAL"],
     img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&q=60",
+    imgs: ["https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&q=60"],
     address: "684 John Wesley Dobbs Ave",
     walk: "Right on the trail",
   },
 ];
 
 export const menuPicks = [
-  { name: "Wood-fired pizza", img: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=500&q=60" },
-  { name: "New Realm Burger", img: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&q=60" },
-  { name: "Street tacos", img: "https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=500&q=60" },
+  { name: "Wood-fired pizza", img: "/photos/pizza.png" },
+  { name: "New Realm Burger", img: "/photos/burger.png" },
+  { name: "Street tacos", img: "/photos/tacos.png" },
 ];
 
 export const friends = [
@@ -89,4 +94,19 @@ export const mapPins = [
   { x: 47, y: 16, r: 4.7 }, { x: 57, y: 18, r: 4.8 }, { x: 45, y: 21, r: 4.5 },
   { x: 34, y: 22, r: 4.6 }, { x: 63, y: 21, r: 4.2 }, { x: 55, y: 24, r: 4.9 },
   { x: 43, y: 25, r: 4.4 }, { x: 63, y: 25, r: 4.3 }, { x: 52, y: 27, r: 4.1 },
+];
+
+// approx Atlanta BeltLine loop + eastside spot pins (lon, lat)
+export const beltlineLoop: [number, number][] = [
+  [-84.408, 33.786], [-84.395, 33.799], [-84.376, 33.803], [-84.36, 33.796],
+  [-84.35, 33.781], [-84.347, 33.762], [-84.354, 33.741], [-84.371, 33.727],
+  [-84.394, 33.724], [-84.41, 33.734], [-84.418, 33.755], [-84.415, 33.773],
+  [-84.408, 33.786],
+];
+export const geoPins: { lng: number; lat: number; r: number }[] = [
+  { lng: -84.3669, lat: 33.7719, r: 4.7 }, { lng: -84.3654, lat: 33.7669, r: 4.8 },
+  { lng: -84.3725, lat: 33.7756, r: 4.5 }, { lng: -84.3629, lat: 33.7591, r: 4.6 },
+  { lng: -84.3527, lat: 33.7644, r: 4.2 }, { lng: -84.3699, lat: 33.7631, r: 4.9 },
+  { lng: -84.3805, lat: 33.7702, r: 4.4 }, { lng: -84.3547, lat: 33.7727, r: 4.3 },
+  { lng: -84.3752, lat: 33.7554, r: 4.1 },
 ];

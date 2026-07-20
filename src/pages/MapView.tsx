@@ -2,16 +2,14 @@ import { RotateCw, ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
-import DarkMap from "@/components/DarkMap";
+import RealMap from "@/components/RealMap";
 import { spots } from "@/lib/data";
 
 export default function MapView() {
   return (
     <Screen>
-      <div className="absolute inset-0 bg-[#161a26]">
-        <DarkMap circle pinScale={2.2} className="absolute inset-x-0 top-0 h-[65%]" />
-      </div>
-      <div className="relative flex h-full flex-col">
+      <RealMap zoom={12.1} className="absolute inset-0" />
+      <div className="pointer-events-none relative flex h-full flex-col [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_header]:pointer-events-auto">
         <header className="m-3 flex items-center justify-around rounded-full bg-[#101014]/90 px-5 py-4 backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
           <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>

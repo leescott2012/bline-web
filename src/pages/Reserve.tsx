@@ -62,7 +62,7 @@ export default function Reserve() {
         </div>
       </div>
 
-      <img src={spots[1].img} alt="" className="mt-6 h-56 w-full object-cover" loading="lazy" />
+      <img src="/photos/ponce-wide.png" alt="" className="mt-6 h-56 w-full object-cover" loading="lazy" />
       
       <div className="sticky bottom-0 z-20 bg-gradient-to-t from-ink via-ink/90 to-transparent p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <p className="pb-3 text-center text-sm text-zinc-500">Powered by OpenTable</p>
