@@ -1,0 +1,3 @@
+{
+  "rewrites": [{ "source": "/((?!api|photos|refs|compare).*)", "destination": "/index.html" }]
+}
