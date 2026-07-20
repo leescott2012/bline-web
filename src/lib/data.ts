@@ -10,6 +10,10 @@ export type Spot = {
   badges: string[];
   img: string;
   imgs: string[];
+  price: number;
+  wasPrice: number;
+  lng: number;
+  lat: number;
   address: string;
   walk: string;
 };
@@ -28,7 +32,11 @@ export const spots: Spot[] = [
     badges: ["TRAIL PICK", "DEAL"],
     img: "/photos/new-realm-card.png",
     imgs: ["/photos/new-realm-card.png", "/photos/new-realm-mural.png", "/photos/new-realm-hero.png"],
-    address: "550 Somerset Ter NE",
+    price: 135,
+    wasPrice: 191,
+    lng: -84.3669,
+    lat: 33.7719,
+address: "550 Somerset Ter NE",
     walk: "3 min walk from Ponce City Market",
   },
   {
@@ -43,7 +51,11 @@ export const spots: Spot[] = [
     badges: ["LOCAL FAVE", "PERKS"],
     img: "/photos/ponce-card.png",
     imgs: ["/photos/ponce-card.png", "/photos/ponce-wide.png"],
-    address: "675 Ponce De Leon Ave NE",
+    price: 96,
+    wasPrice: 161,
+    lng: -84.3660,
+    lat: 33.7726,
+address: "675 Ponce De Leon Ave NE",
     walk: "On the Eastside Trail",
   },
   {
@@ -58,7 +70,11 @@ export const spots: Spot[] = [
     badges: ["TRAIL PICK"],
     img: "https://images.unsplash.com/photo-1567129937968-cdad8f07e2f8?w=900&q=60",
     imgs: ["https://images.unsplash.com/photo-1567129937968-cdad8f07e2f8?w=900&q=60"],
-    address: "99 Krog St NE",
+    price: 130,
+    wasPrice: 164,
+    lng: -84.3636,
+    lat: 33.7530,
+address: "99 Krog St NE",
     walk: "1 min walk from Eastside Trail",
   },
   {
@@ -73,7 +89,11 @@ export const spots: Spot[] = [
     badges: ["DEAL"],
     img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&q=60",
     imgs: ["https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=900&q=60"],
-    address: "684 John Wesley Dobbs Ave",
+    price: 110,
+    wasPrice: 149,
+    lng: -84.3644,
+    lat: 33.7616,
+address: "684 John Wesley Dobbs Ave",
     walk: "Right on the trail",
   },
 ];

@@ -9,11 +9,13 @@ export default function RealMap({
   interactive = true,
   zoom = 12.6,
   center = [-84.381, 33.764] as [number, number],
+  onMap,
 }: {
   className?: string;
   interactive?: boolean;
   zoom?: number;
   center?: [number, number];
+  onMap?: (m: maplibregl.Map) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
 
@@ -28,6 +30,7 @@ export default function RealMap({
       attributionControl: false,
     });
 
+    onMap?.(map);
     map.on("load", () => {
       map.addSource("beltline", {
         type: "geojson",

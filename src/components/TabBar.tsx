@@ -1,8 +1,8 @@
-import { BedDouble, Heart, Map, Gift, User } from "lucide-react";
+import { Footprints, Heart, Map, Gift, User } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const tabs = [
-  { icon: BedDouble, label: "Explore", href: "/" },
+  { icon: Footprints, label: "Explore", href: "/" },
   { icon: Heart, label: "Saved", href: "/saved" },
   { icon: Map, label: "Map", href: "/map" },
   { icon: Gift, label: "Perks", href: "/conditions" },
