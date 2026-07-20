@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
 // Sliding carousel: swipe manually, auto-advances, HT-style dots pill.
-export default function PhotoCarousel({ imgs, alt, className = "" }: { imgs: string[]; alt: string; className?: string }) {
+export default function PhotoCarousel({ imgs, alt, className = "", auto = false }: { imgs: string[]; alt: string; className?: string; auto?: boolean }) {
   const [i, setI] = useState(0);
   const n = imgs.length;
 
   useEffect(() => {
-    if (n < 2) return;
+    if (!auto || n < 2) return;
     const t = setTimeout(() => setI((i + 1) % n), 4200);
     return () => clearTimeout(t);
-  }, [i, n]);
+  }, [i, n, auto]);
 
   return (
     <div className={`relative overflow-hidden ${className}`}>

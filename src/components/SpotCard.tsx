@@ -7,11 +7,11 @@ import PhotoCarousel from "@/components/PhotoCarousel";
 const badgeColor = (b: string, first: boolean) =>
   b === "DEAL" || b === "PERKS" ? "bg-accent" : first ? "bg-[#0d7d84]" : "bg-[#7c3aed]";
 
-export default function SpotCard({ spot, photoH = "h-56" }: { spot: Spot; photoH?: string }) {
+export default function SpotCard({ spot, photoH = "h-56", autoPhotos = false }: { spot: Spot; photoH?: string; autoPhotos?: boolean }) {
   return (
     <Link href={`/spot/${spot.id}`} className="block overflow-hidden rounded-2xl bg-card">
       <div className={`relative ${photoH}`}>
-        <PhotoCarousel imgs={spot.imgs} alt={spot.name} className="h-full w-full" />
+        <PhotoCarousel imgs={spot.imgs} alt={spot.name} auto={autoPhotos} className="h-full w-full" />
         <button aria-label="Save" onClick={(e) => e.preventDefault()}
           className="absolute right-3 top-3 text-white drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
           <Heart size={30} strokeWidth={1.8} />

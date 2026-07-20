@@ -18,7 +18,11 @@
 <h1>B-line — Figma reference (left) vs build (right)</h1>
 <div id="rows"></div>
 <script>
-const screens = [
+const screens = new URLSearchParams(location.search).has("ht") ? [
+  ["HT · Explore top (map + first card)", "ht/ht-top.png", "/"],
+  ["HT · Explore mid-scroll", "ht/ht-list.png", "/"],
+  ["HT · Explore list scrolled", "ht/ht-scroll.png", "/"],
+] : [
   ["01 Home", "refs/01-home.png", "/"],
   ["02 Detail", "refs/02-detail.png", "/spot/new-realm"],
   ["03 Reserve", "refs/03-reserve.png", "/reserve/new-realm"],

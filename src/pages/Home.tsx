@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Search, SlidersHorizontal, Gift } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "wouter";
-import type maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
@@ -16,9 +16,21 @@ export default function Home() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const activeRef = useRef(0);
 
+  const activeMarker = useRef<maplibregl.Marker | null>(null);
+
   const flyTo = (i: number) => {
+    const map = mapRef.current;
+    if (!map) return;
     const s = spots[i];
-    mapRef.current?.easeTo({ center: [s.lng, s.lat], zoom: 13.6, duration: 700 });
+    map.easeTo({ center: [s.lng, s.lat], zoom: 13.6, duration: 700 });
+    // white "active" pin, HT-style
+    if (!activeMarker.current) {
+      const d = document.createElement("div");
+      d.innerHTML = `<div class="bline-pin bline-pin-active"><span class="star">★</span> <b></b></div>`;
+      activeMarker.current = new maplibregl.Marker({ element: d, anchor: "bottom" });
+    }
+    activeMarker.current.getElement().querySelector("b")!.textContent = spots[i].rating.toFixed(1);
+    activeMarker.current.setLngLat([s.lng, s.lat]).addTo(map);
   };
 
   const onCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -33,6 +45,7 @@ export default function Home() {
   const setSheet = (m: "list" | "cards") => {
     setMode(m);
     if (m === "cards") flyTo(activeRef.current);
+    else activeMarker.current?.remove();
   };
 
   return (
@@ -40,30 +53,28 @@ export default function Home() {
       <RealMap zoom={12.1} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
       {/* header stays fixed over the map */}
-      <header className="absolute inset-x-0 top-0 z-10 m-2 rounded-2xl bg-[#101014]/95 p-3 shadow-lg backdrop-blur">
-        <div className="flex items-center gap-3">
+      <header className="absolute inset-x-0 top-0 z-10">
+        <div className="flex items-center gap-2 bg-[#0e0e12] px-4 py-2">
           <Search size={20} className="shrink-0 text-white" />
-          <Link href="/filters" className="flex flex-1 items-stretch justify-around text-left">
+          <Link href="/filters" className="flex flex-1 items-center justify-around text-center">
             <div>
-              <p className="text-xs text-zinc-400">Where —</p>
-              <p className="text-lg font-semibold">Eastside Trail</p>
+              <p className="text-[13px] text-zinc-400">Where</p>
+              <p className="text-[17px] font-semibold leading-tight">Eastside Trail</p>
             </div>
-            <div className="w-px bg-line" />
+            <div className="h-8 w-px bg-line" />
             <div>
-              <p className="text-xs text-zinc-400">When —</p>
-              <p className="text-lg font-semibold">Open now</p>
+              <p className="text-[13px] text-zinc-400">When</p>
+              <p className="text-[17px] font-semibold leading-tight">Open now</p>
             </div>
           </Link>
           <Link href="/filters" aria-label="Filters"
-            className="grid size-11 shrink-0 place-items-center rounded-full border border-line bg-panel">
-            <SlidersHorizontal size={18} />
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-zinc-600">
+            <SlidersHorizontal size={16} />
           </Link>
         </div>
-        <div className="mt-2.5 flex justify-center">
-          <button className="rounded-full border border-zinc-600 px-5 py-1 text-sm text-zinc-200">
-            Within a 10-min walk
-          </button>
-        </div>
+        <button className="w-full bg-[#17171d]/95 py-2 text-center text-[15px] font-medium text-zinc-100">
+          Within a 10-min walk ▾
+        </button>
       </header>
 
       {/* bottom stack: sheet + banner + tabs */}
@@ -94,7 +105,7 @@ export default function Home() {
             onScroll={onCardScroll}>
             {spots.map((s) => (
               <div key={s.id} className="w-[86%] shrink-0 snap-center">
-                <SpotCard spot={s} photoH="h-44" />
+                <SpotCard spot={s} photoH="h-44" autoPhotos />
               </div>
             ))}
           </div>

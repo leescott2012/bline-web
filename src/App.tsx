@@ -1,4 +1,8 @@
 import { Route, Switch } from "wouter";
+import FeedbackButton from "@/components/FeedbackButton";
+import { installErrorCapture } from "@/lib/bugReport";
+
+installErrorCapture();
 import Home from "@/pages/Home";
 import Detail from "@/pages/Detail";
 import Reserve from "@/pages/Reserve";
@@ -30,6 +34,7 @@ export default function App() {
           <Route path="/saved" component={Saved} />
           <Route>404</Route>
         </Switch>
+        <FeedbackButton />
       </div>
     </div>
   );
