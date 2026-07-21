@@ -13,6 +13,8 @@ import { spots } from "@/lib/data";
 // mode. In card mode the map pans to the active card's spot.
 export default function Home() {
   const [mode, setMode] = useState<"list" | "cards">("list");
+  const [hdr, setHdr] = useState(1);
+  const [activeIdx, setActiveIdx] = useState(0);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const activeRef = useRef(0);
 
@@ -38,6 +40,7 @@ export default function Home() {
     const i = Math.max(0, Math.min(spots.length - 1, Math.round(el.scrollLeft / (el.clientWidth * 0.86))));
     if (i !== activeRef.current) {
       activeRef.current = i;
+      setActiveIdx(i);
       flyTo(i);
     }
   };
@@ -52,27 +55,30 @@ export default function Home() {
     <Screen className="overflow-hidden">
       <RealMap zoom={12.1} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
-      {/* header stays fixed over the map */}
-      <header className="absolute inset-x-0 top-0 z-10">
+      {/* header fixed over the map; fades + lifts away as the list scrolls up */}
+      <header
+        className="absolute inset-x-0 top-0 z-10 transition-none"
+        style={{ opacity: hdr, transform: `translateY(${(hdr - 1) * 16}px)`, pointerEvents: hdr < 0.1 ? "none" : "auto" }}
+      >
         <div className="flex items-center gap-2 bg-[#0e0e12] px-4 py-2">
           <Search size={20} className="shrink-0 text-white" />
           <Link href="/filters" className="flex flex-1 items-center justify-around text-center">
             <div>
-              <p className="text-[13px] text-zinc-400">Where</p>
-              <p className="text-[17px] font-semibold leading-tight">Eastside Trail</p>
+              <p className="text-[11px] text-zinc-400">Where</p>
+              <p className="text-[16px] font-semibold leading-tight">Eastside Trail</p>
             </div>
             <div className="h-8 w-px bg-line" />
             <div>
-              <p className="text-[13px] text-zinc-400">When</p>
-              <p className="text-[17px] font-semibold leading-tight">Open now</p>
+              <p className="text-[11px] text-zinc-400">When</p>
+              <p className="text-[16px] font-semibold leading-tight">Open now</p>
             </div>
           </Link>
           <Link href="/filters" aria-label="Filters"
-            className="grid size-10 shrink-0 place-items-center rounded-full border border-zinc-600">
+            className="grid size-9 shrink-0 place-items-center rounded-full border border-zinc-600">
             <SlidersHorizontal size={16} />
           </Link>
         </div>
-        <button className="w-full bg-[#17171d]/95 py-2 text-center text-[15px] font-medium text-zinc-100">
+        <button className="w-full bg-[#17171d]/95 py-2 text-center text-[14px] font-medium text-zinc-100">
           Within a 10-min walk ▾
         </button>
       </header>
@@ -80,10 +86,13 @@ export default function Home() {
       {/* bottom stack: sheet + banner + tabs */}
       {/* LIST MODE — cards rest low so the map breathes, then scroll up over it */}
       {mode === "list" && (
-        <div className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain">
+        <div
+          className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
+          onScroll={(e) => { const p = Math.min(e.currentTarget.scrollTop / 140, 1); setHdr(1 - p); }}
+        >
           {/* transparent spacer keeps the map open above the first card (HT-style) */}
           <div className="h-[33vh] shrink-0" />
-          <div className="min-h-full space-y-3 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
+          <div className="min-h-full space-y-2.5 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
             <div className="flex cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")}>
               <span className="h-1.5 w-12 rounded-full bg-zinc-500" />
             </div>
@@ -107,9 +116,9 @@ export default function Home() {
           </motion.div>
           <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-3"
             onScroll={onCardScroll}>
-            {spots.map((s) => (
+            {spots.map((s, i) => (
               <div key={s.id} className="w-[86%] shrink-0 snap-center">
-                <SpotCard spot={s} photoH="h-44" autoPhotos />
+                <SpotCard spot={s} photoClass="aspect-[2/1]" autoPhotos={i === activeIdx} />
               </div>
             ))}
           </div>
