@@ -13,6 +13,7 @@ export default function RealMap({
   zoom = 12.6,
   center = [-84.381, 33.764] as [number, number],
   styleUrl = MAP_STYLE,
+  decorations = true,
   onMap,
 }: {
   className?: string;
@@ -20,6 +21,7 @@ export default function RealMap({
   zoom?: number;
   center?: [number, number];
   styleUrl?: string;
+  decorations?: boolean;
   onMap?: (m: maplibregl.Map) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
@@ -41,28 +43,30 @@ export default function RealMap({
     ro.observe(el.current);
     map.on("load", () => {
       map.resize();
-      map.addSource("beltline", {
-        type: "geojson",
-        data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: beltlineLoop } },
-      });
-      map.addLayer({
-        id: "beltline-line",
-        type: "line",
-        source: "beltline",
-        paint: { "line-color": "#c026d3", "line-width": 3.5, "line-dasharray": [1.4, 1.6] },
-      });
-      // fly-in
-      map.easeTo({ zoom, duration: 1600, essential: true });
-      // pins drop in, staggered
-      geoPins.forEach((p, i) => {
-        const d = document.createElement("div");
-        d.innerHTML = `<div class="bline-pin" style="animation-delay:${300 + i * 90}ms"><span class="star">★</span> ${p.r.toFixed(1)}</div>`;
-        new maplibregl.Marker({ element: d, anchor: "bottom" }).setLngLat([p.lng, p.lat]).addTo(map);
-      });
+      if (decorations) {
+        map.addSource("beltline", {
+          type: "geojson",
+          data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: beltlineLoop } },
+        });
+        map.addLayer({
+          id: "beltline-line",
+          type: "line",
+          source: "beltline",
+          paint: { "line-color": "#c026d3", "line-width": 3.5, "line-dasharray": [1.4, 1.6] },
+        });
+        // fly-in
+        map.easeTo({ zoom, duration: 1600, essential: true });
+        // pins drop in, staggered
+        geoPins.forEach((p, i) => {
+          const d = document.createElement("div");
+          d.innerHTML = `<div class="bline-pin" style="animation-delay:${300 + i * 90}ms"><span class="star">★</span> ${p.r.toFixed(1)}</div>`;
+          new maplibregl.Marker({ element: d, anchor: "bottom" }).setLngLat([p.lng, p.lat]).addTo(map);
+        });
+      }
     });
 
     return () => { ro.disconnect(); map.remove(); };
-  }, [interactive, zoom, center[0], center[1], styleUrl]);
+  }, [interactive, zoom, center[0], center[1], styleUrl, decorations]);
 
   return (
     <div className={className}>

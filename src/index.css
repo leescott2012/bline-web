@@ -69,3 +69,28 @@ body {
   color: #0b0b0f;
   font-size: 12px;
 }
+
+/* turn-by-turn nav markers */
+.nav-puck {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #2f6bff;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+.nav-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2f6bff;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+}
+.nav-dest {
+  font-size: 26px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}

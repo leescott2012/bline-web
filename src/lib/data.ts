@@ -123,6 +123,28 @@ export const beltlineLoop: [number, number][] = [
   [-84.394, 33.724], [-84.41, 33.734], [-84.418, 33.755], [-84.415, 33.773],
   [-84.408, 33.786],
 ];
+// Turn-by-turn demo route: Eastside Trail, Ponce City Market → Krog Street Market
+export const navRoute: [number, number][] = [
+  [-84.366, 33.7726], [-84.3654, 33.771], [-84.3648, 33.7688],
+  [-84.3644, 33.7662], [-84.364, 33.7635], [-84.3636, 33.7605],
+  [-84.3632, 33.7575], [-84.3634, 33.7548], [-84.3636, 33.753],
+];
+export const navSteps: { at: number; icon: "up" | "right" | "left" | "flag"; dist: string; text: string }[] = [
+  { at: 0.0, icon: "up", dist: "0.4 mi", text: "Head south on Eastside Trail" },
+  { at: 0.28, icon: "up", dist: "0.3 mi", text: "Continue past Historic Fourth Ward Park" },
+  { at: 0.55, icon: "up", dist: "0.3 mi", text: "Continue on Eastside Trail" },
+  { at: 0.82, icon: "right", dist: "350 ft", text: "Bear right toward Krog Street Market" },
+  { at: 0.97, icon: "flag", dist: "Arrive", text: "Krog Street Market" },
+];
+
+// meters between two lng/lat points (haversine)
+export function distM(a: [number, number], b: [number, number]) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * toR, dLng = (b[0] - a[0]) * toR;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * toR) * Math.cos(b[1] * toR) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
 export const geoPins: { lng: number; lat: number; r: number }[] = [
   { lng: -84.3669, lat: 33.7719, r: 4.7 }, { lng: -84.3654, lat: 33.7669, r: 4.8 },
   { lng: -84.3725, lat: 33.7756, r: 4.5 }, { lng: -84.3629, lat: 33.7591, r: 4.6 },

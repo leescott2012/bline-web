@@ -1,75 +1,153 @@
-import { ArrowUp, CornerUpRight, Navigation } from "lucide-react";
-import { Link } from "wouter";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUp, CornerUpRight, CornerUpLeft, Flag, Navigation2, X } from "lucide-react";
+import { useLocation } from "wouter";
+import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
+import RealMap from "@/components/RealMap";
+import { navRoute, navSteps, distM } from "@/lib/data";
 
-// Turn-by-turn — stylized 3D-ish scene, no map SDK
+const TOTAL_MI = 1.4, TOTAL_MIN = 28, DUR_MS = 40000;
+
+// cumulative distance along the route (meters)
+const cum = navRoute.reduce<number[]>((acc, pt, i) => {
+  acc.push(i === 0 ? 0 : acc[i - 1] + distM(navRoute[i - 1], pt));
+  return acc;
+}, []);
+const totalM = cum[cum.length - 1];
+
+function bearing(a: [number, number], b: [number, number]) {
+  const toR = Math.PI / 180, toD = 180 / Math.PI;
+  const y = Math.sin((b[0] - a[0]) * toR) * Math.cos(b[1] * toR);
+  const x = Math.cos(a[1] * toR) * Math.sin(b[1] * toR) - Math.sin(a[1] * toR) * Math.cos(b[1] * toR) * Math.cos((b[0] - a[0]) * toR);
+  return (Math.atan2(y, x) * toD + 360) % 360;
+}
+function posAt(p: number): { pos: [number, number]; brg: number } {
+  const d = p * totalM;
+  let i = 0;
+  while (i < cum.length - 2 && cum[i + 1] < d) i++;
+  const seg = cum[i + 1] - cum[i] || 1;
+  const t = (d - cum[i]) / seg;
+  const a = navRoute[i], b = navRoute[i + 1];
+  return { pos: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t], brg: bearing(a, b) };
+}
+const fmtClock = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getHours() % 12 || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
+};
+const stepIcon = { up: ArrowUp, right: CornerUpRight, left: CornerUpLeft, flag: Flag } as const;
+
 export default function Navigate() {
-  return (
-    <Screen className="bg-[#bcd9ea]">
-      <svg viewBox="0 0 100 160" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
-        <rect width="100" height="40" fill="#bcd9ea" />
-        <rect y="40" width="100" height="120" fill="#8faf77" />
-        {/* trail */}
-        <path d="M50 160 C 48 120, 55 90, 62 70 C 68 55, 72 50, 80 46"
-          stroke="#9b59f5" strokeWidth="9" fill="none" strokeLinecap="round" opacity="0.9" />
-        <path d="M50 160 C 48 120, 55 90, 62 70 C 68 55, 72 50, 80 46"
-          stroke="#c77bff" strokeWidth="5" fill="none" strokeLinecap="round" />
-        {/* sidewalk */}
-        <path d="M30 160 C 30 110, 38 80, 46 60 L 60 40 L 100 40 L 100 160 Z" fill="#b9b9ad" opacity="0.5" />
-        {/* buildings */}
-        <g>
-          <path d="M0 40 L 42 40 L 42 95 L 0 105 Z" fill="#9e5b45" />
-          <path d="M4 48 h8 v7 h-8 z M16 47 h8 v7 h-8 z M28 46 h8 v7 h-8 z M4 62 h8 v7 h-8 z M16 61 h8 v7 h-8 z M28 60 h8 v7 h-8 z" fill="#5d3021" />
-          <rect x="8" y="76" width="26" height="18" fill="#d4703d" />
-          <circle cx="15" cy="83" r="4" fill="#f2b544" /><circle cx="26" cy="85" r="4" fill="#4aa3d8" />
-        </g>
-        <g>
-          <path d="M56 20 L 100 14 L 100 40 L 60 40 Z" fill="#a4664c" />
-          <path d="M62 24 h5 v5 h-5 z M72 23 h5 v5 h-5 z M82 21 h5 v5 h-5 z" fill="#61341f" />
-        </g>
-        {/* trees */}
-        {[[70, 78], [78, 95], [66, 115], [82, 130], [74, 148], [88, 70]].map(([x, y], i) => (
-          <g key={i}>
-            <rect x={x - 1} y={y} width="2" height="6" fill="#6b4a2b" />
-            <circle cx={x} cy={y - 4} r="7" fill="#3f7d33" />
-            <circle cx={x - 4} cy={y - 1} r="5" fill="#4a8c3c" />
-          </g>
-        ))}
-      </svg>
+  const [, nav] = useLocation();
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const puckRef = useRef<maplibregl.Marker | null>(null);
+  const follow = useRef(true);
+  const raf = useRef(0);
+  const prev = useRef({ si: -1, mi: "", min: -1 });
 
-      <div className="relative flex h-full flex-col p-4">
+  const [step, setStep] = useState(navSteps[0]);
+  const [eta, setEta] = useState({ mi: TOTAL_MI.toFixed(1), min: TOTAL_MIN, arr: "" });
+  const [arrived, setArrived] = useState(false);
+  const [recenterVisible, setRecenterVisible] = useState(false);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const start = () => {
+      const maplibre = maplibregl;
+      // route casing + line
+      map.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: navRoute } } });
+      map.addLayer({ id: "route-casing", type: "line", source: "route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#7b1e86", "line-width": 12 } });
+      map.addLayer({ id: "route-line", type: "line", source: "route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#d946ef", "line-width": 6 } });
+
+      // start dot + destination pin
+      const dot = document.createElement("div");
+      dot.className = "nav-dot";
+      new maplibre.Marker({ element: dot }).setLngLat(navRoute[0]).addTo(map);
+      const dest = document.createElement("div");
+      dest.innerHTML = `<div class="nav-dest">📍</div>`;
+      new maplibre.Marker({ element: dest, anchor: "bottom" }).setLngLat(navRoute[navRoute.length - 1]).addTo(map);
+
+      // puck (always points up; the map rotates to heading)
+      const puckEl = document.createElement("div");
+      puckEl.innerHTML = `<div class="nav-puck"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2 L20 21 L12 16 L4 21 Z" fill="#fff"/></svg></div>`;
+      puckRef.current = new maplibre.Marker({ element: puckEl, rotationAlignment: "viewport" }).setLngLat(navRoute[0]).addTo(map);
+
+      const first = posAt(0);
+      map.jumpTo({ center: first.pos, zoom: 15.5, pitch: 55, bearing: first.brg });
+      map.on("dragstart", () => { follow.current = false; setRecenterVisible(true); });
+
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const p = Math.min((t - t0) / DUR_MS, 1);
+        const { pos, brg } = posAt(p);
+        puckRef.current!.setLngLat(pos);
+        if (follow.current) map.easeTo({ center: pos, bearing: brg, duration: 120, easing: (x) => x });
+
+        let si = 0;
+        for (let k = 0; k < navSteps.length; k++) if (navSteps[k].at <= p) si = k;
+        if (si !== prev.current.si) { prev.current.si = si; setStep(navSteps[si]); }
+        const mi = ((1 - p) * TOTAL_MI).toFixed(1);
+        const min = Math.max(0, Math.round((1 - p) * TOTAL_MIN));
+        if (mi !== prev.current.mi || min !== prev.current.min) {
+          prev.current.mi = mi; prev.current.min = min;
+          setEta({ mi, min, arr: fmtClock(Date.now() + min * 60000) });
+        }
+        if (p < 1) raf.current = requestAnimationFrame(tick);
+        else setArrived(true);
+      };
+      raf.current = requestAnimationFrame(tick);
+    };
+
+    if (map.isStyleLoaded()) start();
+    else map.once("load", start);
+    return () => cancelAnimationFrame(raf.current);
+  }, []);
+
+  const recenter = () => { follow.current = true; setRecenterVisible(false); };
+  const StepIcon = stepIcon[step.icon];
+
+  return (
+    <Screen className="overflow-hidden bg-[#bcd9ea]">
+      <RealMap interactive decorations={false} zoom={15.5} center={navRoute[0]} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+
+      {/* top instruction banner */}
+      <div className="pointer-events-none absolute inset-x-3 top-3 z-10">
         <div className="overflow-hidden rounded-2xl shadow-xl">
-          <div className="flex items-center gap-4 bg-black/90 p-5 text-white">
-            <ArrowUp size={40} strokeWidth={3} />
-            <div>
-              <p className="text-4xl font-bold">350 ft</p>
-              <p className="text-xl text-zinc-300">Continue on Eastside Trail</p>
+          <div className="flex items-center gap-4 bg-black/90 p-4 text-white">
+            <StepIcon size={38} strokeWidth={2.5} className="shrink-0" />
+            <div className="min-w-0">
+              <p className="text-3xl font-bold leading-none">{step.dist}</p>
+              <p className="mt-1 truncate text-lg text-zinc-300">{step.text}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-4 bg-zinc-700/90 px-5 py-3 text-white">
-            <CornerUpRight size={22} />
-            <p>then bear right toward Ponce City Market</p>
           </div>
         </div>
+      </div>
 
-        <span className="mx-auto mt-24 rounded-xl bg-white px-4 py-2 font-semibold text-zinc-900 shadow">
-          Ponce City Market
-        </span>
+      {/* recenter */}
+      {recenterVisible && (
+        <button onClick={recenter}
+          className="absolute bottom-40 right-4 z-10 flex items-center gap-2 rounded-full bg-white/95 px-4 py-2.5 font-semibold text-blue-600 shadow-lg">
+          <Navigation2 size={16} /> Recenter
+        </button>
+      )}
 
-        <div className="mt-auto">
-          <div className="mb-3 flex items-end justify-between">
-            <button className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2.5 font-semibold text-blue-600 shadow">
-              <Navigation size={16} /> Recenter
-            </button>
-            <span className="rounded-lg bg-white px-3 py-1.5 font-semibold text-blue-600 shadow">Eastside Trail</span>
-          </div>
-          <Link href="/trail" className="block rounded-3xl bg-white/95 p-5 shadow-xl">
-            <div className="flex justify-around text-center text-zinc-900">
-              <div><p className="text-3xl font-bold">3:29</p><p className="text-sm text-zinc-500">arrival</p></div>
-              <div><p className="text-3xl font-bold">3</p><p className="text-sm text-zinc-500">min</p></div>
-              <div><p className="text-3xl font-bold">0.2</p><p className="text-sm text-zinc-500">mi</p></div>
+      {/* bottom ETA card */}
+      <div className="absolute inset-x-0 bottom-0 z-10 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="rounded-3xl bg-white/95 p-4 shadow-xl backdrop-blur">
+          {arrived ? (
+            <p className="py-2 text-center text-xl font-bold text-zinc-900">You've arrived at Krog Street Market 🎉</p>
+          ) : (
+            <div className="flex items-center justify-around text-center text-zinc-900">
+              <div><p className="text-3xl font-bold">{eta.arr || "—"}</p><p className="text-sm text-zinc-500">arrival</p></div>
+              <div><p className="text-3xl font-bold">{eta.min}</p><p className="text-sm text-zinc-500">min</p></div>
+              <div><p className="text-3xl font-bold">{eta.mi}</p><p className="text-sm text-zinc-500">mi</p></div>
             </div>
-          </Link>
+          )}
+          <button onClick={() => nav("/trail")}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-[#c9187e] py-3 font-semibold text-white">
+            <X size={18} /> End
+          </button>
         </div>
       </div>
     </Screen>
