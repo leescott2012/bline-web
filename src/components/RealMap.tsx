@@ -3,18 +3,23 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { beltlineLoop, geoPins } from "@/lib/data";
 
-// Real 2D Atlanta map (Carto dark style, no API key). Fly-in + pin drop animations.
+// Real 2D Atlanta map (Carto Voyager street style, no API key). Fly-in + pin drop.
+// styleUrl lets the Map-styles screen swap basemaps (voyager/positron/dark/satellite).
+export const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+
 export default function RealMap({
   className = "",
   interactive = true,
   zoom = 12.6,
   center = [-84.381, 33.764] as [number, number],
+  styleUrl = MAP_STYLE,
   onMap,
 }: {
   className?: string;
   interactive?: boolean;
   zoom?: number;
   center?: [number, number];
+  styleUrl?: string;
   onMap?: (m: maplibregl.Map) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
@@ -23,7 +28,7 @@ export default function RealMap({
     if (!el.current) return;
     const map = new maplibregl.Map({
       container: el.current,
-      style: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
+      style: styleUrl,
       center,
       zoom: zoom - 1.2,
       interactive,
@@ -31,7 +36,11 @@ export default function RealMap({
     });
 
     onMap?.(map);
+    // keep the canvas matched to its container (it can init before layout settles)
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(el.current);
     map.on("load", () => {
+      map.resize();
       map.addSource("beltline", {
         type: "geojson",
         data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: beltlineLoop } },
@@ -52,12 +61,12 @@ export default function RealMap({
       });
     });
 
-    return () => map.remove();
-  }, [interactive, zoom, center[0], center[1]]);
+    return () => { ro.disconnect(); map.remove(); };
+  }, [interactive, zoom, center[0], center[1], styleUrl]);
 
   return (
     <div className={className}>
-      <div ref={el} className="h-full w-full" />
+      <div ref={el} className="h-full w-full" style={{ background: "#eae7e0" }} />
     </div>
   );
 }
