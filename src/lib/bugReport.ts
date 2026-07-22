@@ -1,14 +1,12 @@
-// Bug bin — same Supabase bug_reports table as Dumpster (anon inserts allowed,
-// source-tagged "bline"). Anon key is a public client key by design.
-const URL = "https://zstsigakqcggerhjbawj.supabase.co";
-const KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpzdHNpZ2FrcWNnZ2VyaGpiYXdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg5Njg5OTUsImV4cCI6MjA5NDU0NDk5NX0.u7rE6Txr89qWgTKc9UTinnzmGdCBeIT_e2HpYKjXOcs";
+// Bug bin — bline's own Supabase bug_reports table (anon inserts allowed,
+// source-tagged "bline-*").
+import { SUPABASE_URL, SUPABASE_ANON } from "./supabase";
 
 export async function reportBug(source: string, message: string, context?: Record<string, unknown>) {
   try {
-    await fetch(`${URL}/rest/v1/bug_reports`, {
+    await fetch(`${SUPABASE_URL}/rest/v1/bug_reports`, {
       method: "POST",
-      headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         source: `bline-${source}`,
         message: message.slice(0, 2000),
