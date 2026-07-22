@@ -3,10 +3,12 @@ import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { spots, menuPicks } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
+import { useFavorites, toggleFav } from "@/lib/favorites";
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
+  const saved = useFavorites().includes(spot.id);
   return (
     <Screen className="pb-28">
       <div className="relative h-80">
@@ -17,7 +19,11 @@ export default function Detail() {
         </Link>
         <div className="absolute right-4 top-4 flex gap-2">
           <button aria-label="Share" className="grid size-11 place-items-center rounded-full bg-black/50"><Share size={18} /></button>
-          <button aria-label="Save" className="grid size-11 place-items-center rounded-full bg-black/50"><Heart size={18} fill="white" /></button>
+          <button aria-label={saved ? "Remove from saved" : "Save"} aria-pressed={saved}
+            onClick={() => toggleFav(spot.id)}
+            className="grid size-11 place-items-center rounded-full bg-black/50">
+            <Heart size={18} className={saved ? "text-hot" : "text-white"} fill={saved ? "currentColor" : "none"} />
+          </button>
         </div>
       </div>
 

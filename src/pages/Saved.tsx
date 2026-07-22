@@ -4,9 +4,11 @@ import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import { spots } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
+import { useFavorites, toggleFav } from "@/lib/favorites";
 
 export default function Saved() {
-  const favs = spots.slice(0, 2);
+  const favs = useFavorites();
+  const saved = spots.filter((s) => favs.includes(s.id));
   return (
     <Screen className="overflow-hidden">
       <div className="h-full overflow-y-auto pb-24">
@@ -26,33 +28,42 @@ export default function Saved() {
           </div>
 
           <h2 className="mt-6 text-2xl font-bold">My Favorites</h2>
-          <p className="text-zinc-400">{favs.length} available now</p>
+          <p className="text-zinc-400">{saved.length} available now</p>
 
-          <div className="mt-3 space-y-4">
-            {favs.map((s) => (
-              <Link key={s.id} href={`/spot/${s.id}`} className="block overflow-hidden bg-card">
-                <div className="relative h-52">
-                  <PhotoCarousel imgs={s.imgs} alt={s.name} className="h-full w-full" />
-                  <span className="absolute right-3 top-3 grid size-10 place-items-center bg-black/50">
-                    <Heart size={20} className="text-hot" fill="currentColor" />
-                  </span>
-                </div>
-                <div className="flex items-start justify-between p-4">
-                  <div>
-                    <h3 className="text-[18px] font-bold">{s.name}</h3>
-                    <p className="mt-1 flex items-center gap-1.5 text-[13px] text-zinc-400">
-                      <ThumbsUp size={13} /> {s.loved}% loved · {s.area}
-                    </p>
+          {saved.length === 0 ? (
+            <div className="mt-3 flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-10 text-center text-zinc-400">
+              <Heart size={32} />
+              <p>No favorites yet.<br />Tap the heart on any spot to save it here.</p>
+            </div>
+          ) : (
+            <div className="mt-3 space-y-4">
+              {saved.map((s) => (
+                <Link key={s.id} href={`/spot/${s.id}`} className="block overflow-hidden bg-card">
+                  <div className="relative h-52">
+                    <PhotoCarousel imgs={s.imgs} alt={s.name} className="h-full w-full" />
+                    <button aria-label="Remove from saved"
+                      onClick={(e) => { e.preventDefault(); toggleFav(s.id); }}
+                      className="absolute right-3 top-3 text-hot drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]">
+                      <Heart size={26} fill="currentColor" />
+                    </button>
                   </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold text-hot">{s.rating}</p>
-                    <p className="text-xs text-zinc-400">{s.ratings} ratings</p>
-                    <p className="text-xs text-zinc-400 underline">Open till {s.openTill}</p>
+                  <div className="flex items-start justify-between p-4">
+                    <div>
+                      <h3 className="text-[18px] font-bold">{s.name}</h3>
+                      <p className="mt-1 flex items-center gap-1.5 text-[13px] text-zinc-400">
+                        <ThumbsUp size={13} /> {s.loved}% loved · {s.area}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-hot">{s.rating}</p>
+                      <p className="text-xs text-zinc-400">{s.ratings} ratings</p>
+                      <p className="text-xs text-zinc-400 underline">Open till {s.openTill}</p>
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 

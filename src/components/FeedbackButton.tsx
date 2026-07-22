@@ -1,17 +1,44 @@
-import { useState } from "react";
-import { Bug, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Bug, X, ImagePlus } from "lucide-react";
 import { reportBug } from "@/lib/bugReport";
+
+// downscale an image file to a small JPEG data URL so it fits in the bug row
+function shrink(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 1000;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale);
+      c.height = Math.round(img.height * scale);
+      c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+      resolve(c.toDataURL("image/jpeg", 0.6));
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 export default function FeedbackButton() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
+  const [img, setImg] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => { setText(""); setImg(null); };
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) setImg(await shrink(f));
+  };
 
   const send = async () => {
-    if (!text.trim()) return;
-    await reportBug("feedback", text.trim());
+    if (!text.trim() && !img) return;
+    await reportBug("feedback", text.trim() || "(screenshot only)", img ? { screenshot: img } : undefined);
     setSent(true);
-    setTimeout(() => { setOpen(false); setSent(false); setText(""); }, 1200);
+    setTimeout(() => { setOpen(false); setSent(false); reset(); }, 1200);
   };
 
   return (
@@ -31,9 +58,26 @@ export default function FeedbackButton() {
             <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
               placeholder="What happened / what looked off?"
               className="mt-3 h-28 w-full resize-none rounded-xl border border-line bg-ink p-3 text-[15px] outline-none" />
+
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
+            {img ? (
+              <div className="relative mt-3 inline-block">
+                <img src={img} alt="attachment" className="h-24 rounded-lg border border-line object-cover" />
+                <button aria-label="Remove attachment" onClick={() => setImg(null)}
+                  className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-black text-white">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => fileRef.current?.click()}
+                className="mt-3 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-zinc-300">
+                <ImagePlus size={16} /> Attach screenshot
+              </button>
+            )}
+
             <button onClick={send}
               className="mt-3 w-full rounded-full bg-accent py-3 font-semibold disabled:opacity-50"
-              disabled={!text.trim() || sent}>
+              disabled={(!text.trim() && !img) || sent}>
               {sent ? "Sent — thank you! 🙌" : "Send feedback"}
             </button>
           </div>

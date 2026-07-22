@@ -47,8 +47,22 @@ export default function Home() {
 
   const setSheet = (m: "list" | "cards") => {
     setMode(m);
+    setHdr(1);
     if (m === "cards") flyTo(activeRef.current);
     else activeMarker.current?.remove();
+  };
+
+  // pull DOWN on the list (while scrolled to the top) → single-card mode
+  const pullY = useRef<number | null>(null);
+  const onListTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    pullY.current = e.currentTarget.scrollTop <= 0 ? e.touches[0].clientY : null;
+  };
+  const onListTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (pullY.current == null) return;
+    if (e.touches[0].clientY - pullY.current > 48) {
+      pullY.current = null;
+      setSheet("cards");
+    }
   };
 
   return (
@@ -89,13 +103,15 @@ export default function Home() {
         <div
           className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain"
           onScroll={(e) => { const p = Math.min(e.currentTarget.scrollTop / 140, 1); setHdr(1 - p); }}
+          onTouchStart={onListTouchStart}
+          onTouchMove={onListTouchMove}
         >
           {/* transparent spacer keeps the map open above the first card (HT-style) */}
           <div className="h-[33vh] shrink-0" />
           <div className="min-h-full space-y-2.5 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
-            <div className="flex cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")}>
+            <button className="flex w-full cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")} aria-label="Single-card view">
               <span className="h-1.5 w-12 rounded-full bg-zinc-500" />
-            </div>
+            </button>
             {spots.map((s) => (
               <SpotCard key={s.id} spot={s} />
             ))}
