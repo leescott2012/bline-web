@@ -38,9 +38,12 @@ export default function Detail() {
           <span className="text-zinc-200">{spot.rating}</span> · {spot.ratings} ratings · {spot.category}
         </p>
 
-        <button className="mt-4 flex w-full items-center justify-between rounded-2xl border border-line px-4 py-3 text-left text-[15px] whitespace-nowrap">
-          <span><span className="font-semibold text-mint">Open now</span> · Closes 12:00 AM</span>
-          <span className="flex items-center gap-1 text-zinc-400">{spot.address} <ChevronRight size={14} /></span>
+        <button className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]">
+          <span className="shrink-0 whitespace-nowrap"><span className="font-semibold text-mint">Open now</span> · Closes 12:00 AM</span>
+          <span className="flex min-w-0 items-center gap-1 text-zinc-400">
+            <span className="truncate">{spot.address}</span>
+            <ChevronRight size={14} className="shrink-0" />
+          </span>
         </button>
 
         <Link href="/trail" className="mt-6 flex items-center gap-4">

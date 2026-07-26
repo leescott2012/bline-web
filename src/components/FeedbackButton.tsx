@@ -44,7 +44,7 @@ export default function FeedbackButton() {
   return (
     <>
       <button aria-label="Send feedback" onClick={() => setOpen(true)}
-        className="absolute right-0 top-1/2 z-30 grid size-9 -translate-y-1/2 translate-x-[42%] place-items-center rounded-l-xl bg-black/40 pr-1.5 text-zinc-400 backdrop-blur active:translate-x-0">
+        className="absolute right-0 top-32 z-30 grid size-9 translate-x-[42%] place-items-center rounded-l-xl bg-black/40 pr-1.5 text-zinc-400 backdrop-blur active:translate-x-0">
         <Bug size={16} />
       </button>
       {open && (

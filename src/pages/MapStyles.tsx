@@ -103,9 +103,9 @@ export default function MapStyles() {
 
   return (
     <Screen className="overflow-hidden bg-gradient-to-b from-white via-[#f2effa] to-white text-zinc-900">
-      <header className="relative flex items-center justify-center px-4 py-6">
-        <Link href="/map" aria-label="Back" className="absolute left-4"><ChevronLeft size={24} /></Link>
-        <h1 className="text-3xl font-bold">Choose your map style</h1>
+      <header className="grid grid-cols-[40px_1fr_40px] items-center px-4 py-6">
+        <Link href="/map" aria-label="Back"><ChevronLeft size={24} /></Link>
+        <h1 className="text-center text-2xl font-bold leading-tight">Choose your map style</h1>
       </header>
       <p className="pb-4 text-center text-sm font-bold tracking-widest text-zinc-600">MAP STYLES</p>
 
