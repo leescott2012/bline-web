@@ -14,6 +14,7 @@ import MapStyles from "@/pages/MapStyles";
 import Friends from "@/pages/Friends";
 import Filters from "@/pages/Filters";
 import Saved from "@/pages/Saved";
+import Profile from "@/pages/Profile";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
           <Route path="/friends" component={Friends} />
           <Route path="/filters" component={Filters} />
           <Route path="/saved" component={Saved} />
+          <Route path="/profile" component={Profile} />
           <Route>404</Route>
         </Switch>
         <FeedbackButton />

@@ -94,3 +94,17 @@ body {
   line-height: 1;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
+
+/* trail character: trees along the route (real map, 3D-tilted views) */
+.bline-tree {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}
+.bline-mural {
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  pointer-events: none;
+}

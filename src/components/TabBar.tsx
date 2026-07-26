@@ -1,12 +1,12 @@
-import { Footprints, Heart, Map, Gift, User } from "lucide-react";
+import { Footprints, Heart, Map, Users, User } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 const tabs = [
   { icon: Footprints, label: "Explore", href: "/" },
   { icon: Heart, label: "Saved", href: "/saved" },
   { icon: Map, label: "Map", href: "/map" },
-  { icon: Gift, label: "Perks", href: "/conditions" },
-  { icon: User, label: "You", href: "/friends" },
+  { icon: Users, label: "Friends", href: "/friends" },
+  { icon: User, label: "You", href: "/profile" },
 ];
 
 export default function TabBar() {

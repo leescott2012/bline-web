@@ -21,25 +21,6 @@ export type Spot = {
 // ponytail: mock data only — swap for Supabase when the backend lands
 export const spots: Spot[] = [
   {
-    id: "new-realm",
-    name: "New Realm Brewing",
-    category: "Brewery & Beer garden",
-    area: "Midtown",
-    loved: 95,
-    rating: 4.7,
-    ratings: "1,412",
-    openTill: "12a",
-    badges: ["TRAIL PICK", "DEAL"],
-    img: "/photos/new-realm-card.png",
-    imgs: ["/photos/new-realm-card.png", "/photos/new-realm-mural.png", "/photos/new-realm-hero.png"],
-    price: 135,
-    wasPrice: 191,
-    lng: -84.3669,
-    lat: 33.7719,
-address: "550 Somerset Ter NE",
-    walk: "3 min walk from Ponce City Market",
-  },
-  {
     id: "ponce-city",
     name: "Ponce City Market",
     category: "Food hall · 30+ vendors",
@@ -57,6 +38,25 @@ address: "550 Somerset Ter NE",
     lat: 33.7726,
 address: "675 Ponce De Leon Ave NE",
     walk: "On the Eastside Trail",
+  },
+  {
+    id: "new-realm",
+    name: "New Realm Brewing",
+    category: "Brewery & Beer garden",
+    area: "Midtown",
+    loved: 95,
+    rating: 4.7,
+    ratings: "1,412",
+    openTill: "12a",
+    badges: ["TRAIL PICK", "DEAL"],
+    img: "/photos/new-realm-card.png",
+    imgs: ["/photos/new-realm-card.png", "/photos/new-realm-mural.png", "/photos/new-realm-hero.png"],
+    price: 135,
+    wasPrice: 191,
+    lng: -84.3669,
+    lat: 33.7719,
+address: "550 Somerset Ter NE",
+    walk: "3 min walk from Ponce City Market",
   },
   {
     id: "krog-street",
@@ -152,3 +152,21 @@ export const geoPins: { lng: number; lat: number; r: number }[] = [
   { lng: -84.3805, lat: 33.7702, r: 4.4 }, { lng: -84.3547, lat: 33.7727, r: 4.3 },
   { lng: -84.3752, lat: 33.7554, r: 4.1 },
 ];
+
+// Synthetic crowd-density sample points for the real MapLibre heatmap layer
+// (Trail Conditions screen). Clustered hottest near Ponce City Market, warm
+// near New Realm Brewing, light scatter along the rest of the trail.
+export const crowdDensityPoints: { lng: number; lat: number; weight: number }[] = (() => {
+  const jitter = (lng: number, lat: number, n: number, spread: number, weight: number) =>
+    Array.from({ length: n }, () => ({
+      lng: lng + (Math.random() - 0.5) * spread,
+      lat: lat + (Math.random() - 0.5) * spread,
+      weight,
+    }));
+  return [
+    ...jitter(-84.366, 33.7726, 22, 0.004, 1),   // Ponce City Market — busiest
+    ...jitter(-84.3669, 33.7719, 14, 0.0035, 0.7), // New Realm Brewing
+    ...jitter(-84.3636, 33.753, 8, 0.003, 0.5),    // Krog Street Market
+    ...beltlineLoop.flatMap((pt) => jitter(pt[0], pt[1], 3, 0.003, 0.3)),
+  ];
+})();

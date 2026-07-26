@@ -1,16 +1,85 @@
-import { ChevronLeft, Users, Sun, Navigation2 } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ChevronLeft, Users, Sun } from "lucide-react";
 import { Link } from "wouter";
+import type maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
+import RealMap from "@/components/RealMap";
+import { crowdDensityPoints } from "@/lib/data";
 
 const hours = ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "1", "2"];
 const heights = [4, 5, 8, 14, 34, 48, 64, 52, 40, 22, 14, 10];
 
+const radiusByZoom = (mult: number) =>
+  ["interpolate", ["linear"], ["zoom"], 10, 16 * mult, 16, 38 * mult] as maplibregl.ExpressionSpecification;
+
 export default function Crowd() {
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const start = () => {
+      map.addSource("crowd-density", {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: crowdDensityPoints.map((p) => ({
+            type: "Feature",
+            properties: { weight: p.weight },
+            geometry: { type: "Point", coordinates: [p.lng, p.lat] },
+          })),
+        },
+      });
+      map.addLayer({
+        id: "crowd-heat",
+        type: "heatmap",
+        source: "crowd-density",
+        paint: {
+          "heatmap-weight": ["get", "weight"],
+          "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 1, 16, 3],
+          "heatmap-color": [
+            "interpolate", ["linear"], ["heatmap-density"],
+            0, "rgba(0,0,0,0)",
+            0.2, "#4ade4a",
+            0.4, "#facc15",
+            0.6, "#fb923c",
+            0.8, "#ef4444",
+            1, "#b91c1c",
+          ],
+          "heatmap-radius": radiusByZoom(1),
+          "heatmap-opacity": 0.72,
+        },
+      });
+
+      // live glow/pulse — two offset sine waves so opacity and radius breathe
+      // out of phase, reads as a fluid glow rather than a rigid blink.
+      const t0 = performance.now();
+      const tick = (t: number) => {
+        const dt = (t - t0) / 1000;
+        const opacity = 0.62 + 0.18 * Math.sin(dt * 1.1);
+        const radiusMult = 1 + 0.12 * Math.sin(dt * 0.8 + 1.2);
+        if (map.getLayer("crowd-heat")) {
+          map.setPaintProperty("crowd-heat", "heatmap-opacity", opacity);
+          map.setPaintProperty("crowd-heat", "heatmap-radius", radiusByZoom(radiusMult));
+        }
+        rafRef.current = requestAnimationFrame(tick);
+      };
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    if (map.isStyleLoaded()) start();
+    else map.once("load", start);
+
+    return () => cancelAnimationFrame(rafRef.current);
+  }, []);
+
   return (
-    <Screen>
+    <Screen className="overflow-hidden">
       <header className="relative flex items-center px-4 py-4">
-        <Link href="/" aria-label="Back" className="mr-3"><ChevronLeft size={22} /></Link>
+        <Link href="/profile" aria-label="Back" className="mr-3"><ChevronLeft size={22} /></Link>
         <h1 className="text-sm font-bold tracking-widest text-zinc-300">
           TRAIL CONDITIONS / <span className="text-white">CROWD-DENSITY</span>
         </h1>
@@ -30,26 +99,8 @@ export default function Crowd() {
       </div>
 
       <div className="relative mx-0 h-[55%] overflow-hidden">
-        <svg viewBox="0 0 100 90" preserveAspectRatio="xMidYMid slice" className="h-full w-full">
-          <rect width="100" height="90" fill="#252c3b" />
-          <ellipse cx="20" cy="20" rx="14" ry="9" fill="#1e3229" />
-          <ellipse cx="80" cy="65" rx="14" ry="9" fill="#1e3229" />
-          <g stroke="#39415a" strokeWidth="0.8" fill="none">
-            <path d="M0 30 H100 M0 60 H100 M25 0 V90 M70 0 V90" />
-          </g>
-          {/* heat trail */}
-          <g fill="none" strokeLinecap="round">
-            <path d="M10 75 C 30 70, 40 55, 48 40 C 54 28, 58 20, 66 12" stroke="#4ade4a" strokeWidth="7" opacity="0.35" />
-            <path d="M30 40 C 42 42, 55 44, 72 40" stroke="#4ade4a" strokeWidth="6" opacity="0.35" />
-            <path d="M44 55 C 48 46, 50 38, 54 28" stroke="#fb923c" strokeWidth="8" opacity="0.55" />
-            <path d="M46 50 C 49 43, 51 37, 53 31" stroke="#ef4444" strokeWidth="8" opacity="0.8" />
-            <path d="M52 32 C 60 28, 66 26, 74 27" stroke="#fb923c" strokeWidth="6" opacity="0.55" />
-          </g>
-          <text x="12" y="52" fill="#9aa4bd" fontSize="6" fontWeight="700">Atlanta</text>
-          <text x="56" y="42" fill="#d99a3d" fontSize="3.4" fontWeight="700">Ponce City Market</text>
-          <text x="76" y="30" fill="#8b93ab" fontSize="2.8" transform="rotate(70 76 30)">Eastside Trail</text>
-          <path d="M50 46 l3.5 8 -3.5 -2 -3.5 2 z" fill="#3b82f6" stroke="white" strokeWidth="0.7" />
-        </svg>
+        <RealMap decorations={false} zoom={13.6} center={[-84.3665, 33.7723]}
+          onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
       </div>
 
       <div className="mx-4 mt-3 rounded-3xl border-2 border-accent bg-white p-4 text-zinc-900">

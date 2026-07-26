@@ -109,7 +109,7 @@ export default function Navigate() {
 
   return (
     <Screen className="overflow-hidden bg-[#bcd9ea]">
-      <RealMap interactive decorations={false} zoom={15.5} center={navRoute[0]} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+      <RealMap interactive decorations={false} autoPitch={false} zoom={15.5} center={navRoute[0]} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
       {/* top instruction banner */}
       <div className="pointer-events-none absolute inset-x-3 top-3 z-10">
