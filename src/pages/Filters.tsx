@@ -1,19 +1,31 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import Screen from "@/components/Screen";
 import DarkMap from "@/components/DarkMap";
 import { spots } from "@/lib/data";
+import {
+  CATEGORIES,
+  applyFilters,
+  resetFilters,
+  setCategory,
+  setMaxWalkMinutes,
+  setMinRating,
+  useExploreFilters,
+} from "@/lib/exploreFilters";
 
-const categories = ["Breweries", "Eats", "Coffee", "Bars", "Art & Murals"];
-const ratings = ["4.0+", "4.5+", "Any"];
+const ratingOptions = [
+  { label: "4.0+", value: 4.0 },
+  { label: "4.5+", value: 4.5 },
+  { label: "Any", value: 0 },
+];
 
 export default function Filters() {
   const [, nav] = useLocation();
-  const [cat, setCat] = useState("Breweries");
-  const [dist, setDist] = useState(60);
-  const [minRating, setMinRating] = useState("4.5+");
-  const [openNow, setOpenNow] = useState(true);
+  const filters = useExploreFilters();
+  const { category, minRating, maxWalkMinutes } = filters;
+  const [openNow, setOpenNow] = useState(true); // visual only — see data.ts note on fake "open now" clock math
+  const count = useMemo(() => applyFilters(spots, filters).length, [filters]);
 
   return (
     <Screen>
@@ -24,7 +36,7 @@ export default function Filters() {
           <Link href="/" aria-label="Close" className="absolute left-4"><X size={24} /></Link>
           <h1 className="text-2xl font-bold">Filters</h1>
           <button className="absolute right-4 text-zinc-300 underline"
-            onClick={() => { setCat("Breweries"); setDist(60); setMinRating("4.5+"); setOpenNow(true); }}>
+            onClick={() => { resetFilters(); setOpenNow(true); }}>
             Reset
           </button>
         </header>
@@ -32,27 +44,27 @@ export default function Filters() {
         <div className="px-4">
           <h2 className="text-xl font-semibold">Category</h2>
           <div className="no-scrollbar -mx-4 mt-3 flex gap-2.5 overflow-x-auto px-4">
-            {categories.map((c) => (
-              <button key={c} onClick={() => setCat(c)}
-                className={`shrink-0 rounded-full px-5 py-2.5 text-lg ${c === cat ? "bg-accent font-semibold" : "bg-[#3a3a42]"}`}>
+            {CATEGORIES.map((c) => (
+              <button key={c} onClick={() => setCategory(category === c ? null : c)}
+                className={`shrink-0 rounded-full px-5 py-2.5 text-lg ${c === category ? "bg-accent font-semibold" : "bg-[#3a3a42]"}`}>
                 {c}
               </button>
             ))}
           </div>
 
           <h2 className="mt-7 text-xl font-semibold">Distance from trail</h2>
-          <input type="range" min={10} max={100} value={dist} onChange={(e) => setDist(+e.target.value)}
+          <input type="range" min={2} max={17} value={maxWalkMinutes} onChange={(e) => setMaxWalkMinutes(+e.target.value)}
             className="mt-4 w-full accent-accent" aria-label="Distance from trail" />
-          <p className="mt-1 text-zinc-400">Within {Math.round(dist / 6)}-min walk</p>
+          <p className="mt-1 text-zinc-400">Within {maxWalkMinutes}-min walk</p>
 
           <img src="/photos/ponce-wide.png" alt="" className="mt-5 h-40 w-full rounded-2xl object-cover" loading="lazy" />
 
           <h2 className="mt-6 text-xl font-semibold">Minimum rating</h2>
           <div className="mt-3 flex overflow-hidden rounded-full bg-[#3a3a42] text-center">
-            {ratings.map((r) => (
-              <button key={r} onClick={() => setMinRating(r)}
-                className={`flex-1 py-3 text-lg ${r === minRating ? "rounded-full bg-accent font-semibold" : ""}`}>
-                {r}
+            {ratingOptions.map((r) => (
+              <button key={r.label} onClick={() => setMinRating(r.value)}
+                className={`flex-1 py-3 text-lg ${r.value === minRating ? "rounded-full bg-accent font-semibold" : ""}`}>
+                {r.label}
               </button>
             ))}
           </div>
@@ -67,7 +79,7 @@ export default function Filters() {
 
           <button onClick={() => nav("/")}
             className="mt-7 w-full rounded-2xl bg-accent py-4 text-lg font-semibold">
-            Show 28 spots
+            Show {count} spot{count === 1 ? "" : "s"}
           </button>
         </div>
       </div>
