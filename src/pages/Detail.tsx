@@ -1,7 +1,7 @@
 import { ChevronLeft, Share, Heart, Star, ChevronRight } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
-import { spots, menuPicks } from "@/lib/data";
+import { spots, menuPicks, isOpenNow, closingTimeLabel } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
@@ -28,10 +28,15 @@ export default function Detail() {
       </div>
 
       <div className="px-4 pt-4">
-        <div className="flex gap-2">
-          <span className="rounded bg-[#7c3aed] px-2 py-1 text-[11px] font-bold text-white">TRAIL PICK</span>
-          <span className="rounded bg-accent px-2 py-1 text-[11px] font-bold text-white">DEAL</span>
-        </div>
+        {spot.badges.length > 0 && (
+          <div className="flex gap-2">
+            {spot.badges.map((b) => (
+              <span key={b} className={`rounded px-2 py-1 text-[11px] font-bold text-white ${b === "DEAL" ? "bg-accent" : "bg-[#7c3aed]"}`}>
+                {b}
+              </span>
+            ))}
+          </div>
+        )}
         <h1 className="mt-3 text-3xl font-bold">{spot.name}</h1>
         <p className="mt-2 flex items-center gap-1.5 text-[15px] text-zinc-400">
           <Star size={16} fill="currentColor" className="text-zinc-300" />
@@ -39,7 +44,10 @@ export default function Detail() {
         </p>
 
         <button className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]">
-          <span className="shrink-0 whitespace-nowrap"><span className="font-semibold text-mint">Open now</span> · Closes 12:00 AM</span>
+          <span className="shrink-0 whitespace-nowrap">
+            {isOpenNow(spot) ? <span className="font-semibold text-mint">Open now</span> : <span className="font-semibold text-hot">Closed</span>}
+            {" "}· Closes {closingTimeLabel(spot.openTill)}
+          </span>
           <span className="flex min-w-0 items-center gap-1 text-zinc-400">
             <span className="truncate">{spot.address}</span>
             <ChevronRight size={14} className="shrink-0" />

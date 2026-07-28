@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import Screen from "@/components/Screen";
@@ -11,6 +11,7 @@ import {
   setCategory,
   setMaxWalkMinutes,
   setMinRating,
+  setOpenNow,
   useExploreFilters,
 } from "@/lib/exploreFilters";
 
@@ -23,8 +24,7 @@ const ratingOptions = [
 export default function Filters() {
   const [, nav] = useLocation();
   const filters = useExploreFilters();
-  const { category, minRating, maxWalkMinutes } = filters;
-  const [openNow, setOpenNow] = useState(true); // visual only — see data.ts note on fake "open now" clock math
+  const { category, minRating, maxWalkMinutes, openNow } = filters;
   const count = useMemo(() => applyFilters(spots, filters).length, [filters]);
 
   return (
@@ -36,7 +36,7 @@ export default function Filters() {
           <Link href="/" aria-label="Close" className="absolute left-4"><X size={24} /></Link>
           <h1 className="text-2xl font-bold">Filters</h1>
           <button className="absolute right-4 text-zinc-300 underline"
-            onClick={() => { resetFilters(); setOpenNow(true); }}>
+            onClick={resetFilters}>
             Reset
           </button>
         </header>

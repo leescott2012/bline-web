@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { distM, type Spot } from "@/lib/data";
+import { distM, isOpenNow, walkMinutesFromTrail, type Spot } from "@/lib/data";
 
 // localStorage-backed Explore search/filter/sort state. Same module-store +
 // useSyncExternalStore pattern as favorites.ts / mapStyle.ts — no Redux/Context.
@@ -10,6 +10,7 @@ export interface ExploreFilters {
   category: string | null; // null = all categories
   minRating: number; // 0 = Any
   maxWalkMinutes: number; // walk minutes from the BeltLine trail
+  openNow: boolean;
   sort: SortKey;
 }
 
@@ -18,7 +19,7 @@ export interface ExploreFilters {
 export const CATEGORIES = ["Breweries", "Eats", "Coffee", "Bars", "Desserts"] as const;
 
 const KEY = "bline:exploreFilters";
-const DEFAULTS: ExploreFilters = { query: "", category: null, minRating: 0, maxWalkMinutes: 10, sort: "recommended" };
+const DEFAULTS: ExploreFilters = { query: "", category: null, minRating: 0, maxWalkMinutes: 10, openNow: false, sort: "recommended" };
 
 let state: ExploreFilters = load();
 const listeners = new Set<() => void>();
@@ -50,6 +51,10 @@ export function setMinRating(minRating: number) {
 }
 export function setMaxWalkMinutes(maxWalkMinutes: number) {
   state = { ...state, maxWalkMinutes };
+  emit();
+}
+export function setOpenNow(openNow: boolean) {
+  state = { ...state, openNow };
   emit();
 }
 export function setSort(sort: SortKey) {
@@ -85,15 +90,15 @@ function categoryOf(spot: Spot): string {
   return "Eats";
 }
 
-// ponytail: maxWalkMinutes is wired to shared state and drives the Filters
-// slider label, but it doesn't gate results — the only distance-to-trail data
-// available (data.ts's beltlineLoop) is a coarse decorative loop, not real
-// trail geometry: it puts Ponce City Market ~20min from "the trail" it's built
-// on. Same call as "Open now" in data.ts — don't invent fake precision. Wire
-// up real routing distance once the backend has actual trail geometry.
 export function matchesFilters(spot: Spot, f: ExploreFilters): boolean {
   if (f.category && categoryOf(spot) !== f.category) return false;
   if (spot.rating < f.minRating) return false;
+  if (walkMinutesFromTrail(spot.lng, spot.lat) > f.maxWalkMinutes) return false;
+  // ponytail: openNow defaults to false (not gating) even though the wireframe
+  // shows it "on" by default — isOpenNow() is a same-day estimate with no real
+  // opening-time data, and gating by default risks an empty list if a demo
+  // happens outside typical hours. Real when the user explicitly flips it on.
+  if (f.openNow && !isOpenNow(spot)) return false;
   const q = f.query.trim().toLowerCase();
   if (q && !spot.name.toLowerCase().includes(q) && !spot.category.toLowerCase().includes(q)) return false;
   return true;

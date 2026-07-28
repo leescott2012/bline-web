@@ -359,6 +359,77 @@ export function distM(a: [number, number], b: [number, number]) {
   return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+// Real (approximate) trail-segment centerlines, built from the actual street
+// addresses/cross-streets in RAW_SPOTS above — NOT the same as `beltlineLoop`,
+// which is a decorative full-corridor loop shape used for map art and puts
+// Ponce City Market ~20min from "the trail" it's literally built on. These two
+// short polylines trace the real Eastside Trail corridor (Piedmont Park down
+// through PCM/Krog St) and the real Westside/Southwest Trail corridor
+// (Westview through Lee+White to Pittsburgh Yards), for actual walk-distance
+// filtering.
+const EASTSIDE_TRAIL_PATH: [number, number][] = [
+  [-84.372, 33.782], [-84.3715, 33.7815], [-84.371, 33.775], [-84.3669, 33.7719],
+  [-84.371, 33.767], [-84.373, 33.766], [-84.3625, 33.7575], [-84.3636, 33.753],
+  [-84.361, 33.746],
+];
+const SOUTHWEST_TRAIL_PATH: [number, number][] = [
+  [-84.443, 33.735], [-84.415, 33.735], [-84.42, 33.726], [-84.416, 33.723],
+  [-84.403, 33.719],
+];
+const WALK_M_PER_MIN = 80; // ~5 km/h average walking pace
+
+function nearestPointOnSegment(p: [number, number], a: [number, number], b: [number, number]): [number, number] {
+  // flat-earth projection — fine at city scale; longitude scaled by cos(lat) to un-skew degrees
+  const k = Math.cos((p[1] * Math.PI) / 180);
+  const ax = a[0] * k, ay = a[1], bx = b[0] * k, by = b[1], px = p[0] * k, py = p[1];
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return [(ax + t * dx) / k, ay + t * dy];
+}
+function distToPolylineM(p: [number, number], path: [number, number][]): number {
+  let min = Infinity;
+  for (let i = 0; i < path.length - 1; i++) {
+    min = Math.min(min, distM(p, nearestPointOnSegment(p, path[i], path[i + 1])));
+  }
+  return min;
+}
+export function walkMinutesFromTrail(lng: number, lat: number): number {
+  const p: [number, number] = [lng, lat];
+  return Math.min(distToPolylineM(p, EASTSIDE_TRAIL_PATH), distToPolylineM(p, SOUTHWEST_TRAIL_PATH)) / WALK_M_PER_MIN;
+}
+
+// openTill ("11p", "12a", "1a", "7p", ...) is the only real hours data we
+// have — no opening time is stored. isOpenNow() assumes evening venues (close
+// after 7p) open by 11a and daytime venues (close by 7p) open by 7a; measured
+// relative to a 4am anchor so post-midnight closes ("12a"/"1a") don't need
+// special-cased wraparound math.
+function closeHour24(openTill: string): number {
+  const m = /^(\d+)([ap])$/.exec(openTill);
+  if (!m) return 23;
+  const h = parseInt(m[1], 10) % 12;
+  return m[2] === "p" ? h + 12 : h;
+}
+function hoursSince4am(h: number): number {
+  return ((h - 4) % 24 + 24) % 24;
+}
+export function isOpenNow(spot: Spot): boolean {
+  const close = closeHour24(spot.openTill);
+  // daytime closes are 5p-7p (17-19); evening/late-night closes are 10p-1a
+  // (22-23, or 0-1 post-midnight) — a small close value alone doesn't mean
+  // daytime, since "12a"/"1a" parse to 0/1.
+  const isDaytime = close >= 17 && close <= 19;
+  const openAt = isDaytime ? 7 : 11; // daytime spots open ~7a, evening spots ~11a
+  const now = new Date();
+  const nowH = now.getHours() + now.getMinutes() / 60;
+  return hoursSince4am(nowH) >= hoursSince4am(openAt) && hoursSince4am(nowH) < hoursSince4am(close);
+}
+export function closingTimeLabel(openTill: string): string {
+  const m = /^(\d+)([ap])$/.exec(openTill);
+  if (!m) return openTill;
+  return `${m[1]}:00 ${m[2] === "a" ? "AM" : "PM"}`;
+}
+
 export const geoPins: { lng: number; lat: number; r: number }[] = [
   { lng: -84.3669, lat: 33.7719, r: 4.7 }, { lng: -84.3654, lat: 33.7669, r: 4.8 },
   { lng: -84.3725, lat: 33.7756, r: 4.5 }, { lng: -84.3629, lat: 33.7591, r: 4.6 },

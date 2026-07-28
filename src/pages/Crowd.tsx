@@ -9,6 +9,15 @@ import { crowdDensityPoints } from "@/lib/data";
 
 const hours = ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "1", "2"];
 const heights = [4, 5, 8, 14, 34, 48, 64, 52, 40, 22, 14, 10];
+// single source of truth for the peak window — was two independently hardcoded
+// strings (this heading + the "Peak until" stat chip) that could silently drift.
+const PEAK_WINDOW = "4–6 PM";
+const PEAK_ENDS = PEAK_WINDOW.split("–")[1].trim();
+
+// crowd-level label derived from the real heatmap weight total (crowdDensityPoints),
+// not hardcoded — shifts if the underlying density data changes.
+const TOTAL_WEIGHT = crowdDensityPoints.reduce((s, p) => s + p.weight, 0);
+const CROWD_LEVEL = TOTAL_WEIGHT < 30 ? "Light" : TOTAL_WEIGHT < 60 ? "Moderate" : "Busy";
 
 const radiusByZoom = (mult: number) =>
   ["interpolate", ["linear"], ["zoom"], 10, 16 * mult, 16, 38 * mult] as maplibregl.ExpressionSpecification;
@@ -87,9 +96,11 @@ export default function Crowd() {
 
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-3">
         {[
-          { icon: Users, big: "Moderate", small: "crowd" },
+          { icon: Users, big: CROWD_LEVEL, small: "crowd" },
+          // ponytail: no weather API wired up — real "clear"/"72°F" would need
+          // a marketplace weather integration, out of scope for this pass.
           { icon: Sun, big: "72°F", small: "clear" },
-          { icon: null, big: "Peak until", small: "6 PM" },
+          { icon: null, big: "Peak until", small: PEAK_ENDS },
         ].map(({ icon: Icon, big, small }, i) => (
           <div key={i} className="flex shrink-0 items-center gap-2 rounded-2xl border-2 border-accent bg-[#f3e3f3] px-4 py-2.5 text-zinc-900">
             {Icon && <Icon size={20} className="text-accent" />}
@@ -104,7 +115,7 @@ export default function Crowd() {
       </div>
 
       <div className="mx-4 mt-3 rounded-3xl border-2 border-accent bg-white p-4 text-zinc-900">
-        <h2 className="text-center text-lg font-bold">Eastside Trail · busiest 4–6 PM</h2>
+        <h2 className="text-center text-lg font-bold">Eastside Trail · busiest {PEAK_WINDOW}</h2>
         <div className="mt-3 flex h-20 items-end justify-between gap-1.5">
           {heights.map((h, i) => (
             <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-[#d8b4e2] to-accent" style={{ height: `${h}px`, opacity: 0.5 + h / 130 }} />
