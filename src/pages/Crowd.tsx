@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { ChevronLeft, Users, Sun } from "lucide-react";
+import { ChevronLeft, Users, Sun, Cloud, CloudRain, CloudSnow, CloudFog, CloudLightning } from "lucide-react";
 import { Link } from "wouter";
 import type maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
 import { crowdDensityPoints } from "@/lib/data";
+import { useWeatherNow } from "@/lib/weather";
 
 const hours = ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "1", "2"];
 const heights = [4, 5, 8, 14, 34, 48, 64, 52, 40, 22, 14, 10];
@@ -18,6 +19,17 @@ const PEAK_ENDS = PEAK_WINDOW.split("–")[1].trim();
 // not hardcoded — shifts if the underlying density data changes.
 const TOTAL_WEIGHT = crowdDensityPoints.reduce((s, p) => s + p.weight, 0);
 const CROWD_LEVEL = TOTAL_WEIGHT < 30 ? "Light" : TOTAL_WEIGHT < 60 ? "Moderate" : "Busy";
+
+// icon for the current WMO weather code — falls back to Sun if unmapped
+function weatherIcon(code: number) {
+  if (code === 0 || code === 1) return Sun;
+  if (code === 2 || code === 3) return Cloud;
+  if (code === 45 || code === 48) return CloudFog;
+  if (code >= 51 && code <= 67) return CloudRain;
+  if (code >= 71 && code <= 86) return CloudSnow;
+  if (code >= 95) return CloudLightning;
+  return Sun;
+}
 
 const radiusByZoom = (mult: number) =>
   ["interpolate", ["linear"], ["zoom"], 10, 16 * mult, 16, 38 * mult] as maplibregl.ExpressionSpecification;
@@ -85,6 +97,13 @@ export default function Crowd() {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
+  const weather = useWeatherNow();
+  const WeatherIcon = weather ? weatherIcon(weather.code) : Sun;
+  // falls back to a static reading if the fetch fails (offline, blocked) or
+  // hasn't resolved yet — never blocks or blanks the chip
+  const weatherBig = weather ? `${weather.tempF}°F` : "72°F";
+  const weatherSmall = weather ? weather.label : "clear";
+
   return (
     <Screen className="overflow-hidden">
       <header className="relative flex items-center px-4 py-4">
@@ -97,9 +116,7 @@ export default function Crowd() {
       <div className="no-scrollbar flex gap-3 overflow-x-auto px-4 pb-3">
         {[
           { icon: Users, big: CROWD_LEVEL, small: "crowd" },
-          // ponytail: no weather API wired up — real "clear"/"72°F" would need
-          // a marketplace weather integration, out of scope for this pass.
-          { icon: Sun, big: "72°F", small: "clear" },
+          { icon: WeatherIcon, big: weatherBig, small: weatherSmall },
           { icon: null, big: "Peak until", small: PEAK_ENDS },
         ].map(({ icon: Icon, big, small }, i) => (
           <div key={i} className="flex shrink-0 items-center gap-2 rounded-2xl border-2 border-accent bg-[#f3e3f3] px-4 py-2.5 text-zinc-900">
