@@ -103,7 +103,7 @@ export default function MapStyles() {
 
   return (
     <Screen className="overflow-hidden bg-gradient-to-b from-white via-[#f2effa] to-white text-zinc-900">
-      <header className="grid grid-cols-[40px_1fr_40px] items-center px-4 py-6">
+      <header className="grid grid-cols-[40px_1fr_40px] items-center px-4 pb-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
         <Link href="/map" aria-label="Back"><ChevronLeft size={24} /></Link>
         <h1 className="text-center text-2xl font-bold leading-tight">Choose your map style</h1>
       </header>

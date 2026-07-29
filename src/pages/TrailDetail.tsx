@@ -6,7 +6,7 @@ import Screen from "@/components/Screen";
 export default function TrailDetail() {
   return (
     <Screen className="bg-[#1b2043]">
-      <header className="relative flex items-center justify-center px-4 py-4 text-white">
+      <header className="relative flex items-center justify-center px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <Link href="/map" aria-label="Back" className="absolute left-4 text-[#e0218a]"><ChevronLeft size={24} /></Link>
         <h1 className="text-sm font-bold tracking-widest">TRAIL SEGMENT DETAIL</h1>
         <Share size={20} className="absolute right-4 text-[#e0218a]" />

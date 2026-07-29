@@ -17,7 +17,7 @@ export default function Profile() {
   return (
     <Screen className="overflow-hidden">
       <div className="h-full overflow-y-auto pb-24">
-        <header className="flex flex-col items-center gap-3 px-6 pt-10">
+        <header className="flex flex-col items-center gap-3 px-6 pt-[max(2.5rem,env(safe-area-inset-top))]">
           <div className="grid size-20 place-items-center rounded-full bg-accent text-3xl font-bold">G</div>
           <div className="text-center">
             <p className="text-xl font-bold">Guest Explorer</p>

@@ -106,7 +106,7 @@ export default function Crowd() {
 
   return (
     <Screen className="overflow-hidden">
-      <header className="relative flex items-center px-4 py-4">
+      <header className="relative flex items-center px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <Link href="/profile" aria-label="Back" className="mr-3"><ChevronLeft size={22} /></Link>
         <h1 className="text-sm font-bold tracking-widest text-zinc-300">
           TRAIL CONDITIONS / <span className="text-white">CROWD-DENSITY</span>

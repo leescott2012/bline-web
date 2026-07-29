@@ -112,7 +112,7 @@ export default function Navigate() {
       <RealMap interactive decorations={false} autoPitch={false} zoom={15.5} center={navRoute[0]} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
       {/* top instruction banner */}
-      <div className="pointer-events-none absolute inset-x-3 top-3 z-10">
+      <div className="pointer-events-none absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10">
         <div className="overflow-hidden rounded-2xl shadow-xl">
           <div className="flex items-center gap-4 bg-black/90 p-4 text-white">
             <StepIcon size={38} strokeWidth={2.5} className="shrink-0" />

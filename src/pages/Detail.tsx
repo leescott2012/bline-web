@@ -14,10 +14,10 @@ export default function Detail() {
       <div className="relative h-80">
         <PhotoCarousel imgs={[...spot.imgs].reverse()} alt={spot.name} auto className="h-full w-full" />
         <Link href="/" aria-label="Back"
-          className="absolute left-4 top-4 grid size-11 place-items-center rounded-full bg-black/50 text-white">
+          className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-black/50 text-white">
           <ChevronLeft size={22} />
         </Link>
-        <div className="absolute right-4 top-4 flex gap-2">
+        <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
           <button aria-label="Share" className="grid size-11 place-items-center rounded-full bg-black/50"><Share size={18} /></button>
           <button aria-label={saved ? "Remove from saved" : "Save"} aria-pressed={saved}
             onClick={() => toggleFav(spot.id)}

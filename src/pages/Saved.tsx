@@ -12,7 +12,7 @@ export default function Saved() {
   return (
     <Screen className="overflow-hidden">
       <div className="h-full overflow-y-auto pb-24">
-        <header className="px-3 pt-4">
+        <header className="px-3 pt-[max(1rem,env(safe-area-inset-top))]">
           <p className="text-center text-2xl font-bold">B-line</p>
           <div className="mt-3 flex overflow-hidden rounded-xl bg-[#2a2a31] text-center">
             <span className="flex-1 rounded-xl bg-[#7c3aed] py-2.5 font-medium">Search — Favorites</span>

@@ -104,7 +104,7 @@ export default function Home() {
         className="absolute inset-x-0 top-0 z-20 transition-none"
         style={{ opacity: hdr, transform: `translateY(${(hdr - 1) * 16}px)`, pointerEvents: hdr < 0.1 ? "none" : "auto" }}
       >
-        <div className="flex items-center gap-2 bg-[#0e0e12] px-4 py-2">
+        <div className="flex items-center gap-2 bg-[#0e0e12] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
           <button
             aria-label={searchOpen ? "Close search" : "Search"}
             onClick={() => { if (searchOpen) setQuery(""); setSearchOpen((v) => !v); }}

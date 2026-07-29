@@ -32,7 +32,7 @@ export default function Filters() {
       <DarkMap className="absolute inset-x-0 top-0 h-72 opacity-60" />
       <div className="relative mt-40 rounded-t-3xl bg-panel pb-6">
         <div className="mx-auto mt-2 h-1 w-10 rounded bg-zinc-600" />
-        <header className="relative flex items-center justify-center px-4 py-4">
+        <header className="relative flex items-center justify-center px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
           <Link href="/" aria-label="Close" className="absolute left-4"><X size={24} /></Link>
           <h1 className="text-2xl font-bold">Filters</h1>
           <button className="absolute right-4 text-zinc-300 underline"

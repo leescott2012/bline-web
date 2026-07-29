@@ -12,7 +12,7 @@ const pins = [
 export default function Friends() {
   return (
     <Screen className="bg-[#efe9e2] text-zinc-900">
-      <header className="pt-4 text-center">
+      <header className="pt-[max(1rem,env(safe-area-inset-top))] text-center">
         <p className="text-3xl font-extrabold text-[#c9187e]">Ⓑ B-line</p>
         <h1 className="mt-1 text-xl font-bold tracking-wide text-[#c9187e]">FRIENDS ON THE TRAIL</h1>
       </header>
