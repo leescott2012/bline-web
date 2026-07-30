@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, SlidersHorizontal, Gift, X, SearchX, ArrowUpDown } from "lucide-react";
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
@@ -19,6 +19,7 @@ const SORTS: { key: SortKey; label: string }[] = [
 // Explore: map locked behind; sheet swipes between full list and single-card
 // mode. In card mode the map pans to the active card's spot.
 export default function Home() {
+  const [, setLocation] = useLocation();
   const [mode, setMode] = useState<"list" | "cards">("list");
   const [hdr, setHdr] = useState(1);
   const [activeIdx, setActiveIdx] = useState(0);
@@ -95,7 +96,11 @@ export default function Home() {
 
   return (
     <Screen className="overflow-hidden">
-      <RealMap zoom={12.1} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+      {/* tapping the background map switches to the dedicated Map tab, same as
+          swiping down on a single card below -- one "go full map" gesture */}
+      <div onClick={() => setLocation("/map")} className="absolute inset-0">
+        <RealMap zoom={12.1} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
+      </div>
 
       {/* header fixed over the map; fades + lifts away as the list scrolls up.
           z-20 (not z-10) so it stays clickable above the list/cards sheet,
@@ -190,8 +195,10 @@ export default function Home() {
           onTouchStart={onListTouchStart}
           onTouchMove={onListTouchMove}
         >
-          {/* transparent spacer keeps the map open above the first card (HT-style) */}
-          <div className="h-[33vh] shrink-0" />
+          {/* transparent spacer keeps the map open above the first card (HT-style);
+              also doubles as the tap target for "tap the map -> Map tab" since it's
+              the topmost element over the visible map in list mode */}
+          <div className="h-[33vh] shrink-0" onClick={() => setLocation("/map")} />
           <div className="min-h-full space-y-2.5 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
             <button className="flex w-full cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")} aria-label="Single-card view">
               <span className="h-1.5 w-12 rounded-full bg-zinc-500" />
@@ -207,7 +214,10 @@ export default function Home() {
           <motion.div
             className="flex h-9 cursor-grab touch-none select-none items-center justify-center"
             drag="y" dragConstraints={{ top: 0, bottom: 0 }} dragElastic={0.08}
-            onDragEnd={(_, info) => { if (info.offset.y < -24 || info.velocity.y < -250) setSheet("list"); }}
+            onDragEnd={(_, info) => {
+              if (info.offset.y < -24 || info.velocity.y < -250) setSheet("list");
+              else if (info.offset.y > 24 || info.velocity.y > 250) setLocation("/map");
+            }}
             onClick={() => setSheet("list")}
           >
             <span className="h-1.5 w-12 rounded-full bg-white/70 shadow" />
