@@ -14,12 +14,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "",
-  { auth: { autoRefreshToken: false, persistSession: false } },
-);
-
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).end();
 
@@ -28,6 +22,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.headers["x-admin-key"] !== adminSecret) {
     return res.status(403).json({ error: "Forbidden." });
   }
+
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // createClient() throws synchronously on an empty url/key -- check first so
+  // a missing env var returns a clean message instead of crashing the function.
+  if (!supabaseUrl || !serviceRoleKey) {
+    return res.status(503).json({ error: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set." });
+  }
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
 
   const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
 
