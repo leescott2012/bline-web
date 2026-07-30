@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import Screen from "@/components/Screen";
 import DarkMap from "@/components/DarkMap";
-import { spots } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 import {
   CATEGORIES,
   applyFilters,
@@ -25,7 +25,8 @@ export default function Filters() {
   const [, nav] = useLocation();
   const filters = useExploreFilters();
   const { category, minRating, maxWalkMinutes, openNow } = filters;
-  const count = useMemo(() => applyFilters(spots, filters).length, [filters]);
+  const spots = useSpots();
+  const count = useMemo(() => applyFilters(spots, filters).length, [spots, filters]);
 
   return (
     <Screen>

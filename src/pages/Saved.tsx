@@ -2,11 +2,12 @@ import { Bell, ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
-import { spots } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
 export default function Saved() {
+  const spots = useSpots();
   const favs = useFavorites();
   const saved = spots.filter((s) => favs.includes(s.id));
   return (

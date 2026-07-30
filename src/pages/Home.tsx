@@ -7,7 +7,7 @@ import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
-import { spots } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 import { useExploreFilters, applyFilters, setQuery, setSort, type SortKey } from "@/lib/exploreFilters";
 
 const SORTS: { key: SortKey; label: string }[] = [
@@ -29,8 +29,9 @@ export default function Home() {
   const activeRef = useRef(0);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  const spots = useSpots();
   const filters = useExploreFilters();
-  const filtered = useMemo(() => applyFilters(spots, filters), [filters]);
+  const filtered = useMemo(() => applyFilters(spots, filters), [spots, filters]);
 
   const activeMarker = useRef<maplibregl.Marker | null>(null);
 
