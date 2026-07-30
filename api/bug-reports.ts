@@ -23,12 +23,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: "Forbidden." });
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  // Same fallback as src/lib/supabase.ts -- this URL is public, not a secret,
+  // so VITE_SUPABASE_URL was never set in Vercel and this project's env vars
+  // reflect that (only ADMIN_SECRET/SUPABASE_SERVICE_ROLE_KEY are configured).
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://cszsikyzoinowjejlznw.supabase.co";
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   // createClient() throws synchronously on an empty url/key -- check first so
   // a missing env var returns a clean message instead of crashing the function.
-  if (!supabaseUrl || !serviceRoleKey) {
-    return res.status(503).json({ error: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set." });
+  if (!serviceRoleKey) {
+    return res.status(503).json({ error: "SUPABASE_SERVICE_ROLE_KEY not set." });
   }
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
