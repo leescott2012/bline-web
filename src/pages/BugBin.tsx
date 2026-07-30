@@ -17,21 +17,30 @@ interface BugReportRow {
   user_agent: string | null;
   viewport: string | null;
   context: { screenshot?: string; [k: string]: unknown } | null;
+  status: string;
+  admin_note: string | null;
   created_at: string;
 }
+
+// The bug-bin-agent clears items out by setting status away from "new" --
+// default view hides anything it's already triaged so the bin actually
+// empties out instead of accumulating forever.
+type Filter = "open" | "all";
 
 export default function BugBin() {
   const [key, setKey] = useState(() => localStorage.getItem(KEY_STORAGE) ?? "");
   const [reports, setReports] = useState<BugReportRow[]>([]);
+  const [filter, setFilter] = useState<Filter>("open");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async (k: string) => {
+  const load = async (k: string, f: Filter) => {
     if (!k.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/bug-reports?limit=100", {
+      const q = f === "open" ? "&status=new" : "";
+      const res = await fetch(`/api/bug-reports?limit=100${q}`, {
         headers: { "x-admin-key": k.trim() },
       });
       if (!res.ok) {
@@ -51,7 +60,7 @@ export default function BugBin() {
 
   // auto-load if a key is already cached
   useEffect(() => {
-    if (key) load(key);
+    if (key) load(key, filter);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -68,17 +77,31 @@ export default function BugBin() {
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && load(key)}
+          onKeyDown={(e) => e.key === "Enter" && load(key, filter)}
           placeholder="Admin key"
           className="flex-1 rounded-xl border border-line bg-panel px-3 py-2 text-sm outline-none"
         />
         <button
-          onClick={() => load(key)}
+          onClick={() => load(key, filter)}
           disabled={loading || !key.trim()}
           className="rounded-xl bg-accent px-4 py-2 text-sm font-semibold disabled:opacity-50"
         >
           {loading ? "Loading…" : "Load"}
         </button>
+      </div>
+
+      <div className="mx-4 mt-3 flex gap-2">
+        {(["open", "all"] as const).map((f) => (
+          <button
+            key={f}
+            onClick={() => { setFilter(f); if (key) load(key, f); }}
+            className={`rounded-full px-3 py-1 text-xs uppercase tracking-widest ${
+              filter === f ? "bg-accent text-black" : "border border-line text-zinc-500"
+            }`}
+          >
+            {f}
+          </button>
+        ))}
       </div>
 
       {error && <p className="mx-4 mt-3 text-sm text-red-400">{error}</p>}
@@ -95,6 +118,9 @@ export default function BugBin() {
               </span>
             </div>
             <p className="mt-1 break-words text-sm text-white">{r.message}</p>
+            {r.admin_note && (
+              <p className="mt-1.5 break-words rounded-lg bg-ink p-2 text-xs text-zinc-400">{r.admin_note}</p>
+            )}
             {r.context?.screenshot && (
               <img
                 src={r.context.screenshot}

@@ -1,5 +1,5 @@
 /**
- * GET /api/bug-reports — lists bline's own bug reports for the admin viewer.
+ * /api/bug-reports — bline's bug bin admin API.
  *
  * bline has no user accounts / auth system at all (pure static SPA, no
  * server layer before this file), so this can't gate on a signed-in admin
@@ -9,14 +9,16 @@
  * accounts to check against. Uses the service-role key server-side to
  * bypass RLS (the anon key intentionally has no SELECT policy).
  *
- * ?limit=50  (default 50, max 200)
+ * GET  — list reports. ?limit=50 (default 50, max 200). ?status=new filters;
+ *        omit to get everything.
+ * PATCH — update one report's status/admin_note (used by the bug-bin-agent
+ *        to clear items out of the bin once triaged). body: { id, status?,
+ *        admin_note? }
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (req.method !== "GET") return res.status(405).end();
-
   const adminSecret = process.env.ADMIN_SECRET;
   if (!adminSecret) return res.status(503).json({ error: "ADMIN_SECRET not set." });
   if (req.headers["x-admin-key"] !== adminSecret) {
@@ -38,15 +40,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+  if (req.method === "GET") {
+    const limit = Math.min(200, Math.max(1, Number(req.query.limit) || 50));
+    const status = typeof req.query.status === "string" ? req.query.status : undefined;
 
-  const { data, error } = await supabaseAdmin
-    .from("bug_reports")
-    .select("id, source, message, url, user_agent, viewport, context, created_at")
-    .like("source", "bline-%")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+    let q = supabaseAdmin
+      .from("bug_reports")
+      .select("id, source, message, url, user_agent, viewport, context, status, admin_note, created_at")
+      .like("source", "bline-%")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (status) q = q.eq("status", status);
 
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(200).json({ reports: data ?? [] });
+    const { data, error } = await q;
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ reports: data ?? [] });
+  }
+
+  if (req.method === "PATCH") {
+    const { id, status, admin_note } = (req.body || {}) as { id?: string; status?: string; admin_note?: string };
+    if (!id) return res.status(400).json({ error: "id required" });
+
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (typeof status === "string") patch.status = status;
+    if (typeof admin_note === "string") patch.admin_note = admin_note.slice(0, 2000);
+
+    const { error } = await supabaseAdmin.from("bug_reports").update(patch).eq("id", id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ ok: true });
+  }
+
+  return res.status(405).end();
 }
