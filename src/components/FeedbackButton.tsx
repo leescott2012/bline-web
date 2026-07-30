@@ -25,6 +25,7 @@ export default function FeedbackButton() {
   const [text, setText] = useState("");
   const [img, setImg] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [failed, setFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const reset = () => { setText(""); setImg(null); };
@@ -36,7 +37,9 @@ export default function FeedbackButton() {
 
   const send = async () => {
     if (!text.trim() && !img) return;
-    await reportBug("feedback", text.trim() || "(screenshot only)", img ? { screenshot: img } : undefined);
+    setFailed(false);
+    const ok = await reportBug("feedback", text.trim() || "(screenshot only)", img ? { screenshot: img } : undefined);
+    if (!ok) { setFailed(true); return; }
     setSent(true);
     setTimeout(() => { setOpen(false); setSent(false); reset(); }, 1200);
   };
@@ -73,6 +76,10 @@ export default function FeedbackButton() {
                 className="mt-3 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-zinc-300">
                 <ImagePlus size={16} /> Attach screenshot
               </button>
+            )}
+
+            {failed && (
+              <p className="mt-3 text-sm text-red-400">Couldn't send — try again in a moment.</p>
             )}
 
             <button onClick={send}
