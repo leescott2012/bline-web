@@ -15,6 +15,7 @@ import Friends from "@/pages/Friends";
 import Filters from "@/pages/Filters";
 import Saved from "@/pages/Saved";
 import Profile from "@/pages/Profile";
+import BugBin from "@/pages/BugBin";
 
 export default function App() {
   return (
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/filters" component={Filters} />
           <Route path="/saved" component={Saved} />
           <Route path="/profile" component={Profile} />
+          <Route path="/bug-bin" component={BugBin} />
           <Route>404</Route>
         </Switch>
         <FeedbackButton />
