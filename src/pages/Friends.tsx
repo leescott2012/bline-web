@@ -1,4 +1,5 @@
-import { LocateFixed } from "lucide-react";
+import { useState } from "react";
+import { Check, LocateFixed } from "lucide-react";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import { friends } from "@/lib/data";
@@ -9,7 +10,32 @@ const pins = [
   { f: friends[0], x: 28, y: 48, tag: "On the trail", batt: "76%" },
 ];
 
+// Real device location, used for both buttons below — friend positions on the
+// illustrated map above stay demo data (no live-presence backend yet).
+function getPosition(): Promise<GeolocationPosition> {
+  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 }));
+}
+
 export default function Friends() {
+  const [located, setLocated] = useState(false);
+
+  const onLocate = async () => {
+    try {
+      await getPosition();
+      setLocated(true);
+      setTimeout(() => setLocated(false), 2000);
+    } catch { /* permission denied or unavailable — no-op */ }
+  };
+
+  const onShareLocation = async () => {
+    try {
+      const { coords } = await getPosition();
+      const url = `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`;
+      if (navigator.share) await navigator.share({ title: "My location on B-line", url });
+      else await navigator.clipboard.writeText(url);
+    } catch { /* permission denied, share cancelled, or clipboard unavailable — no-op */ }
+  };
+
   return (
     <Screen className="bg-[#efe9e2] text-zinc-900">
       <header className="pt-[max(1rem,env(safe-area-inset-top))] text-center">
@@ -43,8 +69,8 @@ export default function Friends() {
           </div>
         ))}
 
-        <button aria-label="Locate me" className="absolute bottom-4 right-4 grid size-12 place-items-center rounded-full bg-white shadow">
-          <LocateFixed size={20} className="text-[#c9187e]" />
+        <button aria-label="Locate me" onClick={onLocate} className="absolute bottom-4 right-4 grid size-12 place-items-center rounded-full bg-white shadow">
+          {located ? <Check size={20} className="text-[#c9187e]" /> : <LocateFixed size={20} className="text-[#c9187e]" />}
         </button>
       </div>
 
@@ -57,7 +83,7 @@ export default function Friends() {
             </li>
           ))}
         </ul>
-        <button className="mt-4 w-full rounded-full bg-[#c9187e] py-3.5 text-lg font-semibold text-white">
+        <button onClick={onShareLocation} className="mt-4 w-full rounded-full bg-[#c9187e] py-3.5 text-lg font-semibold text-white">
           Share my location
         </button>
       </div>

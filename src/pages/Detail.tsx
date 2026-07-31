@@ -5,6 +5,14 @@ import { spots, menuPicks, isOpenNow, closingTimeLabel } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
+async function shareSpot(name: string) {
+  const data = { title: name, text: `Check out ${name} on B-line`, url: location.href };
+  try {
+    if (navigator.share) await navigator.share(data);
+    else await navigator.clipboard.writeText(data.url);
+  } catch { /* share cancelled or clipboard unavailable — no-op */ }
+}
+
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
@@ -18,7 +26,7 @@ export default function Detail() {
           <ChevronLeft size={22} />
         </Link>
         <div className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex gap-2">
-          <button aria-label="Share" className="grid size-11 place-items-center rounded-full bg-black/50"><Share size={18} /></button>
+          <button aria-label="Share" onClick={() => shareSpot(spot.name)} className="grid size-11 place-items-center rounded-full bg-black/50"><Share size={18} /></button>
           <button aria-label={saved ? "Remove from saved" : "Save"} aria-pressed={saved}
             onClick={() => toggleFav(spot.id)}
             className="grid size-11 place-items-center rounded-full bg-black/50">

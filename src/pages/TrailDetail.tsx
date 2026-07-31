@@ -9,7 +9,13 @@ export default function TrailDetail() {
       <header className="relative flex items-center justify-center px-4 pb-4 pt-[max(1rem,env(safe-area-inset-top))] text-white">
         <Link href="/map" aria-label="Back" className="absolute left-4 text-[#e0218a]"><ChevronLeft size={24} /></Link>
         <h1 className="text-sm font-bold tracking-widest">TRAIL SEGMENT DETAIL</h1>
-        <Share size={20} className="absolute right-4 text-[#e0218a]" />
+        <button aria-label="Share" onClick={() => {
+          const data = { title: "Atlanta BeltLine Eastside Trail", text: "Check out this trail segment on B-line", url: location.href };
+          if (navigator.share) navigator.share(data).catch(() => {});
+          else navigator.clipboard.writeText(data.url).catch(() => {});
+        }} className="absolute right-4 text-[#e0218a]">
+          <Share size={20} />
+        </button>
       </header>
 
       <div className="relative mx-0 h-[52%] overflow-hidden bg-[#f3efe4]">
