@@ -29,6 +29,7 @@ export default function App() {
           <Route path="/map" component={MapView} />
           <Route path="/trail" component={TrailDetail} />
           <Route path="/navigate" component={Navigate} />
+          <Route path="/navigate/:id" component={Navigate} />
           <Route path="/conditions" component={Crowd} />
           <Route path="/map-styles" component={MapStyles} />
           <Route path="/friends" component={Friends} />

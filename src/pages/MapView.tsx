@@ -1,38 +1,47 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Layers, LocateFixed } from "lucide-react";
 import { Link } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
+import { useLiveLocation } from "@/lib/useLiveLocation";
 
 // Map tab: just the map, like a navigation tab. Pinch/scroll in for street level —
 // it auto-tilts to 3D with building extrusions. Layers icon opens the style picker.
 export default function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const meRef = useRef<maplibregl.Marker | null>(null);
-  const [locating, setLocating] = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const firstFix = useRef(true);
+  const live = useLiveLocation(tracking);
 
-  const locateMe = () => {
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !live.position) return;
+    const pos: [number, number] = [live.position.lng, live.position.lat];
+    if (!meRef.current) {
+      const d = document.createElement("div");
+      d.className = "bline-me-dot";
+      meRef.current = new maplibregl.Marker({ element: d });
+    }
+    meRef.current.setLngLat(pos).addTo(map);
+    if (firstFix.current) {
+      firstFix.current = false;
+      map.easeTo({ center: pos, zoom: 15.5, duration: 800 });
+    }
+  }, [live.position]);
+
+  const toggleTracking = () => {
     if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocating(false);
-        const map = mapRef.current;
-        if (!map) return;
-        const pos: [number, number] = [coords.longitude, coords.latitude];
-        if (!meRef.current) {
-          const d = document.createElement("div");
-          d.className = "bline-me-dot";
-          meRef.current = new maplibregl.Marker({ element: d });
-        }
-        meRef.current.setLngLat(pos).addTo(map);
-        map.easeTo({ center: pos, zoom: 15.5, duration: 800 });
-      },
-      () => setLocating(false),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    if (tracking) {
+      setTracking(false);
+      meRef.current?.remove();
+      meRef.current = null;
+      firstFix.current = true;
+    } else {
+      setTracking(true);
+    }
   };
 
   return (
@@ -51,9 +60,9 @@ export default function MapView() {
           <Layers size={20} className="text-white" />
         </Link>
       </header>
-      <button aria-label="Locate me" onClick={locateMe}
-        className="absolute bottom-24 right-3 z-10 grid size-12 place-items-center rounded-full bg-[#101014]/90 backdrop-blur">
-        <LocateFixed size={20} className={locating ? "animate-pulse text-white" : "text-white"} />
+      <button aria-label={tracking ? "Stop sharing location" : "Locate me"} onClick={toggleTracking}
+        className={`absolute bottom-24 right-3 z-10 grid size-12 place-items-center rounded-full backdrop-blur ${tracking ? "bg-[#2f6bff]" : "bg-[#101014]/90"}`}>
+        <LocateFixed size={20} className="text-white" />
       </button>
     </Screen>
   );

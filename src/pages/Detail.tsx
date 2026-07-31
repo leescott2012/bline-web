@@ -90,9 +90,13 @@ export default function Detail() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 z-20 bg-gradient-to-t from-ink via-ink/95 to-transparent p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="sticky bottom-0 z-20 flex gap-2 bg-gradient-to-t from-ink via-ink/95 to-transparent p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <Link href={`/navigate/${spot.id}`}
+          className="block flex-1 rounded-full border border-line py-4 text-center text-lg font-semibold">
+          Directions
+        </Link>
         <Link href={`/reserve/${spot.id}`}
-          className="block w-full rounded-full bg-[#5b2a86] py-4 text-center text-lg font-semibold">
+          className="block flex-1 rounded-full bg-[#5b2a86] py-4 text-center text-lg font-semibold">
           Reserve a table
         </Link>
       </div>

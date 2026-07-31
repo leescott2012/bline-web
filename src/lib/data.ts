@@ -378,7 +378,7 @@ const SOUTHWEST_TRAIL_PATH: [number, number][] = [
 ];
 const WALK_M_PER_MIN = 80; // ~5 km/h average walking pace
 
-function nearestPointOnSegment(p: [number, number], a: [number, number], b: [number, number]): [number, number] {
+export function nearestPointOnSegment(p: [number, number], a: [number, number], b: [number, number]): [number, number] {
   // flat-earth projection — fine at city scale; longitude scaled by cos(lat) to un-skew degrees
   const k = Math.cos((p[1] * Math.PI) / 180);
   const ax = a[0] * k, ay = a[1], bx = b[0] * k, by = b[1], px = p[0] * k, py = p[1];
