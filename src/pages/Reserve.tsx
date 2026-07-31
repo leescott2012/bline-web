@@ -2,13 +2,14 @@ import { useState } from "react";
 import { ChevronLeft, Minus, Plus, Star } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
-import { spots } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 
 const days = ["Today", "Fri 12", "Sat 13", "Sun 14"];
 const times = ["6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM"];
 
 export default function Reserve() {
   const { id } = useParams<{ id: string }>();
+  const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const [guests, setGuests] = useState(2);
   const [day, setDay] = useState(0);

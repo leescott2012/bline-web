@@ -1,7 +1,8 @@
 import { ChevronLeft, Share, Heart, Star, ChevronRight } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
-import { spots, menuPicks, isOpenNow, closingTimeLabel } from "@/lib/data";
+import { menuPicks, isOpenNow, closingTimeLabel } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
@@ -15,6 +16,7 @@ async function shareSpot(name: string) {
 
 export default function Detail() {
   const { id } = useParams<{ id: string }>();
+  const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const saved = useFavorites().includes(spot.id);
   return (

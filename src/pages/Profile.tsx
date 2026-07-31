@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import { useFavorites } from "@/lib/favorites";
-import { spots } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
@@ -12,6 +12,7 @@ const links = [
 ];
 
 export default function Profile() {
+  const spots = useSpots();
   const favs = useFavorites();
 
   return (
