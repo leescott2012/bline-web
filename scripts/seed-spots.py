@@ -416,6 +416,11 @@ all_spots = list(CORE_SPOTS)
 for raw in RAW_SPOTS:
     all_spots.append(generate_spot(*raw))
 
+# CORE_SPOTS entries omit "active" (generate_spot() sets it) -- PostgREST's bulk
+# insert requires every object in a batch to share the exact same key set.
+for spot in all_spots:
+    spot.setdefault("active", True)
+
 print(f"  Generated {len(all_spots)} spots total")
 
 # ── Step 3: Upsert all spots ──────────────────────────────────────────────────
