@@ -77,7 +77,14 @@ export default function Navigate() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const origin: [number, number] = [pos.coords.longitude, pos.coords.latitude];
-        setRoute(await fetchRoute(origin, [destSpot.lng, destSpot.lat]));
+        const r = await fetchRoute(origin, [destSpot.lng, destSpot.lat]);
+        if (r) {
+          // show the real route's numbers immediately -- don't wait on a live
+          // GPS fix that may be delayed (or, for a stationary point, never come)
+          setStep(r.steps[0] ?? navSteps[0]);
+          setEta({ mi: r.distanceMi.toFixed(1), min: r.durationMin, arr: fmtClock(Date.now() + r.durationMin * 60000) });
+        }
+        setRoute(r);
       },
       async () => setRoute(await fetchRoute(navRoute[0], [destSpot.lng, destSpot.lat])),
       { enableHighAccuracy: true, timeout: 8000 },
