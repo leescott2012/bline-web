@@ -3,6 +3,55 @@ import { Check, LocateFixed } from "lucide-react";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
 import { friends } from "@/lib/data";
+import { useAuth, signInWithEmail, signOut } from "@/lib/auth";
+
+function SignInCard() {
+  const [email, setEmail] = useState("");
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSending(true);
+    setError(null);
+    const { error: err } = await signInWithEmail(email.trim());
+    setSending(false);
+    if (err) setError(err.message);
+    else setSent(true);
+  };
+
+  if (sent) {
+    return (
+      <div className="mx-3 mt-4 rounded-3xl bg-white/90 p-6 text-center shadow-xl backdrop-blur">
+        <p className="text-lg font-bold text-[#c9187e]">Check your email</p>
+        <p className="mt-1 text-zinc-600">Tap the link we sent to {email} to sign in.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-3 mt-4 rounded-3xl bg-white/90 p-6 shadow-xl backdrop-blur">
+      <p className="text-lg font-bold text-[#c9187e]">Sign in to find friends</p>
+      <p className="mt-1 text-zinc-600">No password — we'll email you a link.</p>
+      <form onSubmit={submit} className="mt-4 space-y-3">
+        <input
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@email.com"
+          className="w-full rounded-full border border-zinc-300 px-4 py-3 text-zinc-900 outline-none"
+        />
+        <button type="submit" disabled={sending}
+          className="w-full rounded-full bg-[#c9187e] py-3.5 text-lg font-semibold text-white disabled:opacity-50">
+          {sending ? "Sending…" : "Send magic link"}
+        </button>
+        {error && <p className="text-center text-sm text-red-600">{error}</p>}
+      </form>
+    </div>
+  );
+}
 
 const pins = [
   { f: friends[1], x: 46, y: 22, tag: "At New Realm", batt: "89%" },
@@ -17,6 +66,7 @@ function getPosition(): Promise<GeolocationPosition> {
 }
 
 export default function Friends() {
+  const { user, loading } = useAuth();
   const [located, setLocated] = useState(false);
 
   const onLocate = async () => {
@@ -41,8 +91,17 @@ export default function Friends() {
       <header className="pt-[max(1rem,env(safe-area-inset-top))] text-center">
         <p className="text-3xl font-extrabold text-[#c9187e]">Ⓑ B-line</p>
         <h1 className="mt-1 text-xl font-bold tracking-wide text-[#c9187e]">FRIENDS ON THE TRAIL</h1>
+        {user && (
+          <button onClick={() => signOut()} className="mt-1 text-xs text-zinc-500 underline">
+            {user.email} · Sign out
+          </button>
+        )}
       </header>
 
+      {loading ? null : !user ? (
+        <SignInCard />
+      ) : (
+      <>
       <div className="relative mt-2 h-[52%]">
         <svg viewBox="0 0 100 80" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
           <rect width="100" height="80" fill="#efe9e2" />
@@ -87,8 +146,14 @@ export default function Friends() {
           Share my location
         </button>
       </div>
+      </>
+      )}
       <div className="h-24" />
-      <TabBar />
+      {/* absolute (not the bare sticky TabBar) so it stays pinned to the bottom
+          even when the page is short -- e.g. the signed-out sign-in card */}
+      <div className="absolute inset-x-0 bottom-0 z-20">
+        <TabBar />
+      </div>
     </Screen>
   );
 }
