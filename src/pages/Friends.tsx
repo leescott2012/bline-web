@@ -5,7 +5,7 @@ import TabBar from "@/components/TabBar";
 import { friends } from "@/lib/data";
 import { useAuth, signInWithEmail, signOut } from "@/lib/auth";
 
-function SignInCard() {
+function SignInCard({ callbackError }: { callbackError: string | null }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +34,9 @@ function SignInCard() {
     <div className="mx-3 mt-4 rounded-3xl bg-white/90 p-6 shadow-xl backdrop-blur">
       <p className="text-lg font-bold text-[#c9187e]">Sign in to find friends</p>
       <p className="mt-1 text-zinc-600">No password — we'll email you a link.</p>
+      {callbackError && (
+        <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{callbackError}</p>
+      )}
       <form onSubmit={submit} className="mt-4 space-y-3">
         <input
           type="email"
@@ -66,7 +69,7 @@ function getPosition(): Promise<GeolocationPosition> {
 }
 
 export default function Friends() {
-  const { user, loading } = useAuth();
+  const { user, loading, callbackError } = useAuth();
   const [located, setLocated] = useState(false);
 
   const onLocate = async () => {
@@ -99,7 +102,7 @@ export default function Friends() {
       </header>
 
       {loading ? null : !user ? (
-        <SignInCard />
+        <SignInCard callbackError={callbackError} />
       ) : (
       <>
       <div className="relative mt-2 h-[52%]">

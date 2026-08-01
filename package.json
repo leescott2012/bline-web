@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.4.2",
     "@capacitor/ios": "^8.4.2",
     "@sentry/react": "^10.67.0",
@@ -30,9 +31,9 @@
     "@capacitor/cli": "^8.4.2",
     "@tailwindcss/vite": "^4.1.14",
     "@types/node": "^26.1.1",
-    "@vercel/node": "^5.9.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@vercel/node": "^5.9.2",
     "@vitejs/plugin-react": "^5.0.0",
     "prettier": "^3.6.0",
     "tailwindcss": "^4.1.14",
