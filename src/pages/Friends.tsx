@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Check, LocateFixed } from "lucide-react";
 import Screen from "@/components/Screen";
 import TabBar from "@/components/TabBar";
-import { friends } from "@/lib/data";
 import { useAuth, signInWithEmail, signOut } from "@/lib/auth";
+import FriendsPanel from "@/components/FriendsPanel";
 
 function SignInCard({ callbackError }: { callbackError: string | null }) {
   const [email, setEmail] = useState("");
@@ -56,12 +56,6 @@ function SignInCard({ callbackError }: { callbackError: string | null }) {
   );
 }
 
-const pins = [
-  { f: friends[1], x: 46, y: 22, tag: "At New Realm", batt: "89%" },
-  { f: friends[2], x: 72, y: 33, tag: "Ponce City Market", batt: "64%" },
-  { f: friends[0], x: 28, y: 48, tag: "On the trail", batt: "76%" },
-];
-
 // Real device location, used for both buttons below — friend positions on the
 // illustrated map above stay demo data (no live-presence backend yet).
 function getPosition(): Promise<GeolocationPosition> {
@@ -105,7 +99,7 @@ export default function Friends() {
         <SignInCard callbackError={callbackError} />
       ) : (
       <>
-      <div className="relative mt-2 h-[52%]">
+      <div className="relative mt-2 h-[30%]">
         <svg viewBox="0 0 100 80" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
           <rect width="100" height="80" fill="#efe9e2" />
           <ellipse cx="45" cy="42" rx="16" ry="12" fill="#8a9b7d" opacity="0.6" />
@@ -123,32 +117,20 @@ export default function Friends() {
           <path d="M48 44 l3 7 -3 -1.8 -3 1.8 z" fill="#3b82f6" stroke="white" strokeWidth="0.6" />
         </svg>
 
-        {pins.map(({ f, x, y, tag, batt }) => (
-          <div key={f.name} className="absolute -translate-x-1/2 -translate-y-1/2 text-center" style={{ left: `${x}%`, top: `${y}%` }}>
-            <span className="rounded-full bg-[#a3c94a] px-2 py-0.5 text-[10px] font-semibold text-white shadow">● {tag}</span>
-            <img src={f.img} alt={f.name} className="mx-auto mt-1 size-14 rounded-full border-4 border-[#a3c94a] object-cover shadow" />
-            <span className="mt-1 inline-block rounded-full bg-white px-1.5 py-0.5 text-[9px] font-medium shadow">🔋 {batt}</span>
-          </div>
-        ))}
+        {/* Real friend pins land here once location sharing ships. Deliberately
+            empty rather than showing invented people on a live-looking map. */}
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <p className="rounded-full bg-white/85 px-4 py-2 text-sm font-medium text-zinc-600 shadow">
+            No one is sharing their location yet
+          </p>
+        </div>
 
         <button aria-label="Locate me" onClick={onLocate} className="absolute bottom-4 right-4 grid size-12 place-items-center rounded-full bg-white shadow">
           {located ? <Check size={20} className="text-[#c9187e]" /> : <LocateFixed size={20} className="text-[#c9187e]" />}
         </button>
       </div>
 
-      <div className="mx-3 mt-2 rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
-        <ul className="space-y-4">
-          {friends.map((f) => (
-            <li key={f.name} className="flex items-center gap-3">
-              <img src={f.img} alt="" className="size-12 rounded-full object-cover" />
-              <p className="text-lg"><span className="font-bold">{f.name}</span> — {f.place}</p>
-            </li>
-          ))}
-        </ul>
-        <button onClick={onShareLocation} className="mt-4 w-full rounded-full bg-[#c9187e] py-3.5 text-lg font-semibold text-white">
-          Share my location
-        </button>
-      </div>
+      <FriendsPanel userId={user.id} />
       </>
       )}
       <div className="h-24" />
