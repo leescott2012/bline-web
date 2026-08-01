@@ -55,7 +55,7 @@ async function fetchSpots() {
       .from("spots")
       .select("*")
       .eq("active", true)
-      .order("id", { ascending: true })
+      .order("sort_order", { ascending: true, nullsFirst: false })
       .abortSignal(controller.signal);
 
     clearTimeout(timeout);
