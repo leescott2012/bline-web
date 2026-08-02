@@ -3,6 +3,7 @@ import { ChevronLeft, Minus, Plus, Star, Loader2, CheckCircle2, AlertCircle } fr
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { useSpots } from "@/lib/spots";
+import { useAuth } from "@/lib/auth";
 
 // Days relative to today — computed at render time so they're always current.
 function buildDays(): { label: string; iso: string }[] {
@@ -35,6 +36,7 @@ async function submitReservation(payload: {
   guests: number;
   dayLabel: string;
   timeLabel: string;
+  userId?: string; // passed when the user is signed in — stored as user_id in Supabase
 }): Promise<{ id: string }> {
   const res = await fetch("/api/reservations", {
     method: "POST",
@@ -52,6 +54,7 @@ export default function Reserve() {
   const { id } = useParams<{ id: string }>();
   const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
+  const { user } = useAuth();
 
   const days = buildDays();
   const [guests, setGuests] = useState(2);
@@ -69,6 +72,9 @@ export default function Reserve() {
         guests,
         dayLabel: days[dayIdx].label,
         timeLabel: time,
+        // Link the reservation to the signed-in user so it shows up in their
+        // Profile → My Reservations list. Omitted for anonymous bookings.
+        ...(user ? { userId: user.id } : {}),
       });
       setState({
         phase: "confirmed",
