@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Search, UserPlus, X } from "lucide-react";
+import { Check, MessageSquare, Search, UserPlus, X } from "lucide-react";
+import { SAMPLE_CONTACTS, inviteByText } from "@/lib/contacts";
 import {
   acceptRequest, claimUsername, getMyProfile, listFriendships, removeFriendship,
   searchProfiles, sendRequest, type FriendEdge, type Profile,
@@ -220,6 +221,37 @@ export default function FriendsPanel({ userId }: { userId: string }) {
                 <p className="truncate text-sm text-zinc-500">@{e.other.username}</p>
               </div>
               <span className="shrink-0 text-sm text-zinc-500">Requested</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Contacts: sample names for now, but Invite is real -- it opens the
+          Messages composer prefilled. See src/lib/contacts.ts. */}
+      <div className="rounded-3xl bg-white/90 p-4 shadow-xl backdrop-blur">
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-zinc-900">From your contacts</p>
+          <span className="rounded-full bg-zinc-200 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-600">
+            Sample
+          </span>
+        </div>
+        <p className="mt-1 text-sm text-zinc-500">
+          Not on B-line yet — invite them by text.
+        </p>
+        <ul className="mt-3 space-y-2">
+          {SAMPLE_CONTACTS.map((c) => (
+            <li key={c.id} className="flex items-center gap-3">
+              <Avatar name={c.name} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold text-zinc-900">{c.name}</p>
+                <p className="truncate text-sm text-zinc-500">Not on B-line</p>
+              </div>
+              <button
+                onClick={() => inviteByText(c)}
+                className="flex shrink-0 items-center gap-1 rounded-full border border-[#c9187e] px-3.5 py-2 text-sm font-semibold text-[#c9187e]"
+              >
+                <MessageSquare size={14} /> Invite
+              </button>
             </li>
           ))}
         </ul>
