@@ -5,7 +5,7 @@ import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
 import { navRoute, navSteps, distM, nearestPointOnSegment, spots } from "@/lib/data";
-import { fetchRoute, type RouteResult } from "@/lib/routing";
+import { fetchRoute, type RouteResult, type RouteStep } from "@/lib/routing";
 import { useLiveLocation } from "@/lib/useLiveLocation";
 
 const DEFAULT_DEST_ID = "krog-street"; // matches the old scripted demo's endpoint
@@ -64,7 +64,8 @@ export default function Navigate() {
   const lastFix = useRef<[number, number] | null>(null);
 
   const [route, setRoute] = useState<RouteResult | null | undefined>(undefined); // undefined = still loading
-  const [step, setStep] = useState(navSteps[0]);
+  const [step, setStep] = useState<RouteStep>(navSteps[0]);
+  const [stepIdx, setStepIdx] = useState(0);
   const [eta, setEta] = useState({ mi: TOTAL_MI.toFixed(1), min: TOTAL_MIN, arr: "" });
   const [arrived, setArrived] = useState(false);
   const [recenterVisible, setRecenterVisible] = useState(false);
@@ -82,6 +83,7 @@ export default function Navigate() {
           // show the real route's numbers immediately -- don't wait on a live
           // GPS fix that may be delayed (or, for a stationary point, never come)
           setStep(r.steps[0] ?? navSteps[0]);
+          setStepIdx(0);
           setEta({ mi: r.distanceMi.toFixed(1), min: r.durationMin, arr: fmtClock(Date.now() + r.durationMin * 60000) });
         }
         setRoute(r);
@@ -105,12 +107,31 @@ export default function Navigate() {
     const draw = () => {
       if (map.getSource("route")) {
         (map.getSource("route") as maplibregl.GeoJSONSource).setData({
-          type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: routeCoords },
+          type: "Feature", properties: { name: step.name ?? "" }, geometry: { type: "LineString", coordinates: routeCoords },
         });
       } else {
-        map.addSource("route", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: routeCoords } } });
+        map.addSource("route", { type: "geojson", data: { type: "Feature", properties: { name: step.name ?? "" }, geometry: { type: "LineString", coordinates: routeCoords } } });
         map.addLayer({ id: "route-casing", type: "line", source: "route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#7b1e86", "line-width": 12 } });
         map.addLayer({ id: "route-line", type: "line", source: "route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#d946ef", "line-width": 6 } });
+        // Road name written along the route, Apple-Maps style, so you can
+        // confirm you're on the right path without reading the banner.
+        map.addLayer({
+          id: "route-label",
+          type: "symbol",
+          source: "route",
+          layout: {
+            "symbol-placement": "line-center",
+            "text-field": ["get", "name"],
+            "text-size": 13,
+            "text-font": ["Noto Sans Bold", "Open Sans Bold"],
+            "text-padding": 6,
+          },
+          paint: {
+            "text-color": "#3b0d43",
+            "text-halo-color": "#ffffff",
+            "text-halo-width": 2,
+          },
+        });
 
         const dest = document.createElement("div");
         dest.innerHTML = `<div class="nav-dest">📍</div>`;
@@ -127,6 +148,16 @@ export default function Navigate() {
     if (map.isStyleLoaded()) draw(); else map.once("load", draw);
   }, [route, routeCoords]);
 
+  // repaint the route label whenever the current step's street changes
+  useEffect(() => {
+    const src = mapRef.current?.getSource("route") as maplibregl.GeoJSONSource | undefined;
+    src?.setData({
+      type: "Feature",
+      properties: { name: step.name ?? "" },
+      geometry: { type: "LineString", coordinates: routeCoords },
+    });
+  }, [step, routeCoords]);
+
   // real-GPS mode: advance progress from live fixes
   useEffect(() => {
     if (route === undefined || !route || !live.position || !puckRef.current) return;
@@ -142,7 +173,7 @@ export default function Navigate() {
     const p = Math.min(1, progressAlong(pos, routeCoords, cum.current));
     let si = 0;
     for (let k = 0; k < route.steps.length; k++) if (route.steps[k].at <= p) si = k;
-    if (si !== prev.current.si) { prev.current.si = si; setStep(route.steps[si]); }
+    if (si !== prev.current.si) { prev.current.si = si; setStep(route.steps[si]); setStepIdx(si); }
     const remainMi = route.distanceMi * (1 - p);
     const remainMin = Math.max(0, Math.round(route.durationMin * (1 - p)));
     setEta({ mi: remainMi.toFixed(1), min: remainMin, arr: fmtClock(Date.now() + remainMin * 60000) });
@@ -164,7 +195,7 @@ export default function Navigate() {
 
       let si = 0;
       for (let k = 0; k < navSteps.length; k++) if (navSteps[k].at <= p) si = k;
-      if (si !== prev.current.si) { prev.current.si = si; setStep(navSteps[si]); }
+      if (si !== prev.current.si) { prev.current.si = si; setStep(navSteps[si]); setStepIdx(si); }
       const mi = ((1 - p) * TOTAL_MI).toFixed(1);
       const min = Math.max(0, Math.round((1 - p) * TOTAL_MIN));
       if (mi !== prev.current.mi || min !== prev.current.min) {
@@ -180,6 +211,10 @@ export default function Navigate() {
 
   const recenter = () => { follow.current = true; setRecenterVisible(false); };
   const StepIcon = stepIcon[step.icon];
+  // Apple Maps previews the following manoeuvre under the current one, so you
+  // can prepare for a turn that lands right after this one.
+  const nextStep = routeSteps[stepIdx + 1];
+  const NextIcon = nextStep ? stepIcon[nextStep.icon] : null;
 
   return (
     <Screen className="overflow-hidden bg-[#bcd9ea]">
@@ -195,6 +230,16 @@ export default function Navigate() {
               <p className="mt-1 truncate text-lg text-zinc-300">{step.text}</p>
             </div>
           </div>
+          {NextIcon && nextStep && (
+            <div className="flex items-center gap-3 bg-[#1c1c1f] px-4 py-2.5 text-zinc-300">
+              <NextIcon size={20} strokeWidth={2.5} className="shrink-0" />
+              {/* keep the API's own casing -- lowercasing mangles proper nouns
+                  like "Atlanta BeltLine Eastside Trail" */}
+              <p className="min-w-0 truncate text-[15px]">
+                <span className="text-zinc-500">then </span>{nextStep.text}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

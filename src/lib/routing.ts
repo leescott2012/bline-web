@@ -8,6 +8,7 @@ export interface RouteStep {
   icon: "up" | "right" | "left" | "flag";
   dist: string;
   text: string;
+  name?: string; // street/trail name, drawn along the route line
 }
 
 export interface RouteResult {
@@ -22,6 +23,7 @@ interface OrsStep {
   duration: number;
   type: number;
   instruction: string;
+  name?: string;
 }
 
 interface OrsResponse {
@@ -73,6 +75,8 @@ export async function fetchRoute(from: [number, number], to: [number, number]): 
         icon: STEP_ICON[s.type] ?? "up",
         dist: s.type === 10 ? "Arrive" : formatDist(s.distance),
         text: s.instruction,
+        // ORS uses "-" for unnamed paths; treat that as no label at all.
+        name: s.name && s.name !== "-" ? s.name : undefined,
       };
     });
 
