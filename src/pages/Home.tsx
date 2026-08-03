@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, SlidersHorizontal, Gift, X, SearchX, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, X, SearchX, ArrowUpDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
@@ -99,17 +99,17 @@ export default function Home() {
       {/* tapping the background map switches to the dedicated Map tab, same as
           swiping down on a single card below -- one "go full map" gesture */}
       <div onClick={() => setLocation("/map")} className="absolute inset-0">
-        <RealMap zoom={12.1} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
+        <RealMap zoom={12.6} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
       </div>
 
       {/* header fixed over the map; fades + lifts away as the list scrolls up.
           z-20 (not z-10) so it stays clickable above the list/cards sheet,
           which shares z-10 and would otherwise win hit-testing by DOM order. */}
       <header
-        className="absolute inset-x-0 top-0 z-20 transition-none"
+        className="absolute inset-x-3 top-[max(0.5rem,env(safe-area-inset-top))] z-20 overflow-hidden rounded-2xl bg-[#0e0e12]/95 shadow-2xl backdrop-blur transition-none"
         style={{ opacity: hdr, transform: `translateY(${(hdr - 1) * 16}px)`, pointerEvents: hdr < 0.1 ? "none" : "auto" }}
       >
-        <div className="flex items-center gap-2 bg-[#0e0e12] px-4 pb-2 pt-[max(0.5rem,env(safe-area-inset-top))]">
+        <div className="flex items-center gap-2 px-4 pb-2 pt-3">
           <button
             aria-label={searchOpen ? "Close search" : "Search"}
             onClick={() => { if (searchOpen) setQuery(""); setSearchOpen((v) => !v); }}
@@ -144,7 +144,7 @@ export default function Home() {
             <SlidersHorizontal size={16} />
           </Link>
         </div>
-        <div className="flex bg-[#17171d]/95">
+        <div className="flex border-t border-white/10 bg-[#17171d]/70">
           <button className="flex-1 py-2 text-center text-[14px] font-medium text-zinc-100">
             Within a 10-min walk ▾
           </button>
@@ -179,7 +179,7 @@ export default function Home() {
       {/* bottom stack: sheet + banner + tabs */}
       {filtered.length === 0 ? (
         <div className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain">
-          <div className="h-[33vh] shrink-0" />
+          <div className="h-[28vh] shrink-0" />
           <div className="min-h-full rounded-t-2xl bg-ink px-4 pb-40 pt-6">
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-10 text-center text-zinc-400">
               <SearchX size={32} />
@@ -198,7 +198,7 @@ export default function Home() {
           {/* transparent spacer keeps the map open above the first card (HT-style);
               also doubles as the tap target for "tap the map -> Map tab" since it's
               the topmost element over the visible map in list mode */}
-          <div className="h-[33vh] shrink-0" onClick={() => setLocation("/map")} />
+          <div className="h-[28vh] shrink-0" onClick={() => setLocation("/map")} />
           <div className="min-h-full space-y-2.5 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
             <button className="flex w-full cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")} aria-label="Single-card view">
               <span className="h-1.5 w-12 rounded-full bg-zinc-500" />
@@ -234,12 +234,6 @@ export default function Home() {
       )}
 
       {/* fixed bottom chrome */}
-      {/* promo sits above the floating nav, which is mounted globally in App */}
-      <div className="absolute inset-x-0 bottom-0 z-20 pb-[var(--bline-nav-space)]">
-        <div className="flex items-center justify-center gap-2 bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium">
-          <Gift size={16} /> New perk: earn trail rewards every check-in
-        </div>
-      </div>
     </Screen>
   );
 }

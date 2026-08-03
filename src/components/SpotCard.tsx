@@ -8,7 +8,7 @@ import { useFavorites, toggleFav } from "@/lib/favorites";
 const badgeColor = (b: string, first: boolean) =>
   b === "DEAL" || b === "PERKS" ? "bg-accent" : first ? "bg-[#0d7d84]" : "bg-[#7c3aed]";
 
-export default function SpotCard({ spot, photoClass = "aspect-[386/220]", autoPhotos = false }: { spot: Spot; photoClass?: string; autoPhotos?: boolean }) {
+export default function SpotCard({ spot, photoClass = "aspect-[488/200]", autoPhotos = false }: { spot: Spot; photoClass?: string; autoPhotos?: boolean }) {
   const favs = useFavorites();
   const saved = favs.includes(spot.id);
   return (
