@@ -1,9 +1,11 @@
-import { Heart, SlidersHorizontal, Activity, Bug, ChevronRight, LogIn, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Heart, SlidersHorizontal, Activity, Bug, ChevronRight, LogIn, LogOut, CalendarDays } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
 import { useAuth, signOut } from "@/lib/auth";
+import { getMyProfile, type Profile } from "@/lib/friends";
 
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
@@ -11,8 +13,30 @@ const links = [
   { icon: Activity, label: "Trail Conditions", href: "/conditions" },
 ];
 
+interface Reservation {
+  id: string;
+  spot_id: string;
+  spot_name: string;
+  guests: number;
+  day_label: string;
+  time_label: string;
+  status: string;
+  created_at: string;
+}
+
+/** Fetch the user's reservations from the API. */
+async function fetchMyReservations(userId: string): Promise<Reservation[]> {
+  try {
+    const res = await fetch(`/api/reservations?userId=${encodeURIComponent(userId)}`);
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
+    return [];
+  }
+}
+
 /** Derive a display name from a Supabase user — use email local-part as fallback. */
-function displayName(email: string | undefined): string {
+function emailDisplayName(email: string | undefined): string {
   if (!email) return "Explorer";
   const local = email.split("@")[0];
   return local
@@ -21,8 +45,8 @@ function displayName(email: string | undefined): string {
 }
 
 /** Single letter avatar initial. */
-function initial(email: string | undefined): string {
-  return (email?.[0] ?? "G").toUpperCase();
+function initial(str: string | undefined): string {
+  return (str?.[0] ?? "G").toUpperCase();
 }
 
 export default function Profile() {
@@ -30,10 +54,37 @@ export default function Profile() {
   const favs = useFavorites();
   const { user, loading } = useAuth();
 
-  const name = user ? displayName(user.email) : "Guest Explorer";
-  const avatarLetter = user ? initial(user.email) : "G";
+  // Fetch the user's profile (@username / display_name) from the profiles table.
+  // Falls back to email-derived name if the user hasn't set a username yet.
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [resvLoading, setResvLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      setReservations([]);
+      return;
+    }
+    // Fetch profile (username + display_name) — set during Friends onboarding
+    getMyProfile(user.id).then(setProfile);
+    // Fetch the user's reservations
+    setResvLoading(true);
+    fetchMyReservations(user.id).then((r) => {
+      setReservations(r);
+      setResvLoading(false);
+    });
+  }, [user]);
+
+  // Prefer display_name from the profiles table; fall back to email-derived name.
+  const name = user
+    ? (profile?.display_name || profile?.username || emailDisplayName(user.email))
+    : "Guest Explorer";
+  const avatarLetter = user
+    ? initial(profile?.display_name || profile?.username || user.email)
+    : "G";
   const subtitle = user
-    ? (user.email ?? "Signed in")
+    ? (profile?.username ? `@${profile.username}` : (user.email ?? "Signed in"))
     : "Sign in to sync your favorites";
 
   return (
@@ -76,6 +127,42 @@ export default function Profile() {
             <p className="text-xs text-zinc-400">Spots nearby</p>
           </div>
         </div>
+
+        {/* My Reservations — only shown when signed in */}
+        {user && (
+          <div className="mx-4 mt-6">
+            <h2 className="mb-3 text-lg font-bold">My Reservations</h2>
+            {resvLoading ? (
+              <p className="text-sm text-zinc-500">Loading…</p>
+            ) : reservations.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-6 text-center text-zinc-400">
+                <CalendarDays size={28} />
+                <p className="text-sm">No upcoming reservations.<br />Tap “Reserve a table” on any spot to book.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
+                {reservations.map((r) => (
+                  <Link key={r.id} href={`/spot/${r.spot_id}`} className="flex items-center justify-between px-4 py-3.5">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{r.spot_name}</p>
+                      <p className="mt-0.5 text-sm text-zinc-400">
+                        {r.day_label} · {r.time_label} · {r.guests} {r.guests === 1 ? "guest" : "guests"}
+                      </p>
+                    </div>
+                    <div className="ml-3 flex shrink-0 items-center gap-2">
+                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                        r.status === "confirmed" ? "bg-mint/20 text-mint" : "bg-zinc-700 text-zinc-400"
+                      }`}>
+                        {r.status}
+                      </span>
+                      <ChevronRight size={16} className="text-zinc-500" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mx-4 mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line">
           {links.map(({ icon: Icon, label, href }) => (

@@ -7,7 +7,9 @@ import RealMap from "@/components/RealMap";
 import { crowdDensityPoints } from "@/lib/data";
 import { useWeatherNow } from "@/lib/weather";
 
-const hours = ["0", "1", "2", "3", "4", "6", "7", "8", "9", "10", "1", "2"];
+// 12-bar chart spanning 10 AM – 9 PM. Labels match the actual hours so the
+// peak bar (index 6 = 4 PM) aligns with PEAK_WINDOW "4–6 PM".
+const hours = ["10", "11", "12", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const heights = [4, 5, 8, 14, 34, 48, 64, 52, 40, 22, 14, 10];
 // single source of truth for the peak window — was two independently hardcoded
 // strings (this heading + the "Peak until" stat chip) that could silently drift.
