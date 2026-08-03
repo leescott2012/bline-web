@@ -3,7 +3,8 @@ import { Check, MessageSquare, Search, X } from "lucide-react";
 import { SAMPLE_CONTACTS, inviteByText } from "@/lib/contacts";
 import {
   acceptRequest, claimUsername, getMyProfile, listFriendships, removeFriendship,
-  searchProfiles, sendRequest, type FriendEdge, type Profile,
+  searchProfiles, sendRequest, getSharingEnabled, setSharingEnabled,
+  type FriendEdge, type Profile,
 } from "@/lib/friends";
 
 const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
@@ -104,6 +105,7 @@ export default function FriendsPanel({ userId }: { userId: string }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(true);
 
   const refresh = useCallback(async () => {
     setEdges(await listFriendships(userId));
@@ -113,7 +115,10 @@ export default function FriendsPanel({ userId }: { userId: string }) {
     getMyProfile(userId).then((p) => {
       setProfile(p);
       setCheckedProfile(true);
-      if (p) refresh();
+      if (p) {
+        refresh();
+        getSharingEnabled(userId).then(setSharing);
+      }
     });
   }, [userId, refresh]);
 
@@ -144,6 +149,27 @@ export default function FriendsPanel({ userId }: { userId: string }) {
 
   return (
     <div className="mx-3 mt-3 space-y-3">
+      {/* Sharing is opt-in, never assumed. Off is enforced by RLS on `locations`,
+          so friends genuinely can't read your position -- not merely hidden. */}
+      <div className={CARD}>
+        <div className="flex items-center gap-3">
+          <span className={`size-2.5 shrink-0 rounded-full ${sharing ? "bg-[#34d399]" : "bg-zinc-400"}`} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold text-zinc-900">
+              {sharing ? "Sharing location" : "Location off"}
+            </p>
+            <p className="text-[13px] text-zinc-500">
+              {sharing ? "Friends you allow can see where you are." : "You're invisible to everyone."}
+            </p>
+          </div>
+          <button role="switch" aria-checked={sharing} aria-label="Share my location"
+            onClick={() => { const next = !sharing; setSharing(next); setSharingEnabled(userId, next); }}
+            className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${sharing ? "bg-[#c9187e]" : "bg-zinc-300"}`}>
+            <span className={`block size-6 rounded-full bg-white transition-transform ${sharing ? "translate-x-5" : ""}`} />
+          </button>
+        </div>
+      </div>
+
       {/* search -- the visual anchor of the screen, Instagram-style */}
       <div className={CARD}>
         <div className="flex items-center gap-2 rounded-xl bg-[#efefef] px-3.5">

@@ -1,23 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Flame, Layers, LocateFixed } from "lucide-react";
-import { Link } from "wouter";
+import { Flame, Layers, Navigation2 } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
-import { useLiveLocation } from "@/lib/useLiveLocation";
+import SpotCard from "@/components/SpotCard";
+import { useSpots } from "@/lib/spots";
 import { crowdDensityPoints } from "@/lib/data";
 
-// Map tab: just the map, like a navigation tab. Layers opens the style picker;
-// the 3D control tilts into the extruded-building view.
-//
-// The 3D buildings layer has minzoom 15, so tilting from a city-wide zoom would
-// show a slanted flat map and nothing else -- the toggle zooms in far enough for
-// buildings to actually exist before pitching.
+// Map tab. Controls sit in one right-side column in the thumb zone; a spot
+// carousel runs along the bottom and drives the map -- scrolling to a card pans
+// there and turns its pin white, mirroring the wireframe.
 const BUILDINGS_MIN_ZOOM = 15.6;
 const PITCH_3D = 60;
+const CARD_ZOOM = 14.4;
 
-// Same crowd-density heatmap the Trail Conditions screen renders, surfaced here
-// as an overlay so you don't have to leave the map to see how busy the trail is.
 const HEAT_SOURCE = "crowd-density";
 const HEAT_LAYER = "crowd-heat";
 
@@ -26,29 +23,41 @@ const CTRL = "grid size-12 place-items-center rounded-full backdrop-blur transit
 const CTRL_OFF = "bg-[#101014]/90 text-white";
 
 export default function MapView() {
+  const [, nav] = useLocation();
+  const spots = useSpots();
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const meRef = useRef<maplibregl.Marker | null>(null);
-  const [tracking, setTracking] = useState(false);
+  const activeMarker = useRef<maplibregl.Marker | null>(null);
+  const activeRef = useRef(0);
+  const [activeIdx, setActiveIdx] = useState(0);
   const [threeD, setThreeD] = useState(false);
   const [heat, setHeat] = useState(false);
-  const firstFix = useRef(true);
-  const live = useLiveLocation(tracking);
 
-  useEffect(() => {
+  // Pan to a card's spot and mark it with the white "selected" pin -- the same
+  // treatment Explore uses, so a spot looks identical wherever you meet it.
+  const flyTo = (i: number) => {
     const map = mapRef.current;
-    if (!map || !live.position) return;
-    const pos: [number, number] = [live.position.lng, live.position.lat];
-    if (!meRef.current) {
+    const s = spots[i];
+    if (!map || !s) return;
+    map.easeTo({ center: [s.lng, s.lat], zoom: Math.max(map.getZoom(), CARD_ZOOM), duration: 650 });
+    if (!activeMarker.current) {
       const d = document.createElement("div");
-      d.className = "bline-me-dot";
-      meRef.current = new maplibregl.Marker({ element: d });
+      d.innerHTML = `<div class="bline-pin bline-pin-active"><span class="star">★</span> <b></b></div>`;
+      activeMarker.current = new maplibregl.Marker({ element: d, anchor: "bottom" });
     }
-    meRef.current.setLngLat(pos).addTo(map);
-    if (firstFix.current) {
-      firstFix.current = false;
-      map.easeTo({ center: pos, zoom: 15.5, duration: 800 });
+    activeMarker.current.getElement().querySelector("b")!.textContent = s.rating.toFixed(1);
+    activeMarker.current.setLngLat([s.lng, s.lat]).addTo(map);
+  };
+
+  const onCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!spots.length) return;
+    const el = e.currentTarget;
+    const i = Math.max(0, Math.min(spots.length - 1, Math.round(el.scrollLeft / (el.clientWidth * 0.86))));
+    if (i !== activeRef.current) {
+      activeRef.current = i;
+      setActiveIdx(i);
+      flyTo(i);
     }
-  }, [live.position]);
+  };
 
   const toggle3D = () => {
     const map = mapRef.current;
@@ -115,21 +124,12 @@ export default function MapView() {
     });
   };
 
-  const toggleTracking = () => {
-    if (!navigator.geolocation) return;
-    if (tracking) {
-      setTracking(false);
-      meRef.current?.remove();
-      meRef.current = null;
-      firstFix.current = true;
-    } else {
-      setTracking(true);
-    }
-  };
+  const activeSpot = spots[activeIdx];
 
   return (
     <Screen className="overflow-hidden">
       <RealMap zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+
       <header className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10">
         <div className="flex items-center justify-around rounded-full bg-[#101014]/90 px-5 py-3.5 backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
@@ -137,15 +137,15 @@ export default function MapView() {
         </div>
       </header>
 
-      {/* Every map control in one right-side column, in the thumb zone.
-          Layers used to live in the top header, which split the controls across
-          two corners; grouping them reads as one set and keeps them reachable
-          one-handed. Active states use brand pink so on/off is obvious. */}
-      <div className="absolute bottom-24 right-3 z-10 flex flex-col-reverse gap-2.5">
-        <button aria-label={tracking ? "Stop following my location" : "Locate me"}
-          aria-pressed={tracking} onClick={toggleTracking}
-          className={`${CTRL} ${tracking ? "bg-[#2f6bff] text-white" : CTRL_OFF}`}>
-          <LocateFixed size={20} />
+      {/* Controls stack above the carousel so neither covers the other. */}
+      <div className="absolute right-3 z-10 flex flex-col-reverse gap-2.5"
+        style={{ bottom: "calc(var(--bline-nav-space) + 14.5rem)" }}>
+        {/* Apple-Maps-style navigation arrow: starts turn-by-turn to whichever
+            card is centred, rather than just recentring the camera. */}
+        <button aria-label={activeSpot ? `Start navigation to ${activeSpot.name}` : "Start navigation"}
+          onClick={() => activeSpot && nav(`/navigate/${activeSpot.id}`)}
+          className={`${CTRL} bg-[#2f6bff] text-white`}>
+          <Navigation2 size={20} fill="currentColor" />
         </button>
 
         <button aria-label={threeD ? "Switch to 2D map" : "Switch to 3D map"}
@@ -165,6 +165,18 @@ export default function MapView() {
         </Link>
       </div>
 
+      {/* Spot carousel. autoPhotos runs on the centred card only: a slideshow on
+          off-screen cards is wasted work and pulls the eye sideways. */}
+      <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
+        <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2"
+          onScroll={onCardScroll}>
+          {spots.map((s, i) => (
+            <div key={s.id} className="w-[86%] shrink-0 snap-center">
+              <SpotCard spot={s} photoClass="aspect-[488/200]" autoPhotos={i === activeIdx} />
+            </div>
+          ))}
+        </div>
+      </div>
     </Screen>
   );
 }

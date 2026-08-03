@@ -84,3 +84,19 @@ export async function acceptRequest(friendshipId: string) {
 export async function removeFriendship(friendshipId: string) {
   return supabase.from("friendships").delete().eq("id", friendshipId);
 }
+
+// Master "visible to friends" switch, stored on the profile. RLS on `locations`
+// already checks profiles.sharing_enabled, so flipping this off hides your
+// position server-side -- not just in the UI.
+export async function getSharingEnabled(userId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("sharing_enabled")
+    .eq("id", userId)
+    .maybeSingle();
+  return data?.sharing_enabled ?? true;
+}
+
+export async function setSharingEnabled(userId: string, enabled: boolean) {
+  return supabase.from("profiles").update({ sharing_enabled: enabled }).eq("id", userId);
+}

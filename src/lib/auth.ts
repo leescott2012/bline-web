@@ -1,17 +1,11 @@
 import { useSyncExternalStore } from "react";
 import type { User } from "@supabase/supabase-js";
-import { Capacitor } from "@capacitor/core";
-import { App } from "@capacitor/app";
 import { supabase } from "./supabase";
 
 // Module store + useSyncExternalStore (same pattern as favorites.ts/spots.ts) so
 // every screen reacts to sign-in/out without prop drilling. Backed by Supabase's
 // own session persistence -- we just mirror whatever it reports.
-let state: { user: User | null; loading: boolean; callbackError: string | null } = {
-  user: null,
-  loading: true,
-  callbackError: null,
-};
+let state: { user: User | null; loading: boolean } = { user: null, loading: true };
 const listeners = new Set<() => void>();
 
 function setState(patch: Partial<typeof state>) {
@@ -36,52 +30,18 @@ export function useAuth() {
   return useSyncExternalStore(subscribe, () => state, () => state);
 }
 
-const isNative = Capacitor.isNativePlatform();
-
-// Native can't use window.location.origin (it's capacitor://localhost, which a
-// magic link in Mail can't reach) -- a custom scheme registered in Info.plist
-// (CFBundleURLTypes) reopens the app instead. Both values must be allowlisted
-// in Supabase: Authentication > URL Configuration > Redirect URLs.
-const REDIRECT_TO = isNative ? "bline://auth-callback" : `${window.location.origin}/friends`;
-
-// Magic-link (OTP) sign-in -- no password.
-export async function signInWithEmail(email: string) {
-  return supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: REDIRECT_TO } });
+// No email, no magic link, no SMS. An anonymous sign-in mints a real Supabase
+// user (real uuid, real RLS) with no identifier at all -- the @username picked
+// straight after IS the identity as far as other people are concerned.
+//
+// Tradeoff worth knowing: the session lives in this device's storage, so
+// clearing site data or switching devices loses the account. Supabase supports
+// attaching an email/phone to an anonymous user later, which is the upgrade
+// path if account recovery ever matters.
+export async function startAnonymousSession() {
+  return supabase.auth.signInAnonymously();
 }
 
 export async function signOut() {
   await supabase.auth.signOut();
-}
-
-// Native only: the magic link reopens the app at bline://auth-callback?code=...
-// (PKCE) or #access_token=... (implicit). The web build handles this itself via
-// supabase-js's detectSessionInUrl, which never fires for a custom scheme.
-if (isNative) {
-  App.addListener("appUrlOpen", async ({ url }) => {
-    if (!url.startsWith("bline://auth-callback")) return;
-    setState({ callbackError: null });
-    try {
-      // Custom schemes don't parse as http(s) URLs everywhere -- normalize first.
-      const normalized = new URL(url.replace("bline://", "https://bline.invalid/"));
-      const code = normalized.searchParams.get("code");
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) setState({ callbackError: error.message });
-        return;
-      }
-      const hash = new URLSearchParams(normalized.hash.replace(/^#/, ""));
-      const access_token = hash.get("access_token");
-      const refresh_token = hash.get("refresh_token");
-      if (access_token && refresh_token) {
-        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-        if (error) setState({ callbackError: error.message });
-      } else {
-        setState({ callbackError: "That sign-in link was missing its token. Request a new one." });
-      }
-    } catch (e) {
-      // Expired/reused link, or opened on a different device than it was
-      // requested from (PKCE verifier lives in this device's storage).
-      setState({ callbackError: e instanceof Error ? e.message : "That sign-in link didn't work. Request a new one." });
-    }
-  });
 }

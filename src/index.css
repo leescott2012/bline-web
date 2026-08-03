@@ -73,6 +73,20 @@ body {
   border-radius: 11px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.6);
 }
+.bline-pin-active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%) rotate(45deg);
+  background: inherit;
+  border-radius: 2px;
+}
+.bline-pin-active {
+  position: relative;
+}
 .bline-pin-active .star {
   color: #0b0b0f;
   font-size: 12px;

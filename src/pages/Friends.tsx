@@ -1,56 +1,34 @@
 import { useState } from "react";
 import { Check, LocateFixed } from "lucide-react";
 import Screen from "@/components/Screen";
-import { useAuth, signInWithEmail, signOut } from "@/lib/auth";
+import { useAuth, startAnonymousSession, signOut } from "@/lib/auth";
 import FriendsPanel from "@/components/FriendsPanel";
 
-function SignInCard({ callbackError }: { callbackError: string | null }) {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
+// No email/SMS: one tap mints an anonymous Supabase user, then FriendsPanel
+// immediately asks for the @username that actually identifies you to friends.
+function StartCard() {
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSending(true);
+  const start = async () => {
+    setBusy(true);
     setError(null);
-    const { error: err } = await signInWithEmail(email.trim());
-    setSending(false);
+    const { error: err } = await startAnonymousSession();
+    setBusy(false);
     if (err) setError(err.message);
-    else setSent(true);
   };
 
-  if (sent) {
-    return (
-      <div className="mx-3 mt-4 rounded-2xl bg-white p-6 text-center shadow-sm">
-        <p className="text-[17px] font-bold text-zinc-900">Check your email</p>
-        <p className="mt-1 text-[14px] text-zinc-500">Tap the link we sent to {email} to sign in.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="mx-3 mt-4 rounded-2xl bg-white p-6 shadow-sm">
-      <p className="text-[17px] font-bold text-zinc-900">Sign in to find friends</p>
-      <p className="mt-1 text-[14px] text-zinc-500">No password — we'll email you a link.</p>
-      {callbackError && (
-        <p className="mt-3 rounded-xl bg-red-50 p-3 text-[13px] text-red-700">{callbackError}</p>
-      )}
-      <form onSubmit={submit} className="mt-4 space-y-3">
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@email.com"
-          className="w-full rounded-xl bg-[#efefef] px-4 py-3 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500"
-        />
-        <button type="submit" disabled={sending}
-          className="w-full rounded-xl bg-[#c9187e] py-3 text-[15px] font-semibold text-white disabled:opacity-50">
-          {sending ? "Sending…" : "Send magic link"}
-        </button>
-        {error && <p className="text-center text-[13px] text-red-600">{error}</p>}
-      </form>
+    <div className="mx-3 mt-4 rounded-2xl bg-white p-6 text-center shadow-sm">
+      <p className="text-[17px] font-bold text-zinc-900">Find your friends on the trail</p>
+      <p className="mt-1 text-[14px] text-zinc-500">
+        Pick a username — no email, no password, nothing to verify.
+      </p>
+      <button onClick={start} disabled={busy}
+        className="mt-4 w-full rounded-xl bg-[#c9187e] py-3 text-[15px] font-semibold text-white disabled:opacity-50">
+        {busy ? "Setting up…" : "Get started"}
+      </button>
+      {error && <p className="mt-2 text-[13px] text-red-600">{error}</p>}
     </div>
   );
 }
@@ -62,7 +40,7 @@ function getPosition(): Promise<GeolocationPosition> {
 }
 
 export default function Friends() {
-  const { user, loading, callbackError } = useAuth();
+  const { user, loading } = useAuth();
   const [located, setLocated] = useState(false);
 
   const onLocate = async () => {
@@ -85,10 +63,14 @@ export default function Friends() {
   return (
     <Screen className="bg-[#fafafa] text-zinc-900">
       <header className="pt-[max(1rem,env(safe-area-inset-top))]">
-        <div className="flex items-baseline justify-between px-4">
-          <h1 className="text-[26px] font-bold tracking-tight text-zinc-900">Friends</h1>
+        <div className="relative px-4 text-center">
+          <p className="text-[22px] font-extrabold tracking-tight text-[#c9187e]">Ⓑ B-line</p>
+          <h1 className="mt-0.5 text-[15px] font-bold tracking-[.08em] text-[#c9187e]">
+            FRIENDS ON THE TRAIL
+          </h1>
           {user && (
-            <button onClick={() => signOut()} className="text-[13px] font-semibold text-[#c9187e]">
+            <button onClick={() => signOut()}
+              className="absolute right-4 top-1 text-[13px] font-semibold text-zinc-400">
               Sign out
             </button>
           )}
@@ -96,7 +78,7 @@ export default function Friends() {
       </header>
 
       {loading ? null : !user ? (
-        <SignInCard callbackError={callbackError} />
+        <StartCard />
       ) : (
       <>
       <div className="relative mx-3 mt-3 h-[26%] overflow-hidden rounded-2xl">
