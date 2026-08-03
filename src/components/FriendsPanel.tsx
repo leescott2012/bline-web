@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Check, MessageSquare, Search, X } from "lucide-react";
 import { SAMPLE_CONTACTS, inviteByText } from "@/lib/contacts";
+import ProfileCard, { ProfileAvatar } from "@/components/ProfileCard";
 import {
   acceptRequest, claimUsername, getMyProfile, listFriendships, removeFriendship,
   searchProfiles, sendRequest, getSharingEnabled, setSharingEnabled,
@@ -72,19 +73,15 @@ function UsernamePicker({ userId, onDone }: { userId: string; onDone: () => void
   );
 }
 
-function Avatar({ name }: { name: string }) {
-  return (
-    <div className="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#c9187e] to-[#7c3aed] text-[16px] font-semibold text-white">
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
 // Instagram's row shape: avatar, stacked name/handle, trailing action.
-function Row({ title, subtitle, children }: { title: string; subtitle: string; children?: React.ReactNode }) {
+function Row({ title, subtitle, avatar, children }: {
+  title: string; subtitle: string;
+  avatar?: Pick<Profile, "username" | "display_name" | "avatar_url">;
+  children?: React.ReactNode;
+}) {
   return (
     <li className="flex items-center gap-3 py-1.5">
-      <Avatar name={title} />
+      <ProfileAvatar profile={avatar ?? { username: title, display_name: title, avatar_url: null }} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[14px] font-semibold leading-tight text-zinc-900">{title}</p>
         <p className="truncate text-[13px] leading-tight text-zinc-500">{subtitle}</p>
@@ -149,6 +146,8 @@ export default function FriendsPanel({ userId }: { userId: string }) {
 
   return (
     <div className="mx-3 mt-3 space-y-3">
+      <ProfileCard profile={profile} onChange={setProfile} />
+
       {/* Sharing is opt-in, never assumed. Off is enforced by RLS on `locations`,
           so friends genuinely can't read your position -- not merely hidden. */}
       <div className={CARD}>
@@ -199,7 +198,7 @@ export default function FriendsPanel({ userId }: { userId: string }) {
             {results.map((p) => {
               const edge = edgeByOtherId.get(p.id);
               return (
-                <Row key={p.id} title={p.display_name || p.username} subtitle={`@${p.username}`}>
+                <Row key={p.id} title={p.display_name || p.username} subtitle={`@${p.username}`} avatar={p}>
                   {edge ? (
                     <span className="shrink-0 text-[13px] text-zinc-500">
                       {edge.status === "accepted" ? "Friends" : edge.incoming ? "Wants to add you" : "Requested"}
@@ -224,7 +223,7 @@ export default function FriendsPanel({ userId }: { userId: string }) {
           <SectionTitle>Requests</SectionTitle>
           <ul className="mt-1.5">
             {incoming.map((e) => (
-              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={`@${e.other.username}`}>
+              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={e.other.status ? e.other.status : `@${e.other.username}`} avatar={e.other}>
                 <button disabled={busyId === e.id}
                   onClick={() => act(e.id, () => acceptRequest(e.id))}
                   className={BTN_PRIMARY}>
@@ -251,7 +250,7 @@ export default function FriendsPanel({ userId }: { userId: string }) {
         ) : (
           <ul className="mt-1.5">
             {accepted.map((e) => (
-              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={`@${e.other.username}`}>
+              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={e.other.status ? e.other.status : `@${e.other.username}`} avatar={e.other}>
                 <button disabled={busyId === e.id}
                   onClick={() => act(e.id, () => removeFriendship(e.id))}
                   className={BTN_NEUTRAL}>
@@ -260,7 +259,7 @@ export default function FriendsPanel({ userId }: { userId: string }) {
               </Row>
             ))}
             {outgoing.map((e) => (
-              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={`@${e.other.username}`}>
+              <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={e.other.status ? e.other.status : `@${e.other.username}`} avatar={e.other}>
                 <span className="shrink-0 text-[13px] text-zinc-500">Requested</span>
               </Row>
             ))}

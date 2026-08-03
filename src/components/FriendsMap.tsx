@@ -32,7 +32,14 @@ export default function FriendsMap({ friends, meId }: { friends: FriendEdge[]; m
         const el = document.createElement("button");
         el.className = "bline-friend-pin";
         el.setAttribute("aria-label", `${person.display_name || person.username} on the map`);
-        el.textContent = (person.display_name || person.username).charAt(0).toUpperCase();
+        // real picture when they've uploaded one, initial otherwise
+        if (person.avatar_url) {
+          el.style.backgroundImage = `url("${person.avatar_url}")`;
+          el.style.backgroundSize = "cover";
+          el.style.backgroundPosition = "center";
+        } else {
+          el.textContent = (person.display_name || person.username).charAt(0).toUpperCase();
+        }
         el.onclick = () => setSelected((cur) => (cur === loc.user_id ? null : loc.user_id));
         marker = new maplibregl.Marker({ element: el });
         markers.current.set(loc.user_id, marker);
@@ -76,7 +83,7 @@ export default function FriendsMap({ friends, meId }: { friends: FriendEdge[]; m
             )}
           </div>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            @{selPerson.username} · {timeAgo(sel.updated_at)}
+            {selPerson.status ? `${selPerson.status} · ` : `@${selPerson.username} · `}{timeAgo(sel.updated_at)}
           </p>
         </div>
       )}
