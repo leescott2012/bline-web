@@ -88,13 +88,14 @@ export default function MapView() {
 
       {/* 3D / 2D toggle, Apple-Maps style: a labelled circle rather than a
           hidden gesture, so the extruded-building view is discoverable.
-          Sits clear of FeedbackButton's edge tab (right-0 top-32 z-30), which
-          otherwise sat on top of this and hid the "D". */}
+          Bottom-right thumb zone, stacked directly above the locate button
+          (bottom-24) -- map controls belong where a thumb rests, not in the
+          top corner where they also collided with FeedbackButton's edge tab. */}
       <button
         aria-label={threeD ? "Switch to 2D map" : "Switch to 3D map"}
         aria-pressed={threeD}
         onClick={toggle3D}
-        className={`absolute right-3 top-[calc(max(0.75rem,env(safe-area-inset-top))+7.75rem)] z-10 grid size-12 place-items-center rounded-full backdrop-blur ${
+        className={`absolute bottom-40 right-3 z-10 grid size-12 place-items-center rounded-full backdrop-blur ${
           threeD ? "bg-[#c9187e] text-white" : "bg-[#101014]/90 text-white"
         }`}
       >
