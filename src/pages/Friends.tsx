@@ -22,19 +22,19 @@ function SignInCard({ callbackError }: { callbackError: string | null }) {
 
   if (sent) {
     return (
-      <div className="mx-3 mt-4 rounded-3xl bg-white/90 p-6 text-center shadow-xl backdrop-blur">
-        <p className="text-lg font-bold text-[#c9187e]">Check your email</p>
-        <p className="mt-1 text-zinc-600">Tap the link we sent to {email} to sign in.</p>
+      <div className="mx-3 mt-4 rounded-2xl bg-white p-6 text-center shadow-sm">
+        <p className="text-[17px] font-bold text-zinc-900">Check your email</p>
+        <p className="mt-1 text-[14px] text-zinc-500">Tap the link we sent to {email} to sign in.</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-3 mt-4 rounded-3xl bg-white/90 p-6 shadow-xl backdrop-blur">
-      <p className="text-lg font-bold text-[#c9187e]">Sign in to find friends</p>
-      <p className="mt-1 text-zinc-600">No password — we'll email you a link.</p>
+    <div className="mx-3 mt-4 rounded-2xl bg-white p-6 shadow-sm">
+      <p className="text-[17px] font-bold text-zinc-900">Sign in to find friends</p>
+      <p className="mt-1 text-[14px] text-zinc-500">No password — we'll email you a link.</p>
       {callbackError && (
-        <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{callbackError}</p>
+        <p className="mt-3 rounded-xl bg-red-50 p-3 text-[13px] text-red-700">{callbackError}</p>
       )}
       <form onSubmit={submit} className="mt-4 space-y-3">
         <input
@@ -43,13 +43,13 @@ function SignInCard({ callbackError }: { callbackError: string | null }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
-          className="w-full rounded-full border border-zinc-300 px-4 py-3 text-zinc-900 outline-none"
+          className="w-full rounded-xl bg-[#efefef] px-4 py-3 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500"
         />
         <button type="submit" disabled={sending}
-          className="w-full rounded-full bg-[#c9187e] py-3.5 text-lg font-semibold text-white disabled:opacity-50">
+          className="w-full rounded-xl bg-[#c9187e] py-3 text-[15px] font-semibold text-white disabled:opacity-50">
           {sending ? "Sending…" : "Send magic link"}
         </button>
-        {error && <p className="text-center text-sm text-red-600">{error}</p>}
+        {error && <p className="text-center text-[13px] text-red-600">{error}</p>}
       </form>
     </div>
   );
@@ -83,22 +83,23 @@ export default function Friends() {
   };
 
   return (
-    <Screen className="bg-[#efe9e2] text-zinc-900">
-      <header className="pt-[max(1rem,env(safe-area-inset-top))] text-center">
-        <p className="text-3xl font-extrabold text-[#c9187e]">Ⓑ B-line</p>
-        <h1 className="mt-1 text-xl font-bold tracking-wide text-[#c9187e]">FRIENDS ON THE TRAIL</h1>
-        {user && (
-          <button onClick={() => signOut()} className="mt-1 text-xs text-zinc-500 underline">
-            {user.email} · Sign out
-          </button>
-        )}
+    <Screen className="bg-[#fafafa] text-zinc-900">
+      <header className="pt-[max(1rem,env(safe-area-inset-top))]">
+        <div className="flex items-baseline justify-between px-4">
+          <h1 className="text-[26px] font-bold tracking-tight text-zinc-900">Friends</h1>
+          {user && (
+            <button onClick={() => signOut()} className="text-[13px] font-semibold text-[#c9187e]">
+              Sign out
+            </button>
+          )}
+        </div>
       </header>
 
       {loading ? null : !user ? (
         <SignInCard callbackError={callbackError} />
       ) : (
       <>
-      <div className="relative mt-2 h-[30%]">
+      <div className="relative mx-3 mt-3 h-[26%] overflow-hidden rounded-2xl">
         <svg viewBox="0 0 100 80" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
           <rect width="100" height="80" fill="#efe9e2" />
           <ellipse cx="45" cy="42" rx="16" ry="12" fill="#8a9b7d" opacity="0.6" />
