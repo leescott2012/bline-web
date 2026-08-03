@@ -17,6 +17,14 @@ body,
   height: 100%;
 }
 
+/* Vertical space the floating island nav occupies (FloatingNav.tsx): pill
+   height + its bottom inset. Pages pad their scroll content by this so the
+   last row isn't hidden under the bar. Single source of truth -- the nav is
+   mounted once globally, so six pages hardcoding their own value would drift. */
+:root {
+  --bline-nav-space: calc(4rem + max(0.6rem, env(safe-area-inset-bottom)));
+}
+
 body {
   background: #0b0b0f;
   color: #fff;

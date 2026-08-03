@@ -1,7 +1,6 @@
 import { Bell, ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
-import TabBar from "@/components/TabBar";
 import { useSpots } from "@/lib/spots";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
@@ -12,7 +11,7 @@ export default function Saved() {
   const saved = spots.filter((s) => favs.includes(s.id));
   return (
     <Screen className="overflow-hidden">
-      <div className="h-full overflow-y-auto pb-24">
+      <div className="h-full overflow-y-auto pb-[var(--bline-nav-space)]">
         <header className="px-3 pt-[max(1rem,env(safe-area-inset-top))]">
           <p className="text-center text-2xl font-bold">B-line</p>
           <div className="mt-3 flex overflow-hidden rounded-xl bg-[#2a2a31] text-center">
@@ -68,9 +67,6 @@ export default function Saved() {
         </section>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-20">
-        <TabBar />
-      </div>
     </Screen>
   );
 }

@@ -3,7 +3,6 @@ import { ChevronLeft, Users, Sun, Cloud, CloudRain, CloudSnow, CloudFog, CloudLi
 import { Link } from "wouter";
 import type maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
-import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
 import { crowdDensityPoints } from "@/lib/data";
 import { useWeatherNow } from "@/lib/weather";
@@ -142,8 +141,7 @@ export default function Crowd() {
           {hours.map((h, i) => <span key={i} className="flex-1 text-center">{h}</span>)}
         </div>
       </div>
-      <div className="h-24" />
-      <TabBar />
+      <div className="h-[var(--bline-nav-space)]" />
     </Screen>
   );
 }

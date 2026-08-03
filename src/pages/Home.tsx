@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
-import TabBar from "@/components/TabBar";
 import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
 import { useSpots } from "@/lib/spots";
@@ -235,11 +234,11 @@ export default function Home() {
       )}
 
       {/* fixed bottom chrome */}
-      <div className="absolute inset-x-0 bottom-0 z-20">
+      {/* promo sits above the floating nav, which is mounted globally in App */}
+      <div className="absolute inset-x-0 bottom-0 z-20 pb-[var(--bline-nav-space)]">
         <div className="flex items-center justify-center gap-2 bg-[#1e3a8a] px-4 py-2.5 text-sm font-medium">
           <Gift size={16} /> New perk: earn trail rewards every check-in
         </div>
-        <TabBar />
       </div>
     </Screen>
   );

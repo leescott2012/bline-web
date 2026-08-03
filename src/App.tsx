@@ -1,5 +1,6 @@
 import { Route, Switch } from "wouter";
 import FeedbackButton from "@/components/FeedbackButton";
+import FloatingNav from "@/components/FloatingNav";
 import { installErrorCapture } from "@/lib/bugReport";
 
 installErrorCapture();
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/bug-bin" component={BugBin} />
           <Route>404</Route>
         </Switch>
+        <FloatingNav />
         <FeedbackButton />
       </div>
     </div>

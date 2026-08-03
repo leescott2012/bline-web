@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Check, LocateFixed } from "lucide-react";
 import Screen from "@/components/Screen";
-import TabBar from "@/components/TabBar";
 import { useAuth, signInWithEmail, signOut } from "@/lib/auth";
 import FriendsPanel from "@/components/FriendsPanel";
 
@@ -133,12 +132,7 @@ export default function Friends() {
       <FriendsPanel userId={user.id} />
       </>
       )}
-      <div className="h-24" />
-      {/* absolute (not the bare sticky TabBar) so it stays pinned to the bottom
-          even when the page is short -- e.g. the signed-out sign-in card */}
-      <div className="absolute inset-x-0 bottom-0 z-20">
-        <TabBar />
-      </div>
+      <div className="h-[var(--bline-nav-space)]" />
     </Screen>
   );
 }

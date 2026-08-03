@@ -1,7 +1,6 @@
 import { Heart, SlidersHorizontal, Activity, Bug, ChevronRight, LogIn, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
-import TabBar from "@/components/TabBar";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
 import { useAuth, signOut } from "@/lib/auth";
@@ -39,7 +38,7 @@ export default function Profile() {
 
   return (
     <Screen className="overflow-hidden">
-      <div className="h-full overflow-y-auto pb-24">
+      <div className="h-full overflow-y-auto pb-[var(--bline-nav-space)]">
         <header className="flex flex-col items-center gap-3 px-6 pt-[max(2.5rem,env(safe-area-inset-top))]">
           <div className="grid size-20 place-items-center rounded-full bg-accent text-3xl font-bold">
             {loading ? "\u2026" : avatarLetter}
@@ -93,9 +92,6 @@ export default function Profile() {
         </p>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 z-20">
-        <TabBar />
-      </div>
     </Screen>
   );
 }
