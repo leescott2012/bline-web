@@ -20,6 +20,7 @@ export default function Detail() {
   const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const saved = useFavorites().includes(spot.id);
+  const isPark = spot.category === "Parks";
   return (
     <Screen className="pb-28">
       <div className="relative h-80">
@@ -80,15 +81,19 @@ export default function Detail() {
           </div>
         </Link>
 
-        <h2 className="mt-8 text-xl font-bold">Menu picks</h2>
-        <div className="no-scrollbar -mx-4 mt-3 flex gap-3 overflow-x-auto px-4">
-          {menuPicks.map((m) => (
-            <figure key={m.name} className="w-40 shrink-0">
-              <img src={m.img} alt={m.name} className="h-32 w-full rounded-xl object-cover" loading="lazy" />
-              <figcaption className="mt-2 text-sm">{m.name}</figcaption>
-            </figure>
-          ))}
-        </div>
+        {!isPark && (
+          <>
+            <h2 className="mt-8 text-xl font-bold">Menu picks</h2>
+            <div className="no-scrollbar -mx-4 mt-3 flex gap-3 overflow-x-auto px-4">
+              {menuPicks.map((m) => (
+                <figure key={m.name} className="w-40 shrink-0">
+                  <img src={m.img} alt={m.name} className="h-32 w-full rounded-xl object-cover" loading="lazy" />
+                  <figcaption className="mt-2 text-sm">{m.name}</figcaption>
+                </figure>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="sticky bottom-0 z-20 flex gap-2 bg-gradient-to-t from-ink via-ink/95 to-transparent p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -96,10 +101,12 @@ export default function Detail() {
           className="block flex-1 rounded-full border border-line py-4 text-center text-lg font-semibold">
           Directions
         </Link>
-        <Link href={`/reserve/${spot.id}`}
-          className="block flex-1 rounded-full bg-[#5b2a86] py-4 text-center text-lg font-semibold">
-          Reserve a table
-        </Link>
+        {!isPark && (
+          <Link href={`/reserve/${spot.id}`}
+            className="block flex-1 rounded-full bg-[#5b2a86] py-4 text-center text-lg font-semibold">
+            Reserve a table
+          </Link>
+        )}
       </div>
 
       {RICH_DATA[spot.id] && (

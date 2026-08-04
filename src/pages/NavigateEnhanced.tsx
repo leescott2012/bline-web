@@ -246,7 +246,7 @@ export default function NavigateEnhanced() {
       lastFix.current = pos;
 
     puckRef.current.setLngLat(pos);
-    if (follow.current) map.easeTo({ center: pos, bearing: brg, duration: 400 });
+    if (follow.current) map.easeTo({ center: pos, ...(brg !== undefined ? { bearing: brg } : {}), duration: 400 });
 
     const p = Math.min(1, progressAlong(pos, routeCoords, cum.current));
     setProgress(p);
@@ -283,7 +283,7 @@ export default function NavigateEnhanced() {
 
       const { pos, brg } = posAt(p, navRoute, cum.current);
       puckRef.current!.setLngLat(pos);
-      if (follow.current) map.easeTo({ center: pos, bearing: brg, duration: 120, easing: (x) => x });
+      if (follow.current) map.easeTo({ center: pos, ...(brg !== undefined ? { bearing: brg } : {}), duration: 120, easing: (x) => x });
 
       let si = 0;
       for (let k = 0; k < navSteps.length; k++) if (navSteps[k].at <= p) si = k;

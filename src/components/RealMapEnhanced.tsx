@@ -43,7 +43,7 @@ export default function RealMapEnhanced({
       zoom: zoom - 1.2,
       interactive,
       attributionControl: false,
-      pitch: autoPitch ? 0 : undefined,
+      ...(autoPitch ? { pitch: 0 } : {}),
     });
 
     onMap?.(map);
