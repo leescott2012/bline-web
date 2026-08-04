@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { menuPicks, isOpenNow, closingTimeLabel } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
+import { RICH_DATA } from "@/lib/richData";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
@@ -100,6 +101,52 @@ export default function Detail() {
           Reserve a table
         </Link>
       </div>
+
+      {RICH_DATA[spot.id] && (
+        <div className="px-4 pb-12">
+          <div className="mt-8 rounded-2xl bg-panel p-5">
+            <h2 className="text-xl font-bold">The Vibe</h2>
+            <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">
+              {RICH_DATA[spot.id].overview}
+            </p>
+          </div>
+
+          <div className="mt-6">
+            <h2 className="text-xl font-bold">Why Visit</h2>
+            <ul className="mt-3 space-y-2">
+              {RICH_DATA[spot.id].whyVisit.map((item, i) => (
+                <li key={i} className="flex items-center gap-2 text-[15px] text-zinc-300">
+                  <div className="size-1.5 rounded-full bg-hot" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-xl font-bold">Insider Tips</h2>
+            <div className="mt-3 space-y-3">
+              {RICH_DATA[spot.id].insiderTips.map((tip, i) => (
+                <div key={i} className="rounded-xl border border-line bg-ink p-4 text-[14px] italic text-zinc-400">
+                  "{tip}"
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-xl font-bold">Nearby Walking Times</h2>
+            <div className="mt-3 divide-y divide-line rounded-xl border border-line">
+              {Object.entries(RICH_DATA[spot.id].walkingTimes).map(([place, time]) => (
+                <div key={place} className="flex justify-between p-3.5 text-[15px]">
+                  <span className="text-zinc-300">{place}</span>
+                  <span className="font-semibold text-hot">{time}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </Screen>
   );
 }

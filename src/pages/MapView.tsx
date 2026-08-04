@@ -3,11 +3,13 @@ import { Flame, Layers, Navigation2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
-import RealMap from "@/components/RealMap";
+import RealMapEnhanced from "@/components/RealMapEnhanced";
 import SpotCard from "@/components/SpotCard";
 import CrowdPanel from "@/components/CrowdPanel";
+import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
 import { useCrowd } from "@/lib/crowd";
+import { useMapInterests, getActiveInterests } from "@/lib/mapInterests";
 
 // Map tab. Controls sit in one right-side column in the thumb zone; a spot
 // carousel runs along the bottom and drives the map -- scrolling to a card pans
@@ -26,6 +28,8 @@ const CTRL_OFF = "bg-[#101014]/90 text-white";
 export default function MapView() {
   const [, nav] = useLocation();
   const spots = useSpots();
+  const interests = useMapInterests();
+  const activeInterests = getActiveInterests(interests);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const activeMarker = useRef<maplibregl.Marker | null>(null);
   const activeRef = useRef(0);
@@ -132,9 +136,12 @@ export default function MapView() {
 
   return (
     <Screen className="overflow-hidden">
-      <RealMap zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+      <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
-      <header className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10">
+      {/* Interest Selector Sidebar */}
+      <InterestSelector />
+
+      <header className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 left-auto right-3">
         <div className="flex items-center justify-around rounded-full bg-[#101014]/90 px-5 py-3.5 backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
           <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>

@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useSpots } from "@/lib/spots";
 import PhotoCarousel from "@/components/PhotoCarousel";
+
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
 export default function Saved() {

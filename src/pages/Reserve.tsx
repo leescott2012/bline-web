@@ -56,6 +56,8 @@ export default function Reserve() {
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const { user } = useAuth();
 
+
+
   const days = buildDays();
   const [guests, setGuests] = useState(2);
   const [dayIdx, setDayIdx] = useState(0);

@@ -4,7 +4,8 @@ import { useLocation, useParams } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
-import { navRoute, navSteps, distM, nearestPointOnSegment, spots } from "@/lib/data";
+import { navRoute, navSteps, distM, nearestPointOnSegment } from "@/lib/data";
+import { useSpots } from "@/lib/spots";
 import { fetchRoute, type RouteResult, type RouteStep } from "@/lib/routing";
 import { useLiveLocation } from "@/lib/useLiveLocation";
 
@@ -54,6 +55,7 @@ const stepIcon = { up: ArrowUp, right: CornerUpRight, left: CornerUpLeft, flag: 
 export default function Navigate() {
   const { id } = useParams<{ id?: string }>();
   const [, nav] = useLocation();
+  const spots = useSpots();
   const destSpot = spots.find((s) => s.id === id) ?? spots.find((s) => s.id === DEFAULT_DEST_ID) ?? spots[0];
 
   const mapRef = useRef<maplibregl.Map | null>(null);

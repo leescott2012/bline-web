@@ -4,6 +4,7 @@ import { signOut } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import FriendsPanel from "@/components/FriendsPanel";
 import FriendsMap from "@/components/FriendsMap";
+
 import { listFriendships, type FriendEdge } from "@/lib/friends";
 
 // Sign-in and username picking both moved to first launch (see Onboarding), so

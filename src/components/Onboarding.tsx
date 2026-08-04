@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MapPin, Users, Flame } from "lucide-react";
+
 import { startAnonymousSession } from "@/lib/auth";
 import { claimUsername } from "@/lib/friends";
 import { refreshProfile } from "@/lib/profile";
@@ -61,10 +62,13 @@ function Welcome() {
         ))}
       </ul>
 
-      <button onClick={start} disabled={busy} className={`${BTN} mt-9`}>
-        {busy ? "Setting up…" : "Get started"}
-      </button>
-      <p className="mt-3 text-center text-[13px] text-zinc-500">
+      <div className="mt-9 space-y-3">
+        <button onClick={start} disabled={busy} className={BTN}>
+          {busy ? "Setting up…" : "Get started"}
+        </button>
+
+      </div>
+      <p className="mt-4 text-center text-[13px] text-zinc-500">
         No email, no password, nothing to verify.
       </p>
       {error && <p className="mt-2 text-center text-[13px] text-red-400">{error}</p>}
