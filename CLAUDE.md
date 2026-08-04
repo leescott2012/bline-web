@@ -5,16 +5,23 @@ backend. Two agents work this repo: **Claude Code** and **Manus**.
 
 ## Branching — how the two agents stay out of each other's way
 
-`main` is the integration branch and is **always deployable** — Vercel builds it
-straight to production at `bline-web.vercel.app`.
+`main` is **always deployable** — Vercel builds it straight to production at
+`bline-web.vercel.app`. The rule is asymmetric on purpose: only one of these two
+working modes has a human watching in real time.
 
-- **Claude Code works on branches** (`feat/…`, `fix/…`) and opens a PR into `main`.
-- **Manus reviews the PR and merges.** Vercel builds a preview URL for every
-  branch, so review happens against a live link, not someone's laptop.
-- Nobody force-pushes `main`. Nobody commits to `main` directly except for the
-  coordination rules in this file.
+- **Claude Code, in a live session with Lee present:** may push straight to
+  `main`. Lee is reviewing and directing as it happens. This is the existing
+  pattern — don't "improve" it into a PR flow.
+- **Manus, and anything scheduled or autonomous:** **never push to `main`.**
+  Branch as `manus/<short-kebab-description>`, one branch per logical unit of
+  work, and open a PR. Vercel builds a preview URL per PR — that preview is the
+  review mechanism.
+- **Merges wait for Lee** (or Claude on Lee's behalf, in a live session). No
+  auto-merge, even if checks pass. A PR sitting unreviewed is fine — log it and
+  move on rather than escalating.
 
-If a change is urgent enough to skip the PR, say so explicitly — don't assume.
+Nobody force-pushes `main`. The canonical version of this lives in the vault
+roadmap's "Branch & PR Conventions"; if the two ever disagree, the vault wins.
 
 ## Standing rules
 
@@ -30,7 +37,7 @@ blank.
 **Never touch `git config`.** The account's GitHub email is private, so a plain
 commit is rejected with GH007. Set the identity per-command instead:
 
-```
+```bash
 GIT_AUTHOR_EMAIL=leescott2012@users.noreply.github.com \
 GIT_COMMITTER_EMAIL=leescott2012@users.noreply.github.com \
 git commit -m "…"
