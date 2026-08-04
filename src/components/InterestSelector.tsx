@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, X } from "lucide-react";
-import { INTERESTS, useMapInterests, toggleInterest, type Interest } from "@/lib/mapInterests";
+import { INTERESTS, useMapInterests, toggleInterest, interestOf, type Interest } from "@/lib/mapInterests";
+import { useSpots } from "@/lib/spots";
 
 // Filter chip for the map. It shipped as a 224px panel pinned open over the
 // left half of the map, which drew two separate "maps tab is cluttered"
@@ -20,6 +21,12 @@ const ICON: Record<Interest, typeof Trees> = {
 
 export default function InterestSelector() {
   const interests = useMapInterests();
+  const spots = useSpots();
+  // Offer only interests that actually match a spot. "Public Art" and "Trail
+  // Access" match nothing in the current dataset, and a filter that can only
+  // ever return an empty map is worse than no filter.
+  const available = (Object.keys(INTERESTS) as Interest[]).filter((id) =>
+    spots.some((s) => interestOf(s.category) === id));
   const [open, setOpen] = useState(false);
   const activeCount = Object.values(interests).filter(Boolean).length;
 
@@ -46,7 +53,7 @@ export default function InterestSelector() {
         <div className="min-w-0 flex-1">
           <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Show on map</p>
           <p className="mt-0.5 text-[13px] text-zinc-500">
-            {activeCount} of {Object.keys(INTERESTS).length} selected
+            {activeCount} of {available.length} selected
           </p>
         </div>
         <button onClick={() => setOpen(false)} aria-label="Close filters"
@@ -56,7 +63,7 @@ export default function InterestSelector() {
       </div>
 
       <div className="grid grid-cols-2 gap-2 p-2">
-        {(Object.keys(INTERESTS) as Interest[]).map((id) => {
+        {available.map((id) => {
           const def = INTERESTS[id];
           const Icon = ICON[id] ?? Trees;
           const isActive = interests[id];

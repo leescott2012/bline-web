@@ -11,7 +11,24 @@ export interface InterestDef {
   label: string;
   icon: string;
   description: string;
-  color: string; // Tailwind class or hex
+  color: string; // marker colour
+  /** Which spot categories belong to this interest. */
+  match: RegExp;
+}
+
+// Spot categories are free text ("Cafe · Cocktail bar", "Juice bar"), so the
+// mapping is a regex per interest rather than an enum. Order matters: parks,
+// art and trail access are checked before dining, because "Beer garden" is
+// dining and "Sculpture garden" is not.
+export function interestOf(category: string): Interest {
+  const c = category ?? "";
+  for (const id of ["parks", "art", "trail-access"] as Interest[]) {
+    if (INTERESTS[id].match.test(c)) return id;
+  }
+  // Dining is the fallback, not another regex. This is a food-and-drink
+  // corridor: 33 of 120 categories ("Dumplings", "Fine dining", "Indian",
+  // "Hot dogs") matched no keyword list and were silently dropped off the map.
+  return "dining";
 }
 
 export const INTERESTS: Record<Interest, InterestDef> = {
@@ -20,29 +37,37 @@ export const INTERESTS: Record<Interest, InterestDef> = {
     label: "Dining & Drinks",
     icon: "🍽️",
     description: "Restaurants, cafes, breweries, and bars",
-    color: "text-red-500",
+    color: "#e11d48",
+    match: /eat|restaurant|cafe|coffee|brewer|bar|pizza|barbecue|bbq|burger|taco|sushi|thai|chinese|mexican|bakery|bagel|juice|smoothie|ice cream|gelato|dessert|deli|diner|kitchen|grill|tavern|food|steak|seafood|charcuterie|wine|cocktail/i,
   },
+
   parks: {
     id: "parks",
     label: "Parks",
     icon: "🌳",
     description: "Public parks and green spaces",
-    color: "text-green-500",
+    color: "#16a34a",
+    match: /park|garden|green|lawn|nature|preserve/i,
   },
+
   art: {
     id: "art",
     label: "Public Art",
     icon: "🎨",
     description: "Murals, sculptures, and installations",
-    color: "text-purple-500",
+    color: "#9333ea",
+    match: /art|mural|sculpture|gallery|installation/i,
   },
+
   "trail-access": {
     id: "trail-access",
     label: "Trail Access",
     icon: "🚶",
     description: "Parking and trail entry points",
-    color: "text-blue-500",
+    color: "#2563eb",
+    match: /trail|access|parking|entry|trailhead|station/i,
   },
+
 };
 
 // State management: which interests are currently visible on the map

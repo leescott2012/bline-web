@@ -9,13 +9,14 @@ import CrowdPanel from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
 import { useCrowd } from "@/lib/crowd";
-import { useMapInterests, getActiveInterests } from "@/lib/mapInterests";
+import { useMapInterests, getActiveInterests, interestOf, INTERESTS } from "@/lib/mapInterests";
 
 // Map tab. The map is the content: no spot deck, no panel pinned over it --
 // two separate reports said it was cluttered and that the cards clashed with
 // the controls. Browsing spots belongs to Explore. Controls sit in one
 // right-side column in the thumb zone.
 const BUILDINGS_MIN_ZOOM = 15.6;
+const PIN_MIN_ZOOM = 13.2;
 const PITCH_3D = 60;
 
 const HEAT_SOURCE = "crowd-density";
@@ -43,6 +44,12 @@ export default function MapView() {
   const [threeD, setThreeD] = useState(false);
   const [heat, setHeat] = useState(false);
   const [open, setOpen] = useState(false);
+  // Assigning a ref doesn't re-render, so map-dependent effects would run once
+  // with `null` and never again. This flips when the map exists.
+  const [mapReady, setMapReady] = useState(false);
+  // 120 pins over the whole city is a pile, not a map. They appear once you're
+  // close enough for them to be distinguishable.
+  const [zoom, setZoom] = useState(12.1);
   const reduce = useReducedMotion();
 
   // Expanded is a transient state: five seconds after the last press the deck
@@ -71,6 +78,38 @@ export default function MapView() {
     });
   };
 
+  // Render the real spots, filtered by the active interests. Until now the map
+  // drew ~8 hardcoded `geoPins` from data.ts and `activeInterests` was computed
+  // but never read -- so the filter toggled state nothing consumed, and none of
+  // the 120 actual spots were ever on the map.
+  const pins = useRef<maplibregl.Marker[]>([]);
+  const activeKey = activeInterests.join(",");
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    pins.current.forEach((m) => m.remove());
+    pins.current = [];
+
+    // An empty selection means "no filter", not "show nothing". A persisted
+    // all-false state was leaving the map with zero pins and no way to tell
+    // why -- a filter that can hide everything needs an off state, not a
+    // silent empty result.
+    const showAll = activeInterests.length === 0;
+    if (zoom < PIN_MIN_ZOOM) return;
+    for (const spot of spots) {
+      const id = interestOf(spot.category);
+      if (!showAll && !activeInterests.includes(id)) continue;
+      const el = document.createElement("button");
+      el.className = "bline-spot-pin";
+      el.style.background = INTERESTS[id].color;
+      el.setAttribute("aria-label", `${spot.name} — ${spot.category}`);
+      el.textContent = spot.rating.toFixed(1);
+      el.onclick = (e) => { e.stopPropagation(); nav(`/spot/${spot.id}`); };
+      pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([spot.lng, spot.lat]).addTo(map));
+    }
+    return () => { pins.current.forEach((m) => m.remove()); pins.current = []; };
+  }, [spots, activeKey, nav, mapReady, zoom]);
+
   // Keep the label honest if a gesture flattens the map out from under us.
   useEffect(() => {
     const map = mapRef.current;
@@ -79,10 +118,12 @@ export default function MapView() {
     // Dragging the map collapses the stack: if you're moving the map you're not
     // reaching for a control, and the chrome should retreat.
     const collapse = () => setOpen(false);
+    const onZoom = () => setZoom(map.getZoom());
+    map.on("zoomend", onZoom);
     map.on("pitchend", sync);
     map.on("dragstart", collapse);
-    return () => { map.off("pitchend", sync); map.off("dragstart", collapse); };
-  }, []);
+    return () => { map.off("pitchend", sync); map.off("dragstart", collapse); map.off("zoomend", onZoom); };
+  }, [mapReady]);
 
   // Live crowd density: aggregated grid counts from everyone sharing right now,
   // layered over the seeded baseline so the map is never blank. Polls while the
@@ -129,7 +170,7 @@ export default function MapView() {
         "heatmap-opacity": 0.72,
       },
     });
-  }, [heat, crowd]);
+  }, [heat, crowd, mapReady]);
 
   const CONTROLS: Ctrl[] = [
     {
@@ -181,7 +222,7 @@ export default function MapView() {
 
   return (
     <Screen className="overflow-hidden">
-      <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
+      <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => { mapRef.current = m; setMapReady(true); }} className="absolute inset-0" />
 
       {/* Filter chip -- opens a sheet, does not sit over the map. */}
       <InterestSelector />
@@ -223,6 +264,15 @@ export default function MapView() {
           </motion.div>
         ))}
       </div>
+
+      {zoom < PIN_MIN_ZOOM && !heat && (
+        <div className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
+          style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
+          <p className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
+            Zoom in to see spots
+          </p>
+        </div>
+      )}
 
       {/* Heat swaps in the conditions that explain the overlay. There is no
           spot deck here any more -- the map tab shows the map. Browsing spots

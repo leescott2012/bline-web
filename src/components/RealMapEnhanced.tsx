@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { beltlineLoop, geoPins } from "@/lib/data";
+import { beltlineLoop } from "@/lib/data";
 import { useMapStyle } from "@/lib/mapStyle";
 
 // Enhanced 3D map with premium landmark styling, smooth transitions, and
@@ -162,14 +162,9 @@ export default function RealMapEnhanced({
             .addTo(map);
         });
 
-        // ── Regular spot pins with enhanced drop-in ──
-        geoPins.forEach((p, i) => {
-          const d = document.createElement("div");
-          d.innerHTML = `<div class="bline-pin" style="animation-delay:${300 + i * 90}ms"><span class="star">★</span> ${p.r.toFixed(1)}</div>`;
-          new maplibregl.Marker({ element: d, anchor: "bottom" })
-            .setLngLat([p.lng, p.lat])
-            .addTo(map);
-        });
+        // Spot pins are drawn by MapView from the real spot list, filtered
+        // by interest -- these were hardcoded stand-ins from data.ts and only
+        // duplicated them.
 
         // ── Trees (dormant until close zoom) ──
         const trees: HTMLDivElement[] = TREE_SPOTS.map((pt) => {
