@@ -99,3 +99,6 @@ if (fail.length) {
   process.exit(1);
 }
 console.log("\n✓ all guards passed\n");
+
+// smoke test: verifies the guard workflow runs green on a PR after the
+// fetch-depth/conditional-probe fix. Delete this branch once confirmed.
