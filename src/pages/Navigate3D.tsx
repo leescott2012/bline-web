@@ -123,14 +123,21 @@ export default function Navigate3D() {
             <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white text-black shadow-lg">
               <Navigation2 size={32} fill="currentColor" className="rotate-45" />
             </div>
-            <div className="flex-1">
-              <p className="text-[22px] font-bold leading-tight tracking-tight text-white uppercase">
-                PREVIEW · ILLUSTRATIVE ROUTE
+            <div className="min-w-0 flex-1">
+              {/* The route, distance and ETA are real (OpenRouteService). What's
+                  approximate is the 3D scene -- aerial imagery with extruded
+                  footprints, not photogrammetry. So label the rendering a
+                  preview, and don't call a real route "illustrative". */}
+              <p className="text-[22px] font-bold leading-tight tracking-tight text-white">
+                {step?.dist ?? "--"}
               </p>
-              <p className="text-[17px] font-medium text-zinc-400">
+              <p className="truncate text-[17px] font-medium text-zinc-400">
                 {step?.text ?? "Head toward destination"}
               </p>
             </div>
+            <span className="shrink-0 self-start rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+              3D preview
+            </span>
           </div>
           {/* Sub-instruction */}
           <div className="flex items-center gap-3 border-t border-white/5 bg-white/5 px-5 py-3">
