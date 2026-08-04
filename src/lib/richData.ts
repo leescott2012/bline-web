@@ -50,9 +50,7 @@ export const RICH_DATA: Record<string, RichSpotInfo> = {
       "Atlanta Dairies": "3 minutes",
       "Ponce City Market": "15 minutes"
     }
-  }
-};
-
+  },
   "historic-fourth-ward-park": {
     overview: "Historic Fourth Ward Park is a 17-acre urban oasis and a cornerstone of the Eastside Trail. It features a stunning retention pond, splash pad, and the city's premier skate park.",
     whyVisit: [
@@ -118,3 +116,4 @@ export const RICH_DATA: Record<string, RichSpotInfo> = {
       "Westside Provisions": "20 minutes"
     }
   }
+};
