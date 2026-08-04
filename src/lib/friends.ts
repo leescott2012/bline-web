@@ -6,7 +6,11 @@ export interface Profile {
   display_name: string;
   avatar_url?: string | null;
   status?: string | null;
+  // Only selected for your own profile -- nobody else's switch is your business.
+  sharing_enabled?: boolean;
 }
+
+const COLS = "id, username, display_name, avatar_url, status";
 
 export interface Friendship {
   id: string;
@@ -25,7 +29,7 @@ export interface FriendEdge extends Friendship {
 export async function getMyProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, status")
+    .select(`${COLS}, sharing_enabled`)
     .eq("id", userId)
     .maybeSingle();
   return data ?? null;
@@ -44,7 +48,7 @@ export async function searchProfiles(query: string, meId: string): Promise<Profi
   if (q.length < 2) return [];
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, status")
+    .select(COLS)
     .ilike("username", `%${q}%`)
     .neq("id", meId)
     .limit(20);
@@ -62,7 +66,7 @@ export async function listFriendships(meId: string): Promise<FriendEdge[]> {
   const otherIds = rows.map((r) => (r.requester_id === meId ? r.addressee_id : r.requester_id));
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, username, display_name, avatar_url, status")
+    .select(COLS)
     .in("id", otherIds);
 
   const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -89,16 +93,8 @@ export async function removeFriendship(friendshipId: string) {
 
 // Master "visible to friends" switch, stored on the profile. RLS on `locations`
 // already checks profiles.sharing_enabled, so flipping this off hides your
-// position server-side -- not just in the UI.
-export async function getSharingEnabled(userId: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("sharing_enabled")
-    .eq("id", userId)
-    .maybeSingle();
-  return data?.sharing_enabled ?? true;
-}
-
+// position server-side -- not just in the UI. crowd_density() checks it too, so
+// going invisible also drops you out of the heatmap aggregate.
 export async function setSharingEnabled(userId: string, enabled: boolean) {
   return supabase.from("profiles").update({ sharing_enabled: enabled }).eq("id", userId);
 }

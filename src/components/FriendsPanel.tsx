@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, MessageSquare, Search, X } from "lucide-react";
+import { MessageSquare, Search, X } from "lucide-react";
 import { SAMPLE_CONTACTS, inviteByText } from "@/lib/contacts";
 import ProfileCard, { ProfileAvatar } from "@/components/ProfileCard";
+import { setProfile } from "@/lib/profile";
+import { clearLocation } from "@/lib/location";
 import {
-  acceptRequest, claimUsername, getMyProfile, listFriendships, removeFriendship,
-  searchProfiles, sendRequest, getSharingEnabled, setSharingEnabled,
-  type FriendEdge, type Profile,
+  acceptRequest, listFriendships, removeFriendship, searchProfiles, sendRequest,
+  setSharingEnabled, type FriendEdge, type Profile,
 } from "@/lib/friends";
-
-const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
 
 // Instagram's visual language: near-white surfaces, a pill search field with no
 // border, bold-but-small row titles over grey secondary text, and compact filled
@@ -17,61 +16,6 @@ const CARD = "rounded-2xl bg-white p-4 shadow-sm";
 const FIELD = "w-full rounded-xl bg-[#efefef] px-4 py-3 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500";
 const BTN_PRIMARY = "shrink-0 rounded-lg bg-[#c9187e] px-4 py-1.5 text-[13px] font-semibold text-white disabled:opacity-50";
 const BTN_NEUTRAL = "shrink-0 rounded-lg bg-[#efefef] px-4 py-1.5 text-[13px] font-semibold text-zinc-900 disabled:opacity-50";
-
-// First run after sign-in: pick the @handle other people will search for.
-function UsernamePicker({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const [username, setUsername] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const handle = username.trim().toLowerCase();
-    if (!USERNAME_RE.test(handle)) {
-      setError("3–20 characters: letters, numbers, underscore or dot.");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    const { error: err } = await claimUsername(userId, handle, displayName.trim() || handle);
-    setSaving(false);
-    // 23505 = unique violation, i.e. the handle is taken
-    if (err) setError(err.code === "23505" ? "That username is taken." : err.message);
-    else onDone();
-  };
-
-  return (
-    <div className={`mx-3 mt-4 ${CARD}`}>
-      <p className="text-[17px] font-bold text-zinc-900">Pick your username</p>
-      <p className="mt-1 text-[14px] text-zinc-500">This is how friends find you on B-line.</p>
-      <form onSubmit={submit} className="mt-4 space-y-2.5">
-        <div className="flex items-center rounded-xl bg-[#efefef] px-4">
-          <span className="text-zinc-500">@</span>
-          <input
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="yourname"
-            autoCapitalize="none"
-            autoCorrect="off"
-            className="w-full bg-transparent py-3 pl-1 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500"
-          />
-        </div>
-        <input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Display name (optional)"
-          className={FIELD}
-        />
-        <button type="submit" disabled={saving}
-          className="w-full rounded-xl bg-[#c9187e] py-3 text-[15px] font-semibold text-white disabled:opacity-50">
-          {saving ? "Saving…" : "Continue"}
-        </button>
-        {error && <p className="text-center text-[13px] text-red-600">{error}</p>}
-      </form>
-    </div>
-  );
-}
 
 // Instagram's row shape: avatar, stacked name/handle, trailing action.
 function Row({ title, subtitle, avatar, children }: {
@@ -95,41 +39,25 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[15px] font-bold text-zinc-900">{children}</p>;
 }
 
-export default function FriendsPanel({ userId }: { userId: string }) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [checkedProfile, setCheckedProfile] = useState(false);
+export default function FriendsPanel({ profile }: { profile: Profile }) {
+  const userId = profile.id;
+  const sharing = profile.sharing_enabled ?? true;
   const [edges, setEdges] = useState<FriendEdge[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [sharing, setSharing] = useState(true);
 
   const refresh = useCallback(async () => {
     setEdges(await listFriendships(userId));
   }, [userId]);
 
-  useEffect(() => {
-    getMyProfile(userId).then((p) => {
-      setProfile(p);
-      setCheckedProfile(true);
-      if (p) {
-        refresh();
-        getSharingEnabled(userId).then(setSharing);
-      }
-    });
-  }, [userId, refresh]);
+  useEffect(() => { refresh(); }, [refresh]);
 
   // debounce so typing doesn't fire a query per keystroke
   useEffect(() => {
-    if (!profile) return;
     const t = setTimeout(async () => setResults(await searchProfiles(query, userId)), 250);
     return () => clearTimeout(t);
-  }, [query, userId, profile]);
-
-  if (!checkedProfile) return null;
-  if (!profile) {
-    return <UsernamePicker userId={userId} onDone={() => getMyProfile(userId).then((p) => { setProfile(p); refresh(); })} />;
-  }
+  }, [query, userId]);
 
   const incoming = edges.filter((e) => e.status === "pending" && e.incoming);
   const outgoing = edges.filter((e) => e.status === "pending" && !e.incoming);
@@ -158,11 +86,20 @@ export default function FriendsPanel({ userId }: { userId: string }) {
               {sharing ? "Sharing location" : "Location off"}
             </p>
             <p className="text-[13px] text-zinc-500">
-              {sharing ? "Friends you allow can see where you are." : "You're invisible to everyone."}
+              {sharing
+                ? "Friends you allow see where you are. The crowd map counts you, anonymously."
+                : "You're invisible to everyone, and out of the crowd map."}
             </p>
           </div>
           <button role="switch" aria-checked={sharing} aria-label="Share my location"
-            onClick={() => { const next = !sharing; setSharing(next); setSharingEnabled(userId, next); }}
+            onClick={() => {
+              const next = !sharing;
+              setProfile({ ...profile, sharing_enabled: next });
+              setSharingEnabled(userId, next);
+              // Stopping the publisher isn't enough on its own -- the last
+              // position you sent would sit there until it aged out.
+              if (!next) clearLocation(userId);
+            }}
             className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${sharing ? "bg-[#c9187e]" : "bg-zinc-300"}`}>
             <span className={`block size-6 rounded-full bg-white transition-transform ${sharing ? "translate-x-5" : ""}`} />
           </button>

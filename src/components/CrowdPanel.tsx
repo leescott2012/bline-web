@@ -13,10 +13,10 @@ const heights = [4, 5, 8, 14, 34, 48, 64, 52, 40, 22, 14, 10];
 const PEAK_WINDOW = "4–6 PM";
 const PEAK_ENDS = PEAK_WINDOW.split("–")[1].trim();
 
-// Derived from the real heatmap weights rather than hardcoded, so the label
-// shifts if the underlying density data changes.
+// Fallback level, derived from the seeded density weights, for when nobody is
+// out yet. Any real users on the trail override it below.
 const TOTAL_WEIGHT = crowdDensityPoints.reduce((s, p) => s + p.weight, 0);
-const CROWD_LEVEL = TOTAL_WEIGHT < 30 ? "Light" : TOTAL_WEIGHT < 60 ? "Moderate" : "Busy";
+const SEEDED_LEVEL = TOTAL_WEIGHT < 30 ? "Light" : TOTAL_WEIGHT < 60 ? "Moderate" : "Busy";
 
 // current WMO weather code -> icon; falls back to Sun if unmapped
 function weatherIcon(code: number) {
@@ -29,8 +29,11 @@ function weatherIcon(code: number) {
   return Sun;
 }
 
-export default function CrowdPanel() {
+export default function CrowdPanel({ people }: { people: number }) {
   const weather = useWeatherNow();
+  // `people` counts real users who published a fix in the last 30 minutes, so
+  // the caption only claims a live number when there genuinely is one.
+  const level = people >= 25 ? "Busy" : people >= 8 ? "Moderate" : people > 0 ? "Light" : SEEDED_LEVEL;
   const WeatherIcon = weather ? weatherIcon(weather.code) : Sun;
   // falls back to a static reading if the fetch fails or hasn't resolved --
   // never blanks the chip
@@ -41,7 +44,7 @@ export default function CrowdPanel() {
     <div className="mx-3 rounded-2xl bg-[#101014]/92 p-3.5 text-white shadow-2xl backdrop-blur">
       <div className="flex items-center gap-2">
         {[
-          { icon: Users, big: CROWD_LEVEL, small: "crowd" },
+          { icon: Users, big: level, small: people > 0 ? `${people} on the trail` : "crowd" },
           { icon: WeatherIcon, big: weatherBig, small: weatherSmall },
           { icon: null, big: "Peak until", small: PEAK_ENDS },
         ].map(({ icon: Icon, big, small }, i) => (

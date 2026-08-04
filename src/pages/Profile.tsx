@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Heart, SlidersHorizontal, Activity, Bug, ChevronRight, LogIn, LogOut, CalendarDays } from "lucide-react";
+import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
 import { useAuth, signOut } from "@/lib/auth";
-import { getMyProfile, type Profile } from "@/lib/friends";
+import { useProfile } from "@/lib/profile";
+import { ProfileAvatar } from "@/components/ProfileCard";
 
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
@@ -34,40 +35,17 @@ async function fetchMyReservations(userId: string): Promise<Reservation[]> {
   }
 }
 
-/** Derive a display name from a Supabase user — use email local-part as fallback. */
-function emailDisplayName(email: string | undefined): string {
-  if (!email) return "Explorer";
-  const local = email.split("@")[0];
-  return local
-    .replace(/[._-]+/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-/** Single letter avatar initial. */
-function initial(str: string | undefined): string {
-  return (str?.[0] ?? "G").toUpperCase();
-}
-
 export default function Profile() {
   const spots = useSpots();
   const favs = useFavorites();
-  const { user, loading } = useAuth();
-
-  // Fetch the user's profile (@username / display_name) from the profiles table.
-  // Falls back to email-derived name if the user hasn't set a username yet.
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const { user } = useAuth();
+  // The gate guarantees both a user and a profile before any screen renders.
+  const { profile } = useProfile();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [resvLoading, setResvLoading] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      setReservations([]);
-      return;
-    }
-    // Fetch profile (username + display_name) — set during Friends onboarding
-    getMyProfile(user.id).then(setProfile);
-    // Fetch the user's reservations
+    if (!user) return;
     setResvLoading(true);
     fetchMyReservations(user.id).then((r) => {
       setReservations(r);
@@ -75,45 +53,24 @@ export default function Profile() {
     });
   }, [user]);
 
-  // Prefer display_name from the profiles table; fall back to email-derived name.
-  const name = user
-    ? (profile?.display_name || profile?.username || emailDisplayName(user.email))
-    : "Guest Explorer";
-  const avatarLetter = user
-    ? initial(profile?.display_name || profile?.username || user.email)
-    : "G";
-  const subtitle = user
-    ? (profile?.username ? `@${profile.username}` : (user.email ?? "Signed in"))
-    : "Sign in to sync your favorites";
+  if (!profile) return null;
+  const name = profile.display_name || profile.username;
 
   return (
     <Screen className="overflow-hidden">
       <div className="h-full overflow-y-auto pb-[var(--bline-nav-space)]">
         <header className="flex flex-col items-center gap-3 px-6 pt-[max(2.5rem,env(safe-area-inset-top))]">
-          <div className="grid size-20 place-items-center rounded-full bg-accent text-3xl font-bold">
-            {loading ? "\u2026" : avatarLetter}
-          </div>
+          <ProfileAvatar profile={profile} size={80} />
           <div className="text-center">
-            <p className="text-xl font-bold">{loading ? "" : name}</p>
-            <p className="text-sm text-zinc-400">{loading ? "" : subtitle}</p>
+            <p className="text-xl font-bold">{name}</p>
+            <p className="text-sm text-zinc-400">@{profile.username}</p>
           </div>
-          {!loading && (
-            user ? (
-              <button
-                onClick={() => signOut()}
-                className="flex items-center gap-1.5 rounded-full border border-line px-4 py-1.5 text-xs text-zinc-400"
-              >
-                <LogOut size={13} /> Sign out
-              </button>
-            ) : (
-              <Link
-                href="/friends"
-                className="flex items-center gap-1.5 rounded-full bg-hot px-4 py-1.5 text-xs font-semibold text-white"
-              >
-                <LogIn size={13} /> Sign in
-              </Link>
-            )
-          )}
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-1.5 rounded-full border border-line px-4 py-1.5 text-xs text-zinc-400"
+          >
+            <LogOut size={13} /> Sign out
+          </button>
         </header>
 
         <div className="mx-4 mt-6 flex overflow-hidden rounded-2xl border border-line">
@@ -127,10 +84,8 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* My Reservations — only shown when signed in */}
-        {user && (
-          <div className="mx-4 mt-6">
-            <h2 className="mb-3 text-lg font-bold">My Reservations</h2>
+        <div className="mx-4 mt-6">
+          <h2 className="mb-3 text-lg font-bold">My Reservations</h2>
             {resvLoading ? (
               <p className="text-sm text-zinc-500">Loading…</p>
             ) : reservations.length === 0 ? (
@@ -160,8 +115,7 @@ export default function Profile() {
                 ))}
               </div>
             )}
-          </div>
-        )}
+        </div>
 
         <div className="mx-4 mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line">
           {links.map(({ icon: Icon, label, href }) => (

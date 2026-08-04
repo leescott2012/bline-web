@@ -7,7 +7,7 @@ import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
 import CrowdPanel from "@/components/CrowdPanel";
 import { useSpots } from "@/lib/spots";
-import { crowdDensityPoints } from "@/lib/data";
+import { useCrowd } from "@/lib/crowd";
 
 // Map tab. Controls sit in one right-side column in the thumb zone; a spot
 // carousel runs along the bottom and drives the map -- scrolling to a card pans
@@ -81,28 +81,31 @@ export default function MapView() {
     return () => { map.off("pitchend", sync); };
   }, []);
 
-  const toggleHeat = () => {
+  // Live crowd density: aggregated grid counts from everyone sharing right now,
+  // layered over the seeded baseline so the map is never blank. Polls while the
+  // heatmap is open -- see src/lib/crowd.ts.
+  const crowd = useCrowd(heat);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const next = !heat;
-    setHeat(next);
-    if (!next) {
+    if (!heat) {
       if (map.getLayer(HEAT_LAYER)) map.removeLayer(HEAT_LAYER);
       if (map.getSource(HEAT_SOURCE)) map.removeSource(HEAT_SOURCE);
       return;
     }
-    if (map.getSource(HEAT_SOURCE)) return;
-    map.addSource(HEAT_SOURCE, {
-      type: "geojson",
-      data: {
-        type: "FeatureCollection",
-        features: crowdDensityPoints.map((pt) => ({
-          type: "Feature" as const,
-          properties: { weight: pt.weight },
-          geometry: { type: "Point" as const, coordinates: [pt.lng, pt.lat] },
-        })),
-      },
-    });
+    const data: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: crowd.points.map((pt) => ({
+        type: "Feature",
+        properties: { weight: pt.weight },
+        geometry: { type: "Point", coordinates: [pt.lng, pt.lat] },
+      })),
+    };
+    const existing = map.getSource(HEAT_SOURCE) as maplibregl.GeoJSONSource | undefined;
+    if (existing) { existing.setData(data); return; }
+
+    map.addSource(HEAT_SOURCE, { type: "geojson", data });
     map.addLayer({
       id: HEAT_LAYER,
       type: "heatmap",
@@ -123,7 +126,7 @@ export default function MapView() {
         "heatmap-opacity": 0.72,
       },
     });
-  };
+  }, [heat, crowd]);
 
   const activeSpot = spots[activeIdx];
 
@@ -156,7 +159,7 @@ export default function MapView() {
         </button>
 
         <button aria-label={heat ? "Hide crowd heatmap" : "Show crowd heatmap"}
-          aria-pressed={heat} onClick={toggleHeat}
+          aria-pressed={heat} onClick={() => setHeat((h) => !h)}
           className={`${CTRL} ${heat ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
           <Flame size={20} />
         </button>
@@ -169,7 +172,7 @@ export default function MapView() {
       {/* Heat on swaps the spot carousel for the conditions that explain it --
           the numbers now live with the overlay instead of a separate screen. */}
       <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
-        {heat && <CrowdPanel />}
+        {heat && <CrowdPanel people={crowd.people} />}
         <div className={`no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 ${heat ? "hidden" : ""}`}
           onScroll={onCardScroll}>
           {spots.map((s, i) => (
