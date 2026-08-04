@@ -27,16 +27,20 @@ export default function Navigate3D({ params }: { params: { id: string } }) {
     <Screen className="overflow-hidden bg-black">
       {/* 3D Map Background */}
       <RealMapEnhanced
-        zoom={17.5}
+        photoreal
+        zoom={16.8}
         center={[spot.lng, spot.lat]}
         autoPitch={false}
         onMap={(map) => {
           mapRef.current = map;
-          map.setPitch(65);
-          map.setBearing(-15);
-          
-          // Add the "Purple Glow" route
+
+          // Camera changes wait for load. Calling setPitch/setBearing straight
+          // after the constructor pushes an update through the transform before
+          // the style is ready, which surfaced as "Invalid LngLat (NaN, NaN)"
+          // out of _elevateCameraIfInsideTerrain and blanked the screen.
           map.on('load', () => {
+            map.setPitch(65);
+            map.setBearing(-15);
             if (!map.getSource('route')) {
               map.addSource('route', {
                 type: 'geojson',

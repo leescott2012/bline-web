@@ -246,7 +246,14 @@ export default function NavigateEnhanced() {
       lastFix.current = pos;
 
     puckRef.current.setLngLat(pos);
-    if (follow.current) map.easeTo({ center: pos, bearing: brg, duration: 400 });
+    // Pass `bearing` only when we actually have one. MapLibre tests
+    // `'bearing' in options`, so an explicit `undefined` is treated as a
+    // supplied value and lands in the camera transform as NaN -- which throws
+    // "Invalid LngLat (NaN, NaN)" and blanks the screen. brg is undefined for
+    // any device that reports no heading and hasn't moved 3m, i.e. anyone
+    // standing still.
+    if (follow.current)
+      map.easeTo({ center: pos, ...(brg == null ? {} : { bearing: brg }), duration: 400 });
 
     const p = Math.min(1, progressAlong(pos, routeCoords, cum.current));
     setProgress(p);
@@ -283,7 +290,13 @@ export default function NavigateEnhanced() {
 
       const { pos, brg } = posAt(p, navRoute, cum.current);
       puckRef.current!.setLngLat(pos);
-      if (follow.current) map.easeTo({ center: pos, bearing: brg, duration: 120, easing: (x) => x });
+      if (follow.current)
+        map.easeTo({
+          center: pos,
+          ...(brg == null ? {} : { bearing: brg }),
+          duration: 120,
+          easing: (x) => x,
+        });
 
       let si = 0;
       for (let k = 0; k < navSteps.length; k++) if (navSteps[k].at <= p) si = k;
