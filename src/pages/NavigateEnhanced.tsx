@@ -6,7 +6,7 @@ import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import { navRoute, navSteps, distM, nearestPointOnSegment } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
-import { fetchRoute, type RouteResult, type RouteStep } from "@/lib/routing";
+import { fetchRoute, cumulative, bearing, posAt, type RouteResult, type RouteStep } from "@/lib/routing";
 import { useLiveLocation } from "@/lib/useLiveLocation";
 
 const DEFAULT_DEST_ID = "krog-street";
@@ -14,41 +14,6 @@ const TOTAL_MI = 1.4,
   TOTAL_MIN = 28,
   DUR_MS = 40000;
 
-function cumulative(route: [number, number][]) {
-  const cum: number[] = [0];
-  for (let i = 1; i < route.length; i++)
-    cum.push(cum[i - 1] + distM(route[i - 1], route[i]));
-  return cum;
-}
-
-function bearing(a: [number, number], b: [number, number]) {
-  const toR = Math.PI / 180,
-    toD = 180 / Math.PI;
-  const y = Math.sin((b[0] - a[0]) * toR) * Math.cos(b[1] * toR);
-  const x =
-    Math.cos(a[1] * toR) * Math.sin(b[1] * toR) -
-    Math.sin(a[1] * toR) * Math.cos(b[1] * toR) * Math.cos((b[0] - a[0]) * toR);
-  return (Math.atan2(y, x) * toD + 360) % 360;
-}
-
-function posAt(
-  p: number,
-  route: [number, number][],
-  cum: number[]
-): { pos: [number, number]; brg: number } {
-  const total = cum[cum.length - 1];
-  const d = p * total;
-  let i = 0;
-  while (i < cum.length - 2 && cum[i + 1] < d) i++;
-  const seg = cum[i + 1] - cum[i] || 1;
-  const t = (d - cum[i]) / seg;
-  const a = route[i],
-    b = route[i + 1];
-  return {
-    pos: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
-    brg: bearing(a, b),
-  };
-}
 
 function progressAlong(
   pos: [number, number],

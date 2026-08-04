@@ -1,3 +1,4 @@
+import { distM } from "@/lib/data";
 // Real turn-by-turn directions via OpenRouteService (free API key, foot-walking
 // profile -- routes on actual trail/path data, not just roads). Falls back to
 // null (caller decides what to show instead) when no key is configured or the
@@ -84,4 +85,44 @@ export async function fetchRoute(from: [number, number], to: [number, number]): 
   } catch {
     return null;
   }
+}
+
+// ── path math, shared by both navigation screens ──────────────────────────
+// Lived in NavigateEnhanced; Navigate3D needs the same walk-along-the-line
+// maths to drive its camera, and two copies would drift.
+
+export function cumulative(route: [number, number][]) {
+  const cum: number[] = [0];
+  for (let i = 1; i < route.length; i++)
+    cum.push(cum[i - 1] + distM(route[i - 1], route[i]));
+  return cum;
+}
+
+export function bearing(a: [number, number], b: [number, number]) {
+  const toR = Math.PI / 180,
+    toD = 180 / Math.PI;
+  const y = Math.sin((b[0] - a[0]) * toR) * Math.cos(b[1] * toR);
+  const x =
+    Math.cos(a[1] * toR) * Math.sin(b[1] * toR) -
+    Math.sin(a[1] * toR) * Math.cos(b[1] * toR) * Math.cos((b[0] - a[0]) * toR);
+  return (Math.atan2(y, x) * toD + 360) % 360;
+}
+
+export function posAt(
+  p: number,
+  route: [number, number][],
+  cum: number[]
+): { pos: [number, number]; brg: number } {
+  const total = cum[cum.length - 1];
+  const d = p * total;
+  let i = 0;
+  while (i < cum.length - 2 && cum[i + 1] < d) i++;
+  const seg = cum[i + 1] - cum[i] || 1;
+  const t = (d - cum[i]) / seg;
+  const a = route[i],
+    b = route[i + 1];
+  return {
+    pos: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t],
+    brg: bearing(a, b),
+  };
 }

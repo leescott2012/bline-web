@@ -4,7 +4,12 @@ import { ArrowLeft, Navigation2, MoreHorizontal, Loader2 } from "lucide-react";
 import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import { useSpots } from "@/lib/spots";
-import { fetchRoute, type RouteResult, type RouteStep } from "@/lib/routing";
+import { fetchRoute, cumulative, posAt, type RouteResult, type RouteStep } from "@/lib/routing";
+
+// Pedestrian framing. Google/Apple walking mode sits far closer and steeper
+// than driving mode -- you want the next 100m of footpath, not the block.
+const WALK_ZOOM = 18.6;
+const WALK_PITCH = 74;
 
 export default function Navigate3D() {
   const { id } = useParams<{ id: string }>();
@@ -51,6 +56,36 @@ export default function Navigate3D() {
     return () => clearInterval(timer);
   }, []);
 
+  // Walk the camera along the route. This is a footpath, not a road: the
+  // camera sits at WALK_ZOOM (~eye height over the trail, close enough to read
+  // doorways and murals) and pitches near the horizon so you're looking *down
+  // the path* rather than at a rooftop plan. It was framed at zoom 16.8 /
+  // pitch 65 over the destination, which reads as driving.
+  const cum = useRef<number[]>([]);
+  useEffect(() => {
+    if (route) cum.current = cumulative(route.coordinates);
+  }, [route]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !route || cum.current.length < 2) return;
+    const { pos, brg } = posAt(progress / 100, route.coordinates, cum.current);
+    map.easeTo({
+      center: pos,
+      bearing: brg,
+      zoom: WALK_ZOOM,
+      pitch: WALK_PITCH,
+      duration: 100,
+      easing: (x: number) => x,
+    });
+
+    // Keep the banner instruction in step with where the camera actually is.
+    const p = progress / 100;
+    let current = route.steps[0];
+    for (const st of route.steps) if (st.at <= p) current = st;
+    setStep(current);
+  }, [progress, route]);
+
   if (route === undefined) {
     return (
       <Screen className="flex items-center justify-center bg-black">
@@ -66,15 +101,14 @@ export default function Navigate3D() {
     <Screen className="overflow-hidden bg-black">
       <RealMapEnhanced
         photoreal
-        zoom={17.5}
-        center={[destSpot.lng, destSpot.lat]}
+        zoom={WALK_ZOOM}
+        center={route?.coordinates?.[0] ?? [destSpot.lng, destSpot.lat]}
         autoPitch={false}
         onMap={(map) => {
           mapRef.current = map;
           
           map.on('load', () => {
-            map.setPitch(65);
-            map.setBearing(-15);
+            map.setPitch(WALK_PITCH);
             if (route && !map.getSource('route')) {
               map.addSource('route', {
                 type: 'geojson',
