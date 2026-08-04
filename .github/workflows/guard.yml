@@ -1,0 +1,40 @@
+name: guard
+
+# Blocks the failure classes that actually reached main on 2026-08-04.
+# Deliberately deterministic: a compiler and a fetch settle these faster than
+# any agent, and they cannot be confidently wrong. Judgement calls live in
+# AGENTS.md, where a human decides.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # The one that matters most: `vite build` does NOT typecheck, so two PRs
+      # reached main with a combined 40 type errors while reporting success.
+      - name: typecheck
+        run: npx tsc --noEmit
+
+      - name: build
+        run: npm run build
+
+      # Lockfiles, closed decisions, and every image URL actually fetched.
+      - name: guards
+        env:
+          GUARD_FILES: ${{ github.event_name == 'pull_request' && '' || '' }}
+        run: |
+          git fetch origin ${{ github.base_ref || 'main' }} --depth=1 || true
+          CHANGED=$(git diff --name-only FETCH_HEAD...HEAD 2>/dev/null || git ls-files 'src/**')
+          GUARD_FILES="$CHANGED" node scripts/guard.mjs
