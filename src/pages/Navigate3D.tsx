@@ -81,6 +81,15 @@ export default function Navigate3D({ params }: { params: { id: string } }) {
       {/* Top Instruction Banner (Wireframe Style) */}
       <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20">
         <div className="overflow-hidden rounded-3xl bg-black/90 shadow-2xl backdrop-blur-xl ring-1 ring-white/10">
+          {/* The distances and ETA below are illustrative -- this screen shows
+              what 3D navigation will look like, it isn't following a real fix.
+              Say so on screen rather than letting the numbers imply otherwise. */}
+          <div className="flex items-center justify-center gap-1.5 bg-amber-400/15 py-1.5">
+            <span className="size-1.5 rounded-full bg-amber-400" />
+            <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
+              Preview · illustrative route
+            </p>
+          </div>
           <div className="flex items-center gap-4 px-5 py-5">
             <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-white text-black shadow-lg">
               <Navigation2 size={32} fill="currentColor" className="rotate-45" />
