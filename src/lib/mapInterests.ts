@@ -4,12 +4,11 @@ import { useSyncExternalStore } from "react";
 // but curated for a discovery + navigation app (not a comprehensive city guide).
 // We exclude "Transit" and "Throne" to keep the app focused and uncluttered.
 
-export type Interest = "dining" | "parks" | "art" | "trail-access";
+export type Interest = "dining" | "parks" | "art" | "trail-access" | "marketplace";
 
 export interface InterestDef {
   id: Interest;
   label: string;
-  icon: string;
   description: string;
   color: string; // marker colour
   /** Which spot categories belong to this interest. */
@@ -35,7 +34,6 @@ export const INTERESTS: Record<Interest, InterestDef> = {
   dining: {
     id: "dining",
     label: "Dining & Drinks",
-    icon: "🍽️",
     description: "Restaurants, cafes, breweries, and bars",
     color: "#e11d48",
     match: /eat|restaurant|cafe|coffee|brewer|bar|pizza|barbecue|bbq|burger|taco|sushi|thai|chinese|mexican|bakery|bagel|juice|smoothie|ice cream|gelato|dessert|deli|diner|kitchen|grill|tavern|food|steak|seafood|charcuterie|wine|cocktail/i,
@@ -44,7 +42,6 @@ export const INTERESTS: Record<Interest, InterestDef> = {
   parks: {
     id: "parks",
     label: "Parks",
-    icon: "🌳",
     description: "Public parks and green spaces",
     color: "#16a34a",
     match: /park|garden|green|lawn|nature|preserve/i,
@@ -53,16 +50,22 @@ export const INTERESTS: Record<Interest, InterestDef> = {
   art: {
     id: "art",
     label: "Public Art",
-    icon: "🎨",
     description: "Murals, sculptures, and installations",
     color: "#9333ea",
     match: /art|mural|sculpture|gallery|installation/i,
   },
 
+  marketplace: {
+    id: "marketplace",
+    label: "Markets & Districts",
+    description: "Shopping and dining districts along the trail",
+    color: "#ea580c",
+    match: /market|district|yards|provisions/i,
+  },
+
   "trail-access": {
     id: "trail-access",
     label: "Trail Access",
-    icon: "🚶",
     description: "Parking and trail entry points",
     color: "#2563eb",
     match: /trail|access|parking|entry|trailhead|station/i,
@@ -77,6 +80,7 @@ const DEFAULTS = {
   parks: true,
   art: false,
   "trail-access": false,
+  marketplace: false,
 } as Record<Interest, boolean>;
 
 let state = load();

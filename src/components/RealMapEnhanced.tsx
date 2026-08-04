@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { beltlineLoop } from "@/lib/data";
+import { trailSegments } from "@/lib/places";
 import { useMapStyle } from "@/lib/mapStyle";
 
 // Enhanced 3D map with premium landmark styling, smooth transitions, and
@@ -111,39 +112,43 @@ export default function RealMapEnhanced({
     map.on("load", () => {
       map.resize();
       if (decorations) {
-        // ── Trail line with enhanced styling ──
+        // The real BeltLine, coloured by build status -- green open, red under
+        // construction, grey future. These are ABI's own renderer colours
+        // (ABI_Trails_website / usestatus), because on a walking app the single
+        // most useful thing a line can tell you is whether you can walk it.
+        // This replaces a decorative magenta loop that was map art, not the
+        // trail: it implied the whole ring was walkable.
         map.addSource("beltline", {
           type: "geojson",
           data: {
-            type: "Feature",
-            properties: {},
-            geometry: { type: "LineString", coordinates: beltlineLoop },
+            type: "FeatureCollection",
+            features: trailSegments.map((t) => ({
+              type: "Feature" as const,
+              properties: { color: t.color, status: t.status, name: t.name },
+              geometry: { type: "LineString" as const, coordinates: t.coords },
+            })),
           },
         });
 
-        // Glow effect: thick, semi-transparent base layer
         map.addLayer({
-          id: "beltline-glow",
+          id: "beltline-casing",
           type: "line",
           source: "beltline",
-          paint: {
-            "line-color": "#c026d3",
-            "line-width": 8,
-            "line-opacity": 0.2,
-            "line-blur": 4,
-          },
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: { "line-color": "#fff", "line-width": 7, "line-opacity": 0.9 },
         });
 
-        // Main trail line: sharp, vibrant magenta
         map.addLayer({
           id: "beltline-line",
           type: "line",
           source: "beltline",
+          layout: { "line-cap": "round", "line-join": "round" },
           paint: {
-            "line-color": "#c026d3",
-            "line-width": 3.5,
-            "line-dasharray": [1.4, 1.6],
-            "line-opacity": 0.95,
+            "line-color": ["get", "color"],
+            "line-width": 4,
+            // Dashed where it isn't walkable yet, so status reads even in
+            // greyscale or to a colour-blind walker.
+            "line-dasharray": ["case", ["==", ["get", "status"], "Open Paved"], ["literal", [1, 0]], ["literal", [2, 1.6]]],
           },
         });
 

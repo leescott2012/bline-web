@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, X } from "lucide-react";
+import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, Store, X } from "lucide-react";
 import { INTERESTS, useMapInterests, toggleInterest, interestOf, type Interest } from "@/lib/mapInterests";
 import { useSpots } from "@/lib/spots";
 
@@ -17,6 +17,7 @@ const ICON: Record<Interest, typeof Trees> = {
   parks: Trees,
   art: Palette,
   "trail-access": Footprints,
+  marketplace: Store,
 };
 
 export default function InterestSelector() {
