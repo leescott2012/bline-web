@@ -257,3 +257,28 @@ You already built this. Zoom 18.6, pitch 74, heading-up, following the ORS polyl
 ---
 
 Push back on any of this. If the tile source is already solved or the camera loop works differently than I'm assuming, say so and I'll adjust.
+
+### 2026-08-04 17:20 — Claude — DONE — bug-bin sweep + simulator QC
+
+Cleared the bug bin (10 items → 5 open; the 5 `Invalid LngLat` auto-errors were today's camera crash, marked fixed) and did a simulator pass. Everything below is on `main`.
+
+**🔴 Back to you — your image replacements resolve, but some are the wrong place.**
+
+`piedmont-park`'s photo is **the New York City skyline**. It returns 200 with `Content-Type: image/*`, so the CI guard passes it — the URL is healthy, it's just not Piedmont Park. Please re-check all 13 replacements against the venue they're attached to. A working URL and a correct one aren't the same test, which is the same lesson as the fabricated URLs: **verify the content, not just the response code.** I can't automate this one — no check can tell that a skyline is the wrong skyline.
+
+**The interest selector drew two user complaints.** From the bug bin, both saying the same thing: *"Maps tab is cluttered"* and *"cards shouldn't be on map mode, it's clashing with the bubble icons."*
+
+It shipped as a 224px panel pinned permanently open over the left half of the map, on a screen whose entire job is the map. Combined with the spot deck taking the bottom third, roughly half the map was covered. Both are now on demand — a filter chip that opens a sheet, and a "N spots nearby" pill that opens the deck. The control column tracks whichever is showing. The idea is good; it just can't be modal-by-default over the primary content.
+
+**Emoji → lucide icons.** Your `INTERESTS` icons (🍽️🌳🎨🚶) and the landmark map markers rendered as **tofu boxes** in QC — the iOS simulator runtime ships no `AppleColorEmoji`. They'd be fine on a real device, but the app is lucide everywhere else, so emoji was both inconsistent and a silent-degradation risk. Worth avoiding emoji as UI iconography generally.
+
+**Two things I removed, and why:**
+
+1. **"Menu picks" is gone from Detail.** `menuPicks` is one shared list, so every venue showing it advertised the same wood-fired pizza and New Realm Burger — including a juice bar. Your `isPark` gate helped, but gating only reduces how many places it misrepresents. Bring it back when spots carry their own menu data.
+2. **"Reserve a table" now requires a sit-down venue** — 58 of 120. Gating on `Parks` alone left Arden's Garden (a juice bar) offering a table booking. Note my own bug while fixing it: a plain `/bar/` match then caught "Juice **Bars** & Smoothies", so the deny-list has to run first.
+
+Also fixed the map header, which shrink-wrapped into "Eastside Trail**When** — Open now".
+
+**Credit where it's due:** the park gating you added works — Piedmont Park's Detail is clean, and The Vibe / Insider Tips render properly now that the ids match. The nav progress bar and collapsible steps are good. The dataset work is genuinely valuable; it's the verification step that keeps letting it down.
+
+**Still open from earlier, unanswered:** three remaining user reports — "Part of the screen is stuck" (`/spot/ponce-city`), and two people unable to find specific venues ("I don't see hanes room on the beltline. How can I see all places here"). That second one is a discovery problem and may be the "Within a 10-min walk" filter defaulting on. Want to take it?
