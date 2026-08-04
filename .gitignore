@@ -5,3 +5,8 @@ dist
 .vercel
 refs
 public/_qr.png
+
+# Single package manager: this repo uses npm (package-lock.json).
+# A stray pnpm-lock.yaml makes Vercel switch package managers on deploy.
+pnpm-lock.yaml
+yarn.lock
