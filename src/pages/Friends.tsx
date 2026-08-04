@@ -30,7 +30,7 @@ export default function Friends() {
             FRIENDS ON THE TRAIL
           </h1>
           <button onClick={() => signOut()}
-            className="absolute right-4 top-1 text-[13px] font-semibold text-zinc-400">
+            className="absolute right-0 top-0 rounded-full px-3 py-1.5 text-[13px] font-semibold text-zinc-500">
             Sign out
           </button>
         </div>
@@ -42,7 +42,7 @@ export default function Friends() {
           <FriendsPanel profile={profile} />
         </>
       )}
-      <div className="h-[var(--bline-nav-space)]" />
+      <div className="h-[calc(var(--bline-nav-space)+1.5rem)]" />
     </Screen>
   );
 }

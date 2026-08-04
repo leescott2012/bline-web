@@ -174,8 +174,8 @@ export default function MapView() {
 
       {/* right-anchored so it clears the filter chip on the left; gap-4 because
           shrink-wrapping ran the two labels together as "Eastside TrailWhen". */}
-      <header className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 max-w-[62%]">
-        <div className="flex items-center gap-4 rounded-full bg-[#101014]/90 px-4 py-3 text-[14px] backdrop-blur">
+      <header className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 max-w-[58%]">
+        <div className="flex items-center gap-3 rounded-full bg-[#101014]/90 px-3.5 py-2.5 text-[13px] backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
           <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>
         </div>
@@ -196,7 +196,7 @@ export default function MapView() {
                 ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
                 : // Collapsed: overlap upward, nudge sideways and shrink with
                   // depth so the stack reads as a deck rather than a blob.
-                  { marginTop: -34, x: i * 5, scale: 1 - i * 0.07, opacity: 1 - i * 0.18 }
+                  { marginTop: -34, x: -i * 5, scale: 1 - i * 0.07, opacity: 1 - i * 0.18 }
             }
             transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
             style={{ zIndex: CONTROLS.length - i }}

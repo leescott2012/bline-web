@@ -15,6 +15,15 @@ html,
 body,
 #root {
   height: 100%;
+  /* Width is load-bearing, not decoration. With only `height` set, any child
+     wider than the screen grew the layout viewport: centred elements then
+     centred inside that wider box (so the app read as off-centre), and mx-*
+     blocks measured their margins against it, pushing headings off the left
+     edge while bordered cards still looked fine. Pin the width and clip
+     horizontally so one overflowing child can't drag the whole page sideways. */
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Vertical space the floating island nav occupies (FloatingNav.tsx): pill
