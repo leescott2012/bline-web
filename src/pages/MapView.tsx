@@ -45,6 +45,20 @@ export default function MapView() {
   const [open, setOpen] = useState(false);
   const reduce = useReducedMotion();
 
+  // Expanded is a transient state: five seconds after the last press the deck
+  // folds itself back up, so the map isn't left with four circles over it
+  // because someone tapped once and walked away.
+  const idle = useRef<number | undefined>(undefined);
+  const armIdle = () => {
+    clearTimeout(idle.current);
+    idle.current = window.setTimeout(() => setOpen(false), 5000);
+  };
+  useEffect(() => {
+    if (!open) return;
+    armIdle();
+    return () => clearTimeout(idle.current);
+  }, [open]);
+
   const toggle3D = () => {
     const map = mapRef.current;
     if (!map) return;
@@ -194,14 +208,18 @@ export default function MapView() {
             animate={
               open
                 ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
-                : // Collapsed: overlap upward, nudge sideways and shrink with
-                  // depth so the stack reads as a deck rather than a blob.
-                  { marginTop: -34, x: -i * 5, scale: 1 - i * 0.07, opacity: 1 - i * 0.18 }
+                : // Collapsed: a vertical deck. Each circle sits a little higher
+                  // and a little smaller than the one in front, so the stack
+                  // reads as depth without drifting sideways off the edge.
+                  { marginTop: -34 - i * 3, x: 0, scale: 1 - i * 0.08, opacity: 1 - i * 0.2 }
             }
             transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
             style={{ zIndex: CONTROLS.length - i }}
           >
-            {render(open ? onPress : () => setOpen(true), open)}
+            {render(
+              open ? () => { onPress(); armIdle(); } : () => setOpen(true),
+              open,
+            )}
           </motion.div>
         ))}
       </div>
