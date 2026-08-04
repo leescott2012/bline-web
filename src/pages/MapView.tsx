@@ -8,6 +8,7 @@ import RealMapEnhanced from "@/components/RealMapEnhanced";
 import CrowdPanel from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
+import { places } from "@/lib/places";
 import { useCrowd } from "@/lib/crowd";
 import { useMapInterests, getActiveInterests, interestOf, INTERESTS } from "@/lib/mapInterests";
 
@@ -50,6 +51,7 @@ export default function MapView() {
   // 120 pins over the whole city is a pile, not a map. They appear once you're
   // close enough for them to be distinguishable.
   const [zoom, setZoom] = useState(12.1);
+  const [locateError, setLocateError] = useState(false);
   const reduce = useReducedMotion();
 
   // Expanded is a transient state: five seconds after the last press the deck
@@ -106,6 +108,24 @@ export default function MapView() {
       el.textContent = spot.rating.toFixed(1);
       el.onclick = (e) => { e.stopPropagation(); nav(`/spot/${spot.id}`); };
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([spot.lng, spot.lat]).addTo(map));
+    }
+
+    // Parks, public art and trail access from Atlanta BeltLine Inc's public
+    // ArcGIS (see scripts/fetch-places.mjs). These carry no rating -- inventing
+    // one to match the spot pins would be fabricating data -- so they render as
+    // a labelled dot instead of a number.
+    for (const place of places) {
+      if (!showAll && !activeInterests.includes(place.kind)) continue;
+      const el = document.createElement("button");
+      el.className = "bline-place-pin";
+      el.style.background = INTERESTS[place.kind].color;
+      el.setAttribute("aria-label", place.detail ? `${place.name} — ${place.detail}` : place.name);
+      el.title = place.detail ? `${place.name} — ${place.detail}` : place.name;
+      el.onclick = (e) => {
+        e.stopPropagation();
+        map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16), duration: 500 });
+      };
+      pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([place.lng, place.lat]).addTo(map));
     }
     return () => { pins.current.forEach((m) => m.remove()); pins.current = []; };
   }, [spots, activeKey, nav, mapReady, zoom]);
@@ -177,8 +197,13 @@ export default function MapView() {
       key: "locate",
       label: "Recentre on my location",
       onPress: () =>
-        navigator.geolocation.getCurrentPosition(({ coords }) =>
-          mapRef.current?.easeTo({ center: [coords.longitude, coords.latitude], zoom: 15, duration: 700 })),
+        navigator.geolocation.getCurrentPosition(
+          ({ coords }) =>
+            mapRef.current?.easeTo({ center: [coords.longitude, coords.latitude], zoom: 15, duration: 700 }),
+          // Without a failure path this button silently does nothing when
+          // location is denied or unavailable, which reads as a dead control.
+          () => setLocateError(true),
+        ),
       render: (press) => (
         <button aria-label="Recentre on my location" onClick={press}
           className={`${CTRL} bg-[#2f6bff] text-white`}>
@@ -264,6 +289,16 @@ export default function MapView() {
           </motion.div>
         ))}
       </div>
+
+      {locateError && (
+        <div className="absolute inset-x-0 z-20 flex justify-center"
+          style={{ bottom: "calc(var(--bline-nav-space) + 4rem)" }}>
+          <button onClick={() => setLocateError(false)}
+            className="rounded-full bg-[#101014]/90 px-4 py-2 text-[13px] font-medium text-zinc-200 backdrop-blur">
+            Location unavailable — check Settings
+          </button>
+        </div>
+      )}
 
       {zoom < PIN_MIN_ZOOM && !heat && (
         <div className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
