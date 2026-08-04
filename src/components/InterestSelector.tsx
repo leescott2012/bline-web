@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, Store, X } from "lucide-react";
 import { INTERESTS, useMapInterests, toggleInterest, interestOf, type Interest } from "@/lib/mapInterests";
 import { useSpots } from "@/lib/spots";
+import { places } from "@/lib/places";
 
 // Filter chip for the map. It shipped as a 224px panel pinned open over the
 // left half of the map, which drew two separate "maps tab is cluttered"
@@ -23,11 +24,15 @@ const ICON: Record<Interest, typeof Trees> = {
 export default function InterestSelector() {
   const interests = useMapInterests();
   const spots = useSpots();
-  // Offer only interests that actually match a spot. "Public Art" and "Trail
-  // Access" match nothing in the current dataset, and a filter that can only
-  // ever return an empty map is worse than no filter.
-  const available = (Object.keys(INTERESTS) as Interest[]).filter((id) =>
-    spots.some((s) => interestOf(s.category) === id));
+  // Offer any interest with something behind it -- in spots OR in places.
+  // Checking spots alone hid Public Art, Trail Access and Markets from the
+  // sheet entirely: those live in places.ts, so the toggles never appeared
+  // even though the data was on the map.
+  const available = (Object.keys(INTERESTS) as Interest[]).filter(
+    (id) =>
+      places.some((p) => p.kind === id) ||
+      spots.some((s) => interestOf(s.category) === id),
+  );
   const [open, setOpen] = useState(false);
   const activeCount = Object.values(interests).filter(Boolean).length;
 

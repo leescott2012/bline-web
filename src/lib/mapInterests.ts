@@ -33,7 +33,7 @@ export function interestOf(category: string): Interest {
 export const INTERESTS: Record<Interest, InterestDef> = {
   dining: {
     id: "dining",
-    label: "Dining & Drinks",
+    label: "Dining",
     description: "Restaurants, cafes, breweries, and bars",
     color: "#e11d48",
     match: /eat|restaurant|cafe|coffee|brewer|bar|pizza|barbecue|bbq|burger|taco|sushi|thai|chinese|mexican|bakery|bagel|juice|smoothie|ice cream|gelato|dessert|deli|diner|kitchen|grill|tavern|food|steak|seafood|charcuterie|wine|cocktail/i,
@@ -57,7 +57,7 @@ export const INTERESTS: Record<Interest, InterestDef> = {
 
   marketplace: {
     id: "marketplace",
-    label: "Markets & Districts",
+    label: "Markets",
     description: "Shopping and dining districts along the trail",
     color: "#ea580c",
     match: /market|district|yards|provisions/i,
@@ -80,7 +80,7 @@ const DEFAULTS = {
   parks: true,
   art: false,
   "trail-access": false,
-  marketplace: false,
+  marketplace: true,
 } as Record<Interest, boolean>;
 
 let state = load();

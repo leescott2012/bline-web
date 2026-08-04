@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { beltlineLoop } from "@/lib/data";
-import { trailSegments } from "@/lib/places";
+import { trailSegments, parkAreas } from "@/lib/places";
 import { useMapStyle } from "@/lib/mapStyle";
 
 // Enhanced 3D map with premium landmark styling, smooth transitions, and
@@ -112,6 +112,47 @@ export default function RealMapEnhanced({
     map.on("load", () => {
       map.resize();
       if (decorations) {
+        // Park boundaries first, so the trail and pins sit on top of the
+        // greenspace rather than under it.
+        map.addSource("parks", {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: parkAreas.map((p) => ({
+              type: "Feature" as const,
+              properties: { name: p.name, acres: p.acres ?? 0 },
+              geometry: { type: "MultiPolygon" as const, coordinates: p.rings },
+            })),
+          },
+        });
+        map.addLayer({
+          id: "parks-fill",
+          type: "fill",
+          source: "parks",
+          paint: { "fill-color": "#16a34a", "fill-opacity": 0.18 },
+        });
+        map.addLayer({
+          id: "parks-outline",
+          type: "line",
+          source: "parks",
+          paint: { "line-color": "#16a34a", "line-width": 1.2, "line-opacity": 0.55 },
+        });
+        // Name the bigger ones once you're close enough to read them.
+        map.addLayer({
+          id: "parks-label",
+          type: "symbol",
+          source: "parks",
+          minzoom: 13.5,
+          filter: [">", ["get", "acres"], 1],
+          layout: {
+            "text-field": ["get", "name"],
+            "text-size": 11,
+            "text-font": ["Noto Sans Regular"],
+            "text-max-width": 9,
+          },
+          paint: { "text-color": "#15803d", "text-halo-color": "#fff", "text-halo-width": 1.4 },
+        });
+
         // The real BeltLine, coloured by build status -- green open, red under
         // construction, grey future. These are ABI's own renderer colours
         // (ABI_Trails_website / usestatus), because on a walking app the single
