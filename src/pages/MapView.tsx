@@ -1,22 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Flame, Layers, Navigation2 } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Flame, Layers, LocateFixed } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
-import SpotCard from "@/components/SpotCard";
 import CrowdPanel from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
 import { useCrowd } from "@/lib/crowd";
 import { useMapInterests, getActiveInterests } from "@/lib/mapInterests";
 
-// Map tab. Controls sit in one right-side column in the thumb zone; a spot
-// carousel runs along the bottom and drives the map -- scrolling to a card pans
-// there and turns its pin white, mirroring the wireframe.
+// Map tab. The map is the content: no spot deck, no panel pinned over it --
+// two separate reports said it was cluttered and that the cards clashed with
+// the controls. Browsing spots belongs to Explore. Controls sit in one
+// right-side column in the thumb zone.
 const BUILDINGS_MIN_ZOOM = 15.6;
 const PITCH_3D = 60;
-const CARD_ZOOM = 14.4;
 
 const HEAT_SOURCE = "crowd-density";
 const HEAT_LAYER = "crowd-heat";
@@ -25,46 +25,25 @@ const HEAT_LAYER = "crowd-heat";
 const CTRL = "grid size-12 place-items-center rounded-full backdrop-blur transition-colors";
 const CTRL_OFF = "bg-[#101014]/90 text-white";
 
+// One entry per control. Collapsed, every button just opens the stack; the
+// real action only fires once it's open, so a half-seen circle can't toggle 3D.
+type Ctrl = {
+  key: string;
+  label: string;
+  onPress: () => void;
+  render: (press: () => void, open: boolean) => React.ReactNode;
+};
+
 export default function MapView() {
   const [, nav] = useLocation();
   const spots = useSpots();
   const interests = useMapInterests();
   const activeInterests = getActiveInterests(interests);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  const activeMarker = useRef<maplibregl.Marker | null>(null);
-  const activeRef = useRef(0);
-  const [activeIdx, setActiveIdx] = useState(0);
   const [threeD, setThreeD] = useState(false);
   const [heat, setHeat] = useState(false);
-  // Closed by default: the map is the content, the deck is a drawer over it.
-  const [deckOpen, setDeckOpen] = useState(false);
-
-  // Pan to a card's spot and mark it with the white "selected" pin -- the same
-  // treatment Explore uses, so a spot looks identical wherever you meet it.
-  const flyTo = (i: number) => {
-    const map = mapRef.current;
-    const s = spots[i];
-    if (!map || !s) return;
-    map.easeTo({ center: [s.lng, s.lat], zoom: Math.max(map.getZoom(), CARD_ZOOM), duration: 650 });
-    if (!activeMarker.current) {
-      const d = document.createElement("div");
-      d.innerHTML = `<div class="bline-pin bline-pin-active"><span class="star">★</span> <b></b></div>`;
-      activeMarker.current = new maplibregl.Marker({ element: d, anchor: "bottom" });
-    }
-    activeMarker.current.getElement().querySelector("b")!.textContent = s.rating.toFixed(1);
-    activeMarker.current.setLngLat([s.lng, s.lat]).addTo(map);
-  };
-
-  const onCardScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!spots.length) return;
-    const el = e.currentTarget;
-    const i = Math.max(0, Math.min(spots.length - 1, Math.round(el.scrollLeft / (el.clientWidth * 0.86))));
-    if (i !== activeRef.current) {
-      activeRef.current = i;
-      setActiveIdx(i);
-      flyTo(i);
-    }
-  };
+  const [open, setOpen] = useState(false);
+  const reduce = useReducedMotion();
 
   const toggle3D = () => {
     const map = mapRef.current;
@@ -83,8 +62,12 @@ export default function MapView() {
     const map = mapRef.current;
     if (!map) return;
     const sync = () => setThreeD(map.getPitch() > 10);
+    // Dragging the map collapses the stack: if you're moving the map you're not
+    // reaching for a control, and the chrome should retreat.
+    const collapse = () => setOpen(false);
     map.on("pitchend", sync);
-    return () => { map.off("pitchend", sync); };
+    map.on("dragstart", collapse);
+    return () => { map.off("pitchend", sync); map.off("dragstart", collapse); };
   }, []);
 
   // Live crowd density: aggregated grid counts from everyone sharing right now,
@@ -134,13 +117,59 @@ export default function MapView() {
     });
   }, [heat, crowd]);
 
-  const activeSpot = spots[activeIdx];
+  const CONTROLS: Ctrl[] = [
+    {
+      key: "locate",
+      label: "Recentre on my location",
+      onPress: () =>
+        navigator.geolocation.getCurrentPosition(({ coords }) =>
+          mapRef.current?.easeTo({ center: [coords.longitude, coords.latitude], zoom: 15, duration: 700 })),
+      render: (press) => (
+        <button aria-label="Recentre on my location" onClick={press}
+          className={`${CTRL} bg-[#2f6bff] text-white`}>
+          <LocateFixed size={20} />
+        </button>
+      ),
+    },
+    {
+      key: "3d",
+      label: "3D",
+      onPress: toggle3D,
+      render: (press) => (
+        <button aria-label={threeD ? "Switch to 2D map" : "Switch to 3D map"} aria-pressed={threeD}
+          onClick={press} className={`${CTRL} ${threeD ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
+          <span className="text-[15px] font-bold tracking-tight">{threeD ? "2D" : "3D"}</span>
+        </button>
+      ),
+    },
+    {
+      key: "heat",
+      label: "Crowd heatmap",
+      onPress: () => setHeat((h) => !h),
+      render: (press) => (
+        <button aria-label={heat ? "Hide crowd heatmap" : "Show crowd heatmap"} aria-pressed={heat}
+          onClick={press} className={`${CTRL} ${heat ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
+          <Flame size={20} />
+        </button>
+      ),
+    },
+    {
+      key: "styles",
+      label: "Map styles",
+      onPress: () => nav("/map-styles"),
+      render: (press) => (
+        <button aria-label="Map styles" onClick={press} className={`${CTRL} ${CTRL_OFF}`}>
+          <Layers size={20} />
+        </button>
+      ),
+    },
+  ];
 
   return (
     <Screen className="overflow-hidden">
       <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="absolute inset-0" />
 
-      {/* Interest Selector Sidebar */}
+      {/* Filter chip -- opens a sheet, does not sit over the map. */}
       <InterestSelector />
 
       {/* right-anchored so it clears the filter chip on the left; gap-4 because
@@ -152,71 +181,40 @@ export default function MapView() {
         </div>
       </header>
 
-      {/* Controls stack above the carousel so neither covers the other. */}
-      <div className="absolute right-3 z-10 flex flex-col-reverse gap-2.5"
-        style={{ bottom: deckOpen ? "calc(var(--bline-nav-space) + 17rem)" : "calc(var(--bline-nav-space) + 4rem)" }}>
-        {/* Apple-Maps-style navigation arrow: starts turn-by-turn to whichever
-            card is centred, rather than just recentring the camera. */}
-        <button aria-label={activeSpot ? `Start navigation to ${activeSpot.name}` : "Start navigation"}
-          onClick={() => activeSpot && nav(`/navigate/${activeSpot.id}`)}
-          className={`${CTRL} bg-[#2f6bff] text-white`}>
-          <Navigation2 size={20} fill="currentColor" />
-        </button>
-
-        <button aria-label={threeD ? "Switch to 2D map" : "Switch to 3D map"}
-          aria-pressed={threeD} onClick={toggle3D}
-          className={`${CTRL} ${threeD ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
-          <span className="text-[15px] font-bold tracking-tight">{threeD ? "2D" : "3D"}</span>
-        </button>
-
-        <button aria-label={heat ? "Hide crowd heatmap" : "Show crowd heatmap"}
-          aria-pressed={heat} onClick={() => setHeat((h) => !h)}
-          className={`${CTRL} ${heat ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
-          <Flame size={20} />
-        </button>
-
-        <Link href="/map-styles" aria-label="Map styles" className={`${CTRL} ${CTRL_OFF}`}>
-          <Layers size={20} />
-        </Link>
+      {/* Idle, the controls compact into a staggered stack -- one thumb-sized
+          target instead of four circles down the edge of the map. Tap it and
+          they fan out. Dragging the map collapses them again, so the map is
+          never competing with its own chrome. */}
+      <div className="absolute right-3 z-10 flex flex-col-reverse items-end"
+        style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
+        {CONTROLS.map(({ key, label, render, onPress }, i) => (
+          <motion.div
+            key={key}
+            initial={false}
+            animate={
+              open
+                ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
+                : // Collapsed: overlap upward, nudge sideways and shrink with
+                  // depth so the stack reads as a deck rather than a blob.
+                  { marginTop: -34, x: i * 5, scale: 1 - i * 0.07, opacity: 1 - i * 0.18 }
+            }
+            transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
+            style={{ zIndex: CONTROLS.length - i }}
+          >
+            {render(open ? onPress : () => setOpen(true), open)}
+          </motion.div>
+        ))}
       </div>
 
-      {/* Two reports said the same thing -- "cards shouldn't be on map mode,
-          it's clashing with the bubble icons" and "maps tab is cluttered". The
-          deck covered a third of the map and crowded the controls, so on a
-          screen whose whole job is the map it now opens on demand: a slim pill
-          by default, the full carousel when you ask for it. */}
-      <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
-        {heat && <CrowdPanel people={crowd.people} />}
+      {/* Heat swaps in the conditions that explain the overlay. There is no
+          spot deck here any more -- the map tab shows the map. Browsing spots
+          is Explore's job; tapping a pin here opens that spot directly. */}
+      {heat && (
+        <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
+          <CrowdPanel people={crowd.people} />
+        </div>
+      )}
 
-        {!heat && !deckOpen && (
-          <div className="flex justify-center pb-2">
-            <button onClick={() => setDeckOpen(true)}
-              className="flex items-center gap-2 rounded-full bg-[#101014]/90 px-4 py-2.5 text-[14px] font-semibold text-white shadow-lg backdrop-blur">
-              <ChevronUp size={16} />
-              {spots.length} spots nearby
-            </button>
-          </div>
-        )}
-
-        {!heat && deckOpen && (
-          <>
-            <div className="flex justify-center pb-1.5">
-              <button aria-label="Hide spot cards" onClick={() => setDeckOpen(false)}
-                className="grid size-9 place-items-center rounded-full bg-[#101014]/90 text-white shadow-lg backdrop-blur">
-                <ChevronDown size={18} />
-              </button>
-            </div>
-            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2"
-              onScroll={onCardScroll}>
-              {spots.map((s, i) => (
-                <div key={s.id} className="w-[86%] shrink-0 snap-center">
-                  <SpotCard spot={s} photoClass="aspect-[488/200]" autoPhotos={i === activeIdx} />
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
     </Screen>
   );
 }
