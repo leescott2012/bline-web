@@ -42,6 +42,7 @@ export default function Navigate3D({ params }: { params: { id: string } }) {
                 type: 'geojson',
                 data: {
                   type: 'Feature',
+                  properties: {},
                   geometry: {
                     type: 'LineString',
                     coordinates: beltlineLoop.slice(0, 20) // Simulated route segment

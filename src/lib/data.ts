@@ -957,3 +957,128 @@ export const mapPins = [
   { x: 52, y: 32, r: 4.6 }, { x: 62, y: 40, r: 4.2 }, { x: 48, y: 48, r: 4.9 },
   { x: 58, y: 56, r: 4.4 }, { x: 44, y: 64, r: 4.3 }, { x: 54, y: 72, r: 4.1 },
 ];
+
+// ── restored 2026-08-04 ────────────────────────────────────────────────────
+// The data.ts rewrite dropped these; RealMap, CrowdPanel, exploreFilters,
+// Navigate and crowd.ts all still import them. Listed as out of scope for the
+// spots migration ("leave it in data.ts"). Recovered verbatim from main.
+
+// approx Atlanta BeltLine loop + eastside spot pins (lon, lat)
+export const beltlineLoop: [number, number][] = [
+  [-84.408, 33.786], [-84.395, 33.799], [-84.376, 33.803], [-84.36, 33.796],
+  [-84.35, 33.781], [-84.347, 33.762], [-84.354, 33.741], [-84.371, 33.727],
+  [-84.394, 33.724], [-84.41, 33.734], [-84.418, 33.755], [-84.415, 33.773],
+  [-84.408, 33.786],
+];
+// Turn-by-turn demo route: Eastside Trail, Ponce City Market → Krog Street Market
+
+// Turn-by-turn demo route: Eastside Trail, Ponce City Market → Krog Street Market
+export const navRoute: [number, number][] = [
+  [-84.366, 33.7726], [-84.3654, 33.771], [-84.3648, 33.7688],
+  [-84.3644, 33.7662], [-84.364, 33.7635], [-84.3636, 33.7605],
+  [-84.3632, 33.7575], [-84.3634, 33.7548], [-84.3636, 33.753],
+];
+
+export const navSteps: { at: number; icon: "up" | "right" | "left" | "flag"; dist: string; text: string }[] = [
+  { at: 0.0, icon: "up", dist: "0.4 mi", text: "Head south on Eastside Trail" },
+  { at: 0.28, icon: "up", dist: "0.3 mi", text: "Continue past Historic Fourth Ward Park" },
+  { at: 0.55, icon: "up", dist: "0.3 mi", text: "Continue on Eastside Trail" },
+  { at: 0.82, icon: "right", dist: "350 ft", text: "Bear right toward Krog Street Market" },
+  { at: 0.97, icon: "flag", dist: "Arrive", text: "Krog Street Market" },
+];
+
+// meters between two lng/lat points (haversine)
+
+// meters between two lng/lat points (haversine)
+export function distM(a: [number, number], b: [number, number]) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b[1] - a[1]) * toR, dLng = (b[0] - a[0]) * toR;
+  const s = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * toR) * Math.cos(b[1] * toR) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+// Real (approximate) trail-segment centerlines, built from the actual street
+// addresses/cross-streets in RAW_SPOTS above — NOT the same as `beltlineLoop`,
+// which is a decorative full-corridor loop shape used for map art and puts
+// Ponce City Market ~20min from "the trail" it's literally built on. These two
+// short polylines trace the real Eastside Trail corridor (Piedmont Park down
+// through PCM/Krog St) and the real Westside/Southwest Trail corridor
+// (Westview through Lee+White to Pittsburgh Yards), for actual walk-distance
+// filtering.
+const EASTSIDE_TRAIL_PATH: [number, number][] = [
+  [-84.372, 33.782], [-84.3715, 33.7815], [-84.371, 33.775], [-84.3669, 33.7719],
+  [-84.371, 33.767], [-84.373, 33.766], [-84.3625, 33.7575], [-84.3636, 33.753],
+  [-84.361, 33.746],
+];
+const SOUTHWEST_TRAIL_PATH: [number, number][] = [
+  [-84.443, 33.735], [-84.415, 33.735], [-84.42, 33.726], [-84.416, 33.723],
+  [-84.403, 33.719],
+];
+const WALK_M_PER_MIN = 80; // ~5 km/h average walking pace
+
+export function nearestPointOnSegment(p: [number, number], a: [number, number], b: [number, number]): [number, number] {
+  // flat-earth projection — fine at city scale; longitude scaled by cos(lat) to un-skew degrees
+  const k = Math.cos((p[1] * Math.PI) / 180);
+  const ax = a[0] * k, ay = a[1], bx = b[0] * k, by = b[1], px = p[0] * k, py = p[1];
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+  return [(ax + t * dx) / k, ay + t * dy];
+}
+function distToPolylineM(p: [number, number], path: [number, number][]): number {
+  let min = Infinity;
+  for (let i = 0; i < path.length - 1; i++) {
+    min = Math.min(min, distM(p, nearestPointOnSegment(p, path[i], path[i + 1])));
+  }
+  return min;
+}
+
+export function walkMinutesFromTrail(lng: number, lat: number): number {
+  const p: [number, number] = [lng, lat];
+  return Math.min(distToPolylineM(p, EASTSIDE_TRAIL_PATH), distToPolylineM(p, SOUTHWEST_TRAIL_PATH)) / WALK_M_PER_MIN;
+}
+
+// openTill ("11p", "12a", "1a", "7p", ...) is the only real hours data we
+// have — no opening time is stored. isOpenNow() assumes evening venues (close
+// after 7p) open by 11a and daytime venues (close by 7p) open by 7a; measured
+// relative to a 4am anchor so post-midnight closes ("12a"/"1a") don't need
+// special-cased wraparound math.
+function closeHour24(openTill: string): number {
+  const m = /^(\d+)([ap])$/.exec(openTill);
+  if (!m) return 23;
+  const h = parseInt(m[1], 10) % 12;
+  return m[2] === "p" ? h + 12 : h;
+}
+function hoursSince4am(h: number): number {
+  return ((h - 4) % 24 + 24) % 24;
+}
+
+export const geoPins: { lng: number; lat: number; r: number }[] = [
+  { lng: -84.3669, lat: 33.7719, r: 4.7 }, { lng: -84.3654, lat: 33.7669, r: 4.8 },
+  { lng: -84.3725, lat: 33.7756, r: 4.5 }, { lng: -84.3629, lat: 33.7591, r: 4.6 },
+  { lng: -84.3527, lat: 33.7644, r: 4.2 }, { lng: -84.3699, lat: 33.7631, r: 4.9 },
+  { lng: -84.3805, lat: 33.7702, r: 4.4 }, { lng: -84.3547, lat: 33.7727, r: 4.3 },
+  { lng: -84.3752, lat: 33.7554, r: 4.1 },
+];
+
+// Synthetic crowd-density sample points for the real MapLibre heatmap layer
+// (Trail Conditions screen). Clustered hottest near Ponce City Market, warm
+// near New Realm Brewing, light scatter along the rest of the trail.
+
+// Synthetic crowd-density sample points for the real MapLibre heatmap layer
+// (Trail Conditions screen). Clustered hottest near Ponce City Market, warm
+// near New Realm Brewing, light scatter along the rest of the trail.
+export const crowdDensityPoints: { lng: number; lat: number; weight: number }[] = (() => {
+  const jitter = (lng: number, lat: number, n: number, spread: number, weight: number) =>
+    Array.from({ length: n }, () => ({
+      lng: lng + (Math.random() - 0.5) * spread,
+      lat: lat + (Math.random() - 0.5) * spread,
+      weight,
+    }));
+  return [
+    ...jitter(-84.366, 33.7726, 22, 0.004, 1),   // Ponce City Market — busiest
+    ...jitter(-84.3669, 33.7719, 14, 0.0035, 0.7), // New Realm Brewing
+    ...jitter(-84.3636, 33.753, 8, 0.003, 0.5),    // Krog Street Market
+    ...beltlineLoop.flatMap((pt) => jitter(pt[0], pt[1], 3, 0.003, 0.3)),
+  ];
+})();
