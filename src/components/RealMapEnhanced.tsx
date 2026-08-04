@@ -8,6 +8,57 @@ import { useMapStyle } from "@/lib/mapStyle";
 // high-fidelity building extrusion. Designed for city-grade navigation.
 const TREE_SPOTS = beltlineLoop.filter((_, i) => i % 2 === 0);
 
+// What actually makes Google/Apple's 3D read as real is aerial imagery *under*
+// extruded buildings -- flat vector fills give it away instantly. Their
+// photogrammetry isn't available to us (Google's 3D Tiles run ~$0.50-1.50 per
+// navigation session), so this approximates it with two free sources: Esri
+// World Imagery for the ground, and Carto's vector tiles for building
+// footprints and heights. The vector source URL is the one Carto's own
+// published style declares, rather than a guessed tile path.
+const PHOTOREAL_STYLE: maplibregl.StyleSpecification = {
+  version: 8,
+  sources: {
+    esri: {
+      type: "raster",
+      tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      tileSize: 256,
+      attribution: "Esri, Maxar, Earthstar Geographics",
+    },
+    carto: {
+      type: "vector",
+      url: "https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json",
+    },
+  },
+  layers: [
+    { id: "imagery", type: "raster", source: "esri" },
+    {
+      // Buildings sit on the photography, shaded light-to-dark by height so the
+      // skyline reads with depth instead of as one flat grey mass.
+      id: "buildings-3d",
+      type: "fill-extrusion",
+      source: "carto",
+      "source-layer": "building",
+      minzoom: 14,
+      paint: {
+        // to-number is load-bearing: `interpolate` requires a numeric input and
+        // coalesce(get(...)) types as `value`, which fails style validation and
+        // takes the whole map down with it.
+        "fill-extrusion-color": [
+          "interpolate", ["linear"], ["to-number", ["coalesce", ["get", "render_height"], 10]],
+          0, "#d8d3cb",
+          20, "#c4bdb2",
+          60, "#a89f92",
+          150, "#8d8375",
+        ],
+        "fill-extrusion-height": ["to-number", ["coalesce", ["get", "render_height"], 10]],
+        "fill-extrusion-base": ["to-number", ["coalesce", ["get", "render_min_height"], 0]],
+        "fill-extrusion-opacity": 0.9,
+        "fill-extrusion-vertical-gradient": true,
+      },
+    },
+  ],
+};
+
 // Flagship landmarks that deserve special visual treatment
 const LANDMARKS = {
   "ponce-city": { lng: -84.3657, lat: 33.7729, name: "Ponce City Market", emoji: "🏛️" },
@@ -21,6 +72,7 @@ export default function RealMapEnhanced({
   center = [-84.381, 33.764] as [number, number],
   decorations = true,
   autoPitch = true,
+  photoreal = false,
   onMap,
 }: {
   className?: string;
@@ -29,6 +81,8 @@ export default function RealMapEnhanced({
   center?: [number, number];
   decorations?: boolean;
   autoPitch?: boolean;
+  /** Aerial imagery under extruded buildings, the way Google/Apple render 3D. */
+  photoreal?: boolean;
   onMap?: (m: maplibregl.Map) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
@@ -38,11 +92,15 @@ export default function RealMapEnhanced({
     if (!el.current) return;
     const map = new maplibregl.Map({
       container: el.current,
-      style: mapStyle.style,
+      style: photoreal ? PHOTOREAL_STYLE : mapStyle.style,
       center,
       zoom: zoom - 1.2,
       interactive,
       attributionControl: false,
+      // Omit the key entirely rather than passing undefined: MapLibre treats a
+      // present-but-undefined `pitch` as a supplied value, which lands in the
+      // camera transform as NaN and throws "Invalid LngLat (NaN, NaN)". Same
+      // trap as `bearing` in NavigateEnhanced.
       ...(autoPitch ? { pitch: 0 } : {}),
     });
 
@@ -131,8 +189,10 @@ export default function RealMapEnhanced({
       }
 
       // ── Premium 3D building extrusion ──
+      // Photoreal mode already ships its own extrusion layer over the imagery,
+      // so skip this or we stack two sets of buildings on the same footprints.
       try {
-        const style = map.getStyle();
+        const style = photoreal ? null : map.getStyle();
         const buildingLayer = style?.layers?.find(
           (l) => (l as { "source-layer"?: string })["source-layer"] === "building"
         );
@@ -214,7 +274,7 @@ export default function RealMapEnhanced({
       ro.disconnect();
       map.remove();
     };
-  }, [interactive, zoom, center[0], center[1], decorations, autoPitch, mapStyle.key]);
+  }, [interactive, zoom, center[0], center[1], decorations, autoPitch, photoreal, mapStyle.key]);
 
   return (
     <div className={className}>

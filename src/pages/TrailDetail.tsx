@@ -64,15 +64,12 @@ export default function TrailDetail() {
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Labelled a preview because that's what it is -- the route and the
+            distances are illustrative, not a live fix. Calling it "Start 3D
+            Navigation" sent people in expecting directions. */}
         <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-white shadow-lg shadow-accent/20">
-          Start 3D Navigation
+          3D Preview
         </Link>
-        <button 
-          onClick={() => alert("Launching 3D Corridor Tour (Gaussian Splats)...")}
-          className="block w-full rounded-full border-2 border-accent/30 bg-white/10 py-3 text-center text-[15px] font-bold text-white backdrop-blur-sm"
-        >
-          3D Corridor Tour
-        </button>
       </div>
     </Screen>
   );

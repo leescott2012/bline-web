@@ -65,20 +65,22 @@ export default function Navigate3D() {
   return (
     <Screen className="overflow-hidden bg-black">
       <RealMapEnhanced
+        photoreal
         zoom={17.5}
         center={[destSpot.lng, destSpot.lat]}
         autoPitch={false}
         onMap={(map) => {
           mapRef.current = map;
-          map.setPitch(65);
-          map.setBearing(-15);
           
           map.on('load', () => {
+            map.setPitch(65);
+            map.setBearing(-15);
             if (route && !map.getSource('route')) {
               map.addSource('route', {
                 type: 'geojson',
                 data: {
                   type: 'Feature',
+                  properties: {},
                   geometry: {
                     type: 'LineString',
                     coordinates: route.coordinates
@@ -126,7 +128,7 @@ export default function Navigate3D() {
                 PREVIEW · ILLUSTRATIVE ROUTE
               </p>
               <p className="text-[17px] font-medium text-zinc-400">
-                {step?.instruction ?? "Head toward destination"}
+                {step?.text ?? "Head toward destination"}
               </p>
             </div>
           </div>
@@ -157,15 +159,22 @@ export default function Navigate3D() {
       <div className="absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20">
         <div className="flex items-center justify-between rounded-[32px] bg-white/95 px-8 py-6 shadow-2xl backdrop-blur-md">
           <div className="text-center">
-            <p className="text-[24px] font-black text-black">{route?.duration ?? "--"}</p>
+            <p className="text-[24px] font-black text-black">
+              {route
+                ? new Date(Date.now() + route.durationMin * 60_000).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })
+                : "--"}
+            </p>
             <p className="text-[12px] font-bold uppercase tracking-widest text-zinc-500">arrival</p>
           </div>
           <div className="text-center">
-            <p className="text-[24px] font-black text-black">{route ? Math.ceil(route.durationMinutes) : "--"}</p>
+            <p className="text-[24px] font-black text-black">{route ? Math.ceil(route.durationMin) : "--"}</p>
             <p className="text-[12px] font-bold uppercase tracking-widest text-zinc-500">min</p>
           </div>
           <div className="text-center">
-            <p className="text-[24px] font-black text-black">{route ? route.distance.toFixed(1) : "--"}</p>
+            <p className="text-[24px] font-black text-black">{route ? route.distanceMi.toFixed(1) : "--"}</p>
             <p className="text-[12px] font-bold uppercase tracking-widest text-zinc-500">mi</p>
           </div>
           <button 
