@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Flame, Layers, Navigation2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Flame, Layers, Navigation2 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
@@ -36,6 +36,8 @@ export default function MapView() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [threeD, setThreeD] = useState(false);
   const [heat, setHeat] = useState(false);
+  // Closed by default: the map is the content, the deck is a drawer over it.
+  const [deckOpen, setDeckOpen] = useState(false);
 
   // Pan to a card's spot and mark it with the white "selected" pin -- the same
   // treatment Explore uses, so a spot looks identical wherever you meet it.
@@ -141,8 +143,10 @@ export default function MapView() {
       {/* Interest Selector Sidebar */}
       <InterestSelector />
 
-      <header className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 left-auto right-3">
-        <div className="flex items-center justify-around rounded-full bg-[#101014]/90 px-5 py-3.5 backdrop-blur">
+      {/* right-anchored so it clears the filter chip on the left; gap-4 because
+          shrink-wrapping ran the two labels together as "Eastside TrailWhen". */}
+      <header className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 max-w-[62%]">
+        <div className="flex items-center gap-4 rounded-full bg-[#101014]/90 px-4 py-3 text-[14px] backdrop-blur">
           <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
           <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>
         </div>
@@ -150,7 +154,7 @@ export default function MapView() {
 
       {/* Controls stack above the carousel so neither covers the other. */}
       <div className="absolute right-3 z-10 flex flex-col-reverse gap-2.5"
-        style={{ bottom: "calc(var(--bline-nav-space) + 14.5rem)" }}>
+        style={{ bottom: deckOpen ? "calc(var(--bline-nav-space) + 17rem)" : "calc(var(--bline-nav-space) + 4rem)" }}>
         {/* Apple-Maps-style navigation arrow: starts turn-by-turn to whichever
             card is centred, rather than just recentring the camera. */}
         <button aria-label={activeSpot ? `Start navigation to ${activeSpot.name}` : "Start navigation"}
@@ -176,18 +180,42 @@ export default function MapView() {
         </Link>
       </div>
 
-      {/* Heat on swaps the spot carousel for the conditions that explain it --
-          the numbers now live with the overlay instead of a separate screen. */}
+      {/* Two reports said the same thing -- "cards shouldn't be on map mode,
+          it's clashing with the bubble icons" and "maps tab is cluttered". The
+          deck covered a third of the map and crowded the controls, so on a
+          screen whose whole job is the map it now opens on demand: a slim pill
+          by default, the full carousel when you ask for it. */}
       <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
         {heat && <CrowdPanel people={crowd.people} />}
-        <div className={`no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 ${heat ? "hidden" : ""}`}
-          onScroll={onCardScroll}>
-          {spots.map((s, i) => (
-            <div key={s.id} className="w-[86%] shrink-0 snap-center">
-              <SpotCard spot={s} photoClass="aspect-[488/200]" autoPhotos={i === activeIdx} />
+
+        {!heat && !deckOpen && (
+          <div className="flex justify-center pb-2">
+            <button onClick={() => setDeckOpen(true)}
+              className="flex items-center gap-2 rounded-full bg-[#101014]/90 px-4 py-2.5 text-[14px] font-semibold text-white shadow-lg backdrop-blur">
+              <ChevronUp size={16} />
+              {spots.length} spots nearby
+            </button>
+          </div>
+        )}
+
+        {!heat && deckOpen && (
+          <>
+            <div className="flex justify-center pb-1.5">
+              <button aria-label="Hide spot cards" onClick={() => setDeckOpen(false)}
+                className="grid size-9 place-items-center rounded-full bg-[#101014]/90 text-white shadow-lg backdrop-blur">
+                <ChevronDown size={18} />
+              </button>
             </div>
-          ))}
-        </div>
+            <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2"
+              onScroll={onCardScroll}>
+              {spots.map((s, i) => (
+                <div key={s.id} className="w-[86%] shrink-0 snap-center">
+                  <SpotCard spot={s} photoClass="aspect-[488/200]" autoPhotos={i === activeIdx} />
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </Screen>
   );

@@ -153,7 +153,9 @@ export default function RealMapEnhanced({
         // ── Flagship landmarks with custom styling ──
         Object.entries(LANDMARKS).forEach(([id, landmark]) => {
           const d = document.createElement("div");
-          d.innerHTML = `<div class="bline-landmark" style="font-size: 32px; filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));">${landmark.emoji}</div>`;
+          // Was an emoji, which renders as a tofu box wherever the emoji font
+          // is missing. A styled marker is legible everywhere.
+          d.innerHTML = `<div class="bline-landmark" style="width:14px;height:14px;border-radius:9999px;background:#c026d3;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45)"></div>`;
           d.title = landmark.name;
           new maplibregl.Marker({ element: d, anchor: "bottom" })
             .setLngLat([landmark.lng, landmark.lat])

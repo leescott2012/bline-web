@@ -1,60 +1,79 @@
+import { useState } from "react";
+import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, X } from "lucide-react";
 import { INTERESTS, useMapInterests, toggleInterest, type Interest } from "@/lib/mapInterests";
+
+// Filter chip for the map. It shipped as a 224px panel pinned open over the
+// left half of the map, which drew two separate "maps tab is cluttered"
+// reports -- on a screen whose entire job is the map. It's now a chip that
+// opens a sheet, and closes again.
+//
+// Icons are lucide, not emoji: the rest of the app is lucide, and emoji
+// silently degrade to tofu wherever the emoji font is missing (the iOS
+// simulator runtime has no AppleColorEmoji, which is why these rendered as
+// "?" boxes in QC).
+const ICON: Record<Interest, typeof Trees> = {
+  dining: UtensilsCrossed,
+  parks: Trees,
+  art: Palette,
+  "trail-access": Footprints,
+};
 
 export default function InterestSelector() {
   const interests = useMapInterests();
+  const [open, setOpen] = useState(false);
+  const activeCount = Object.values(interests).filter(Boolean).length;
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Filter map by interest"
+        className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center gap-2 rounded-full bg-[#101014]/90 px-3.5 py-2.5 text-[14px] font-semibold text-white shadow-lg backdrop-blur"
+      >
+        <SlidersHorizontal size={16} />
+        {activeCount > 0 && (
+          <span className="grid size-5 place-items-center rounded-full bg-accent text-[11px] font-bold">
+            {activeCount}
+          </span>
+        )}
+      </button>
+    );
+  }
 
   return (
-    <div className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 w-56 overflow-hidden rounded-2xl bg-black/90 shadow-xl backdrop-blur">
-      {/* Header */}
-      <div className="border-b border-zinc-700 px-4 py-3">
-        <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">
-          Select an interest
-        </p>
-        <p className="mt-1 text-[13px] text-zinc-500">
-          Show locations on map
-        </p>
+    <div className="absolute left-3 right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 overflow-hidden rounded-2xl bg-[#101014]/95 shadow-xl backdrop-blur">
+      <div className="flex items-center gap-2 border-b border-zinc-800 px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Show on map</p>
+          <p className="mt-0.5 text-[13px] text-zinc-500">
+            {activeCount} of {Object.keys(INTERESTS).length} selected
+          </p>
+        </div>
+        <button onClick={() => setOpen(false)} aria-label="Close filters"
+          className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white">
+          <X size={16} />
+        </button>
       </div>
 
-      {/* Interest Toggles */}
-      <div className="divide-y divide-zinc-800 px-2 py-2">
+      <div className="grid grid-cols-2 gap-2 p-2">
         {(Object.keys(INTERESTS) as Interest[]).map((id) => {
           const def = INTERESTS[id];
+          const Icon = ICON[id] ?? Trees;
           const isActive = interests[id];
-
           return (
             <button
               key={id}
               onClick={() => toggleInterest(id)}
-              className={`w-full rounded-lg px-3 py-3 text-left transition-all ${
-                isActive
-                  ? "bg-accent/20 text-white"
-                  : "text-zinc-400 hover:bg-zinc-900/50"
+              aria-pressed={isActive}
+              className={`flex items-center gap-2.5 rounded-xl px-3 py-3 text-left transition-colors ${
+                isActive ? "bg-accent/25 text-white ring-1 ring-accent" : "bg-white/5 text-zinc-400"
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span className="text-lg">{def.icon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-semibold">{def.label}</p>
-                  <p className="text-[12px] text-zinc-500">{def.description}</p>
-                </div>
-                {/* Active Indicator */}
-                <div
-                  className={`size-5 rounded-full border-2 transition-all ${
-                    isActive
-                      ? "border-accent bg-accent"
-                      : "border-zinc-600 bg-transparent"
-                  }`}
-                />
-              </div>
+              <Icon size={18} className="shrink-0" />
+              <p className="min-w-0 truncate text-[14px] font-semibold">{def.label}</p>
             </button>
           );
         })}
-      </div>
-
-      {/* Footer Info */}
-      <div className="border-t border-zinc-800 px-4 py-2.5 text-[12px] text-zinc-500">
-        {Object.values(interests).filter(Boolean).length} interest
-        {Object.values(interests).filter(Boolean).length !== 1 ? "s" : ""} active
       </div>
     </div>
   );
