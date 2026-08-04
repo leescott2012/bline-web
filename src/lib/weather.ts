@@ -42,7 +42,7 @@ async function fetchWeather(): Promise<WeatherNow | null> {
 }
 
 // Real current conditions from Open-Meteo (free, no API key, CORS-enabled for
-// client-side use). Cached at module scope so re-mounting Crowd.tsx doesn't
+// client-side use). Cached at module scope so re-mounting the panel doesn't
 // refetch every time.
 export function useWeatherNow(): WeatherNow | null {
   const [weather, setWeather] = useState<WeatherNow | null>(cache);

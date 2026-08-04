@@ -5,6 +5,7 @@ import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
+import CrowdPanel from "@/components/CrowdPanel";
 import { useSpots } from "@/lib/spots";
 import { crowdDensityPoints } from "@/lib/data";
 
@@ -165,10 +166,11 @@ export default function MapView() {
         </Link>
       </div>
 
-      {/* Spot carousel. autoPhotos runs on the centred card only: a slideshow on
-          off-screen cards is wasted work and pulls the eye sideways. */}
+      {/* Heat on swaps the spot carousel for the conditions that explain it --
+          the numbers now live with the overlay instead of a separate screen. */}
       <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
-        <div className="no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2"
+        {heat && <CrowdPanel />}
+        <div className={`no-scrollbar flex snap-x snap-mandatory gap-3 overflow-x-auto px-3 pb-2 ${heat ? "hidden" : ""}`}
           onScroll={onCardScroll}>
           {spots.map((s, i) => (
             <div key={s.id} className="w-[86%] shrink-0 snap-center">

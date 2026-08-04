@@ -25,10 +25,10 @@ const TABS = [
 ];
 
 // Now that the nav is mounted globally it would otherwise appear on every
-// route. Only the tab roots (plus Trail Conditions, which carried the old bar)
-// get it -- Detail, Reserve, Filters, MapStyles and especially turn-by-turn
-// Navigate are full-screen views with their own back affordance.
-const NAV_ROUTES = new Set(["/", "/saved", "/map", "/friends", "/profile", "/conditions"]);
+// route. Only the tab roots get it -- Detail, Reserve, Filters, MapStyles and
+// especially turn-by-turn Navigate are full-screen views with their own back
+// affordance.
+const NAV_ROUTES = new Set(["/", "/saved", "/map", "/friends", "/profile"]);
 
 // Reused from MapStyles.tsx's card carousel so motion feels consistent app-wide.
 const COLLAPSE = { type: "spring", stiffness: 320, damping: 30 } as const;
@@ -49,7 +49,7 @@ export default function FloatingNav() {
   useEffect(() => {
     let lastY = 0;
     // Scroll events don't bubble, but they DO capture -- so one document-level
-    // capture listener catches every page's scroller (Screen on Crowd, an inner
+    // capture listener catches every page's scroller (Screen itself, an inner
     // div on Saved/Profile, Home's own sheet) with zero per-page plumbing.
     const onScroll = (e: Event) => {
       const el = e.target as HTMLElement | Document;

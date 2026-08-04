@@ -10,7 +10,6 @@ import { getMyProfile, type Profile } from "@/lib/friends";
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
   { icon: SlidersHorizontal, label: "Search Preferences", href: "/filters" },
-  { icon: Activity, label: "Trail Conditions", href: "/conditions" },
 ];
 
 interface Reservation {
