@@ -8,7 +8,7 @@ export interface RichSpotInfo {
 }
 
 export const RICH_DATA: Record<string, RichSpotInfo> = {
-  "ponce-city-market": {
+  "ponce-city": {
     overview: "Ponce City Market (PCM) is one of the Atlanta BeltLine's flagship destinations. Located inside the restored historic Sears, Roebuck & Co. building, PCM combines restaurants, retail, offices, and rooftop attractions.",
     whyVisit: [
       "Dozens of restaurants",
@@ -30,7 +30,7 @@ export const RICH_DATA: Record<string, RichSpotInfo> = {
       "Krog Street Market": "15 minutes"
     }
   },
-  "krog-street-market": {
+  "krog-street": {
     overview: "Krog Street Market is a historic food hall located directly on the Eastside Trail. Originally built in the 1920s as a warehouse, it is now one of Atlanta's most popular culinary destinations.",
     whyVisit: [
       "Locally owned restaurants",

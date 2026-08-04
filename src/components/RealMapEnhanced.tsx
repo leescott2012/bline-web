@@ -10,7 +10,7 @@ const TREE_SPOTS = beltlineLoop.filter((_, i) => i % 2 === 0);
 
 // Flagship landmarks that deserve special visual treatment
 const LANDMARKS = {
-  "ponce-city-market": { lng: -84.3657, lat: 33.7729, name: "Ponce City Market", emoji: "🏛️" },
+  "ponce-city": { lng: -84.3657, lat: 33.7729, name: "Ponce City Market", emoji: "🏛️" },
   "krog-street": { lng: -84.3641, lat: 33.7569, name: "Krog Street Market", emoji: "🍽️" },
 };
 

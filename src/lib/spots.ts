@@ -99,7 +99,7 @@ async function fetchSpots() {
 }
 
 // Kick off the fetch immediately when this module is first imported.
-// fetchSpots(); // Temporarily disabled to prioritize new high-quality static data
+fetchSpots(); // Supabase is authoritative; staticSpots above is the offline fallback.
 
 
 // ── Public API ────────────────────────────────────────────────────────────

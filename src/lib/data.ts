@@ -144,7 +144,7 @@ export const spots: Spot[] = [
     "website": "https://3peachesgelato.com/"
   },
   {
-    "id": "ponce-city-market",
+    "id": "ponce-city",
     "name": "Ponce City Market",
     "category": "Food Hall",
     "area": "O4W",
@@ -393,7 +393,7 @@ export const spots: Spot[] = [
     "website": "https://kevinrathbunsteak.com/"
   },
   {
-    "id": "ladybird-grove-mess-hall",
+    "id": "lady-bird",
     "name": "Ladybird Grove & Mess Hall",
     "category": "New American Restaurant",
     "area": "O4W",
@@ -434,7 +434,7 @@ export const spots: Spot[] = [
     "website": "https://www.lingeringshade.com/"
   },
   {
-    "id": "krog-street-market",
+    "id": "krog-street",
     "name": "Krog Street Market",
     "category": "Food Hall",
     "area": "Inman Park",

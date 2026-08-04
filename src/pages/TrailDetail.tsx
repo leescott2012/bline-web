@@ -64,7 +64,7 @@ export default function TrailDetail() {
       </div>
 
       <div className="p-4 space-y-3">
-        <Link href="/navigate-3d/ponce-city-market" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-white shadow-lg shadow-accent/20">
+        <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-white shadow-lg shadow-accent/20">
           Start 3D Navigation
         </Link>
         <button 
