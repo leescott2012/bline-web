@@ -130,12 +130,16 @@ export default function Home() {
             <Link href="/filters" className="flex flex-1 items-center justify-around text-center">
               <div>
                 <p className="text-[11px] text-zinc-400">Where</p>
-                <p className="text-[16px] font-semibold leading-tight">Eastside Trail</p>
+                <p className="text-[16px] font-semibold leading-tight truncate max-w-[100px]">
+                  {filters.category || "All Trails"}
+                </p>
               </div>
               <div className="h-8 w-px bg-line" />
               <div>
                 <p className="text-[11px] text-zinc-400">When</p>
-                <p className="text-[16px] font-semibold leading-tight">Open now</p>
+                <p className="text-[16px] font-semibold leading-tight">
+                  {filters.openNow ? "Open now" : "Anytime"}
+                </p>
               </div>
             </Link>
           )}

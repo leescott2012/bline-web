@@ -63,10 +63,16 @@ export default function TrailDetail() {
         <div className="flex justify-between text-xs text-zinc-500"><span>0 mi</span><span>1 mi</span><span>2 mi</span></div>
       </div>
 
-      <div className="p-4">
-        <Link href="/navigate" className="block w-full rounded-full bg-[#c9187e] py-4 text-center text-lg font-semibold text-white">
-          Start navigation
+      <div className="p-4 space-y-3">
+        <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-white shadow-lg shadow-accent/20">
+          Start 3D Navigation
         </Link>
+        <button 
+          onClick={() => alert("Launching 3D Corridor Tour (Gaussian Splats)...")}
+          className="block w-full rounded-full border-2 border-accent/30 bg-white/10 py-3 text-center text-[15px] font-bold text-white backdrop-blur-sm"
+        >
+          3D Corridor Tour
+        </button>
       </div>
     </Screen>
   );

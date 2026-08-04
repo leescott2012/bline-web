@@ -99,10 +99,8 @@ async function fetchSpots() {
 }
 
 // Kick off the fetch immediately when this module is first imported.
-// This means by the time the first component renders, the fetch is already
-// in flight — and if it resolves quickly the UI shows live data on first
-// meaningful paint.
-fetchSpots();
+fetchSpots(); // Supabase is authoritative; staticSpots above is the offline fallback.
+
 
 // ── Public API ────────────────────────────────────────────────────────────
 

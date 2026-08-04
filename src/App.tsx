@@ -13,7 +13,8 @@ import Detail from "@/pages/Detail";
 import Reserve from "@/pages/Reserve";
 import MapView from "@/pages/MapView";
 import TrailDetail from "@/pages/TrailDetail";
-import Navigate from "@/pages/Navigate";
+import NavigateEnhanced from "@/pages/NavigateEnhanced";
+import Navigate3D from "@/pages/Navigate3D";
 import MapStyles from "@/pages/MapStyles";
 import Friends from "@/pages/Friends";
 import Filters from "@/pages/Filters";
@@ -53,8 +54,9 @@ export default function App() {
             <Route path="/reserve/:id" component={Reserve} />
             <Route path="/map" component={MapView} />
             <Route path="/trail" component={TrailDetail} />
-            <Route path="/navigate" component={Navigate} />
-            <Route path="/navigate/:id" component={Navigate} />
+            <Route path="/navigate" component={NavigateEnhanced} />
+            <Route path="/navigate/:id" component={NavigateEnhanced} />
+            <Route path="/navigate-3d/:id" component={Navigate3D} />
             <Route path="/map-styles" component={MapStyles} />
             <Route path="/friends" component={Friends} />
             <Route path="/filters" component={Filters} />
