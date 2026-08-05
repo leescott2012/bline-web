@@ -76,11 +76,13 @@ export const INTERESTS: Record<Interest, InterestDef> = {
 // State management: which interests are currently visible on the map
 const KEY = "bline:mapInterests";
 const DEFAULTS = {
-  dining: true,
-  parks: true,
+  // Nothing is on by default: the map shows what you ask it to show. The empty
+  // state prompts you to choose rather than sitting blank.
+  dining: false,
+  parks: false,
   art: false,
   "trail-access": false,
-  marketplace: true,
+  marketplace: false,
 } as Record<Interest, boolean>;
 
 let state = load();

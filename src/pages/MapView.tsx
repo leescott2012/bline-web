@@ -52,6 +52,7 @@ export default function MapView() {
   // close enough for them to be distinguishable.
   const [zoom, setZoom] = useState(12.1);
   const [locateError, setLocateError] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const reduce = useReducedMotion();
 
   // Expanded is a transient state: five seconds after the last press the deck
@@ -92,15 +93,13 @@ export default function MapView() {
     pins.current.forEach((m) => m.remove());
     pins.current = [];
 
-    // An empty selection means "no filter", not "show nothing". A persisted
-    // all-false state was leaving the map with zero pins and no way to tell
-    // why -- a filter that can hide everything needs an off state, not a
-    // silent empty result.
-    const showAll = activeInterests.length === 0;
-    if (zoom < PIN_MIN_ZOOM) return;
+    // Nothing shows unless it's selected. The map stays empty until you ask
+    // for something -- but an empty map has to say so rather than just looking
+    // broken, hence the prompt below.
+    if (zoom < PIN_MIN_ZOOM || activeInterests.length === 0) return;
     for (const spot of spots) {
       const id = interestOf(spot.category);
-      if (!showAll && !activeInterests.includes(id)) continue;
+      if (!activeInterests.includes(id)) continue;
       const el = document.createElement("button");
       el.className = "bline-spot-pin";
       el.style.background = INTERESTS[id].color;
@@ -115,7 +114,7 @@ export default function MapView() {
     // one to match the spot pins would be fabricating data -- so they render as
     // a labelled dot instead of a number.
     for (const place of places) {
-      if (!showAll && !activeInterests.includes(place.kind)) continue;
+      if (!activeInterests.includes(place.kind)) continue;
       const el = document.createElement("button");
       el.className = "bline-place-pin";
       el.style.background = INTERESTS[place.kind].color;
@@ -261,7 +260,7 @@ export default function MapView() {
       <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => { mapRef.current = m; setMapReady(true); }} className="absolute inset-0" />
 
       {/* Filter chip -- opens a sheet, does not sit over the map. */}
-      <InterestSelector />
+      <InterestSelector open={filtersOpen} onOpenChange={setFiltersOpen} />
 
       {/* right-anchored so it clears the filter chip on the left; gap-4 because
           shrink-wrapping ran the two labels together as "Eastside TrailWhen". */}
@@ -311,7 +310,17 @@ export default function MapView() {
         </div>
       )}
 
-      {zoom < PIN_MIN_ZOOM && !heat && (
+      {activeInterests.length === 0 && !heat && (
+        <div className="absolute inset-x-0 z-10 flex justify-center"
+          style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
+          <button onClick={() => setFiltersOpen(true)}
+            className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
+            Choose what to show
+          </button>
+        </div>
+      )}
+
+      {activeInterests.length > 0 && zoom < PIN_MIN_ZOOM && !heat && (
         <div className="absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
           <button

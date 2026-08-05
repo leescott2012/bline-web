@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { SlidersHorizontal, UtensilsCrossed, Trees, Palette, Footprints, Store, X } from "lucide-react";
 import { INTERESTS, useMapInterests, toggleInterest, interestOf, type Interest } from "@/lib/mapInterests";
 import { useSpots } from "@/lib/spots";
@@ -21,7 +20,13 @@ const ICON: Record<Interest, typeof Trees> = {
   marketplace: Store,
 };
 
-export default function InterestSelector() {
+export default function InterestSelector({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const interests = useMapInterests();
   const spots = useSpots();
   // Offer any interest with something behind it -- in spots OR in places.
@@ -33,13 +38,12 @@ export default function InterestSelector() {
       places.some((p) => p.kind === id) ||
       spots.some((s) => interestOf(s.category) === id),
   );
-  const [open, setOpen] = useState(false);
   const activeCount = Object.values(interests).filter(Boolean).length;
 
   if (!open) {
     return (
       <button
-        onClick={() => setOpen(true)}
+        onClick={() => onOpenChange(true)}
         aria-label="Filter map by interest"
         className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 flex items-center gap-2 rounded-full bg-[#101014]/90 px-3.5 py-2.5 text-[14px] font-semibold text-white shadow-lg backdrop-blur"
       >
@@ -62,7 +66,7 @@ export default function InterestSelector() {
             {activeCount} of {available.length} selected
           </p>
         </div>
-        <button onClick={() => setOpen(false)} aria-label="Close filters"
+        <button onClick={() => onOpenChange(false)} aria-label="Close filters"
           className="grid size-8 shrink-0 place-items-center rounded-full bg-white/10 text-white">
           <X size={16} />
         </button>
