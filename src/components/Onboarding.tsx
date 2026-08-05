@@ -19,15 +19,29 @@ const BTN = "w-full rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-whit
 
 function Shell({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) {
   return (
-    <div className="relative flex h-full flex-col justify-center px-7 pb-[env(safe-area-inset-bottom)]">
-      {onBack && (
-        <button onClick={onBack} aria-label="Back"
-          className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-white/10 text-white">
-          <ChevronLeft size={22} />
-        </button>
-      )}
-      <p className="text-center text-[26px] font-extrabold tracking-tight text-hot">Ⓑ B-line</p>
-      {children}
+    <div className="flex h-full flex-col px-7 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[env(safe-area-inset-bottom)]">
+      {/* The back button lives in a real header row rather than floating over
+          the centred content -- one less thing to go wrong, and it can't land
+          on top of the heading on a short screen.
+
+          That restructure is not what fixed the disappearing back button
+          though; see the username field below. `absolute` and `fixed` were
+          both blamed first and neither was at fault. Measured on device, the
+          button was present, visible, 44x44, opacity 1 -- at y = -176, because
+          WebKit had scrolled the whole viewport up. No CSS position survives
+          that, so don't reach for one if this ever regresses. */}
+      <div className="flex h-11 shrink-0 items-center">
+        {onBack && (
+          <button onClick={onBack} aria-label="Back"
+            className="-ml-2.5 grid size-11 place-items-center rounded-full bg-white/10 text-white">
+            <ChevronLeft size={26} />
+          </button>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col justify-center">
+        <p className="text-center text-[26px] font-extrabold tracking-tight text-hot">Ⓑ B-line</p>
+        {children}
+      </div>
     </div>
   );
 }
@@ -195,7 +209,11 @@ function UsernamePicker({ userId }: { userId: string }) {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="yourname"
-            autoFocus
+            /* Deliberately NOT autoFocus. On iOS the keyboard opened before
+               layout settled and WebKit scrolled the viewport up 176pt to lift
+               this field clear of it, taking the header -- and the only way off
+               this screen -- off the top of the display. Costs one tap; worth
+               it. Re-add only with a device check that the header survives. */
             autoCapitalize="none"
             autoCorrect="off"
             aria-label="Username"
