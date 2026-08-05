@@ -130,6 +130,17 @@ export default function MapView() {
     return () => { pins.current.forEach((m) => m.remove()); pins.current = []; };
   }, [spots, activeKey, nav, mapReady, zoom]);
 
+  // Toggling a filter below the pin threshold used to do nothing at all: the
+  // map opens at 12.1 and pins need 13.2, so the control looked broken. Turning
+  // one on now moves the map to where it actually applies.
+  const firstFilterRender = useRef(true);
+  useEffect(() => {
+    if (firstFilterRender.current) { firstFilterRender.current = false; return; }
+    const map = mapRef.current;
+    if (!map || !activeKey || map.getZoom() >= PIN_MIN_ZOOM) return;
+    map.easeTo({ zoom: PIN_MIN_ZOOM + 0.4, duration: 600 });
+  }, [activeKey, mapReady]);
+
   // Keep the label honest if a gesture flattens the map out from under us.
   useEffect(() => {
     const map = mapRef.current;
@@ -301,11 +312,13 @@ export default function MapView() {
       )}
 
       {zoom < PIN_MIN_ZOOM && !heat && (
-        <div className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
+        <div className="absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
-          <p className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
+          <button
+            onClick={() => mapRef.current?.easeTo({ zoom: PIN_MIN_ZOOM + 0.4, duration: 600 })}
+            className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
             Zoom in to see spots
-          </p>
+          </button>
         </div>
       )}
 
