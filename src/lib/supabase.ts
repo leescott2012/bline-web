@@ -18,4 +18,8 @@ export const SUPABASE_ANON = envOr(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNzenNpa3l6b2lub3dqZWpsem53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3MzA1MDksImV4cCI6MjEwMDMwNjUwOX0.nUiglVtCUVesTRQE6bvyuQgSIGICXMPnog5aq3LC6iw",
 );
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
+  // Passkeys are still a beta API and need an explicit opt-in; without this
+  // flag the auth.registerPasskey / signInWithPasskey methods aren't exposed.
+  auth: { experimental: { passkey: true } },
+});

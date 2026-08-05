@@ -79,3 +79,34 @@ export async function signInWithUsername(username: string, password: string) {
 export function hasLogin(user: User | null) {
   return !!user?.email;
 }
+
+// ── passkeys ───────────────────────────────────────────────────────────────
+// Face ID instead of a password: nothing to remember, nothing to type, and the
+// credential syncs through iCloud Keychain so a new phone just works.
+//
+// WebAuthn binds a credential to a domain, and Capacitor serves the app from
+// `capacitor://localhost`, which is not a domain WebAuthn will accept. So this
+// is a web-first feature: supported in the browser build, hidden in the native
+// app until Associated Domains + an apple-app-site-association file are set up.
+// Offering a button that can only fail would be worse than not offering it.
+export function passkeysAvailable() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.PublicKeyCredential !== "undefined" &&
+    !window.location.protocol.startsWith("capacitor")
+  );
+}
+
+/** Add Face ID to the account you're already signed into. */
+export async function addPasskey() {
+  return (supabase.auth as unknown as {
+    registerPasskey: () => Promise<{ data: unknown; error: { message: string } | null }>;
+  }).registerPasskey();
+}
+
+/** Sign in with Face ID -- no username, no password. */
+export async function signInWithPasskey() {
+  return (supabase.auth as unknown as {
+    signInWithPasskey: () => Promise<{ data: unknown; error: { message: string } | null }>;
+  }).signInWithPasskey();
+}

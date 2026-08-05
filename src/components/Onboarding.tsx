@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { MapPin, Users, Flame, ChevronLeft } from "lucide-react";
+import { MapPin, Users, Flame, ChevronLeft, ScanFace } from "lucide-react";
 
-import { startAnonymousSession, signInWithUsername, signOut } from "@/lib/auth";
+import { startAnonymousSession, signInWithUsername, signOut, signInWithPasskey, passkeysAvailable } from "@/lib/auth";
 import { claimUsername } from "@/lib/friends";
 import { refreshProfile } from "@/lib/profile";
 
@@ -51,10 +51,34 @@ function SignIn({ onBack }: { onBack: () => void }) {
   return (
     <Shell onBack={onBack}>
       <h1 className="mt-7 text-center text-[24px] font-bold">Welcome back</h1>
-      <p className="mt-1.5 text-center text-[14px] text-zinc-400">
+
+      {passkeysAvailable() && (
+        <>
+          {/* Nothing to type and nothing to remember, so it goes first. */}
+          <button
+            onClick={async () => {
+              setBusy(true);
+              setError(null);
+              const { error: err } = await signInWithPasskey();
+              if (err) { setError(err.message); setBusy(false); }
+            }}
+            disabled={busy}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
+          >
+            <ScanFace size={18} /> Sign in with Face ID
+          </button>
+          <div className="my-5 flex items-center gap-3">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-[12px] uppercase tracking-wider text-zinc-500">or</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </>
+      )}
+
+      <p className="text-center text-[14px] text-zinc-400">
         Your @username and the password you set.
       </p>
-      <form onSubmit={submit} className="mt-7 space-y-2.5">
+      <form onSubmit={submit} className="mt-4 space-y-2.5">
         <div className="flex items-center rounded-xl bg-panel px-4 ring-1 ring-line focus-within:ring-hot">
           <span className="text-zinc-500">@</span>
           <input value={username} onChange={(e) => setUsername(e.target.value)}

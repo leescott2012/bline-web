@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check } from "lucide-react";
+import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
-import { useAuth, signOut, attachPassword, hasLogin } from "@/lib/auth";
+import { useAuth, signOut, attachPassword, hasLogin, addPasskey, passkeysAvailable } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { ProfileAvatar } from "@/components/ProfileCard";
 
@@ -46,6 +46,7 @@ export default function Profile() {
   const [linkPassword, setLinkPassword] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [passkeyState, setPasskeyState] = useState<"idle" | "busy" | "done">("idle");
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +100,33 @@ export default function Profile() {
                 Right now @{profile.username} only lives on this phone. Set a password and you can
                 sign back in with your username anywhere.
               </p>
+              {passkeysAvailable() && (
+                <>
+                  {/* Face ID beats a password on every axis that matters here:
+                      nothing to remember, nothing to type, and it syncs to a new
+                      phone through iCloud Keychain. */}
+                  <button
+                    onClick={async () => {
+                      setPasskeyState("busy");
+                      setLinkError(null);
+                      const { error } = await addPasskey();
+                      if (error) { setLinkError(error.message); setPasskeyState("idle"); }
+                      else setPasskeyState("done");
+                    }}
+                    disabled={passkeyState !== "idle"}
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3 text-[15px] font-semibold text-white disabled:opacity-50"
+                  >
+                    <ScanFace size={18} />
+                    {passkeyState === "done" ? "Face ID is set up" : passkeyState === "busy" ? "Setting up…" : "Set up Face ID"}
+                  </button>
+                  <div className="my-3 flex items-center gap-3">
+                    <span className="h-px flex-1 bg-line" />
+                    <span className="text-[12px] uppercase tracking-wider text-zinc-500">or set a password</span>
+                    <span className="h-px flex-1 bg-line" />
+                  </div>
+                </>
+              )}
+
               <form
                 onSubmit={async (e) => {
                   e.preventDefault();
