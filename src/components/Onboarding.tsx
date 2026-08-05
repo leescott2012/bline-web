@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { MapPin, Users, Flame } from "lucide-react";
+import { MapPin, Users, Flame, ChevronLeft } from "lucide-react";
 
-import { startAnonymousSession } from "@/lib/auth";
+import { startAnonymousSession, signInWithUsername, signOut } from "@/lib/auth";
 import { claimUsername } from "@/lib/friends";
 import { refreshProfile } from "@/lib/profile";
 
@@ -17,18 +17,65 @@ const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
 
 const BTN = "w-full rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-white disabled:opacity-50";
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) {
   return (
-    <div className="flex h-full flex-col justify-center px-7 pb-[env(safe-area-inset-bottom)]">
+    <div className="relative flex h-full flex-col justify-center px-7 pb-[env(safe-area-inset-bottom)]">
+      {onBack && (
+        <button onClick={onBack} aria-label="Back"
+          className="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] grid size-11 place-items-center rounded-full bg-white/10 text-white">
+          <ChevronLeft size={22} />
+        </button>
+      )}
       <p className="text-center text-[26px] font-extrabold tracking-tight text-hot">Ⓑ B-line</p>
       {children}
     </div>
   );
 }
 
+// Returning on a new device, or after signing out. Anonymous accounts only
+// exist in device storage, so without this there was no way back into one.
+function SignIn({ onBack }: { onBack: () => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const { error: err } = await signInWithUsername(username, password);
+    if (err) { setError(err.message); setBusy(false); }
+  };
+
+  return (
+    <Shell onBack={onBack}>
+      <h1 className="mt-7 text-center text-[24px] font-bold">Welcome back</h1>
+      <p className="mt-1.5 text-center text-[14px] text-zinc-400">
+        Your @username and the password you set.
+      </p>
+      <form onSubmit={submit} className="mt-7 space-y-2.5">
+        <div className="flex items-center rounded-xl bg-panel px-4 ring-1 ring-line focus-within:ring-hot">
+          <span className="text-zinc-500">@</span>
+          <input value={username} onChange={(e) => setUsername(e.target.value)}
+            placeholder="yourname" autoCapitalize="none" autoCorrect="off" aria-label="Username"
+            className="w-full bg-transparent py-3.5 pl-1 text-[15px] outline-none placeholder:text-zinc-600" />
+        </div>
+        <input value={password} onChange={(e) => setPassword(e.target.value)} type="password"
+          placeholder="Password" aria-label="Password"
+          className="w-full rounded-xl bg-panel px-4 py-3.5 text-[15px] outline-none ring-1 ring-line placeholder:text-zinc-600 focus:ring-hot" />
+        <button type="submit" disabled={busy || !username || !password} className={BTN}>
+          {busy ? "Signing in…" : "Sign in"}
+        </button>
+        {error && <p className="text-center text-[13px] text-red-400">{error}</p>}
+      </form>
+    </Shell>
+  );
+}
+
 // Step 1 -- what they get, then one tap. No form here on purpose: the first
 // screen should be readable in two seconds.
-function Welcome() {
+function Welcome({ onSignIn }: { onSignIn: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +115,11 @@ function Welcome() {
         </button>
 
       </div>
-      <p className="mt-4 text-center text-[13px] text-zinc-500">
+      <button onClick={onSignIn}
+        className="mt-4 w-full py-2 text-center text-[14px] font-semibold text-zinc-300">
+        I already have an account
+      </button>
+      <p className="mt-2 text-center text-[13px] text-zinc-500">
         No email, no password, nothing to verify.
       </p>
       {error && <p className="mt-2 text-center text-[13px] text-red-400">{error}</p>}
@@ -105,7 +156,9 @@ function UsernamePicker({ userId }: { userId: string }) {
   };
 
   return (
-    <Shell>
+    // Backing out signs the throwaway anonymous session away, so you land on
+    // the welcome screen rather than being stuck on a form you can't leave.
+    <Shell onBack={() => signOut()}>
       <h1 className="mt-7 text-center text-[24px] font-bold">Pick your username</h1>
       <p className="mt-1.5 text-center text-[14px] text-zinc-400">
         This is how friends find you on B-line.
@@ -147,5 +200,8 @@ function UsernamePicker({ userId }: { userId: string }) {
 }
 
 export default function Onboarding({ userId }: { userId?: string }) {
-  return userId ? <UsernamePicker userId={userId} /> : <Welcome />;
+  const [signingIn, setSigningIn] = useState(false);
+  if (userId) return <UsernamePicker userId={userId} />;
+  if (signingIn) return <SignIn onBack={() => setSigningIn(false)} />;
+  return <Welcome onSignIn={() => setSigningIn(true)} />;
 }

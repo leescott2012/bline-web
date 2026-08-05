@@ -12,7 +12,7 @@ export default function SpotCard({ spot, photoClass = "aspect-[488/200]", autoPh
   const favs = useFavorites();
   const saved = favs.includes(spot.id);
   return (
-    <Link href={`/spot/${spot.id}`} className="block overflow-hidden bg-card">
+    <Link href={`/spot/${spot.id}`} className="block overflow-hidden rounded-2xl bg-card">
       <div className={`relative ${photoClass}`}>
         <PhotoCarousel imgs={spot.imgs} alt={spot.name} auto={autoPhotos} className="h-full w-full" />
         <button aria-label={saved ? "Remove from saved" : "Save"} aria-pressed={saved}

@@ -23,7 +23,16 @@ body,
      horizontally so one overflowing child can't drag the whole page sideways. */
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  /* Lock the shell. In a WKWebView the document itself will rubber-band and
+     drag the whole app around, which reads as the screen coming loose from the
+     status bar. Scrolling belongs to the panes inside (Screen, the card sheet),
+     never to the document. `fixed` also stops iOS resizing the viewport when
+     the keyboard opens. */
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Vertical space the floating island nav occupies (FloatingNav.tsx): pill

@@ -99,7 +99,11 @@ export default function Home() {
       {/* tapping the background map switches to the dedicated Map tab, same as
           swiping down on a single card below -- one "go full map" gesture */}
       <div onClick={() => setLocation("/map")} className="absolute inset-0">
-        <RealMap zoom={12.6} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
+        {/* Wider than the Map tab on purpose: this is the backdrop behind the card
+            list, so it wants the whole corridor in frame rather than a
+            neighbourhood. autoPitch off keeps it flat -- a tilted backdrop
+            fights the cards sitting on top of it. */}
+        <RealMap zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
       </div>
 
       {/* header fixed over the map; fades + lifts away as the list scrolls up.
@@ -183,7 +187,7 @@ export default function Home() {
       {/* bottom stack: sheet + banner + tabs */}
       {filtered.length === 0 ? (
         <div className="no-scrollbar absolute inset-0 z-10 overflow-y-auto overscroll-contain">
-          <div className="h-[28vh] shrink-0" />
+          <div className="h-[44vh] shrink-0" />
           <div className="min-h-full rounded-t-2xl bg-ink px-4 pb-40 pt-6">
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-10 text-center text-zinc-400">
               <SearchX size={32} />
@@ -202,7 +206,7 @@ export default function Home() {
           {/* transparent spacer keeps the map open above the first card (HT-style);
               also doubles as the tap target for "tap the map -> Map tab" since it's
               the topmost element over the visible map in list mode */}
-          <div className="h-[28vh] shrink-0" onClick={() => setLocation("/map")} />
+          <div className="h-[44vh] shrink-0" onClick={() => setLocation("/map")} />
           <div className="min-h-full space-y-2.5 rounded-t-2xl bg-ink px-2 pb-40 pt-1">
             <button className="flex w-full cursor-grab justify-center py-1.5" onClick={() => setSheet("cards")} aria-label="Single-card view">
               <span className="h-1.5 w-12 rounded-full bg-zinc-500" />

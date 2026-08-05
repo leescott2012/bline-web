@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays } from "lucide-react";
+import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
-import { useAuth, signOut } from "@/lib/auth";
+import { useAuth, signOut, attachPassword, hasLogin } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { ProfileAvatar } from "@/components/ProfileCard";
 
@@ -43,6 +43,9 @@ export default function Profile() {
   const { profile } = useProfile();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [resvLoading, setResvLoading] = useState(false);
+  const [linkPassword, setLinkPassword] = useState("");
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -55,6 +58,7 @@ export default function Profile() {
 
   if (!profile) return null;
   const name = profile.display_name || profile.username;
+  const linked = hasLogin(user);
 
   return (
     <Screen className="overflow-hidden">
@@ -72,6 +76,61 @@ export default function Profile() {
             <LogOut size={13} /> Sign out
           </button>
         </header>
+
+        {/* Until you add these, the account exists only in this device's
+            storage: sign out or switch phones and it's gone, username and all.
+            This upgrades the *same* user in place -- uuid, @username, friends,
+            favourites and reservations all survive. */}
+        <div className="mx-4 mt-6 rounded-2xl border border-line p-4">
+          <div className="flex items-center gap-2">
+            {linked ? <Check size={16} className="text-mint" /> : <KeyRound size={16} className="text-hot" />}
+            <p className="text-[15px] font-bold">
+              {linked ? "You can sign back in" : "Add a way to sign back in"}
+            </p>
+          </div>
+          {linked ? (
+            <p className="mt-1.5 text-[13px] text-zinc-400">
+              Sign in with @{profile.username} and your password to get this account back on
+              another phone.
+            </p>
+          ) : (
+            <>
+              <p className="mt-1.5 text-[13px] text-zinc-400">
+                Right now @{profile.username} only lives on this phone. Set a password and you can
+                sign back in with your username anywhere.
+              </p>
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setLinkBusy(true);
+                  setLinkError(null);
+                  const { error } = await attachPassword(profile.username, linkPassword);
+                  setLinkBusy(false);
+                  if (error) {
+                    // Supabase reports the confirmation-required case as a mail
+                    // failure, which reads as nonsense to someone who never
+                    // typed an email.
+                    setLinkError(
+                      /rate limit|smtp|mail/i.test(error.message)
+                        ? "Couldn't save. Email confirmation needs to be turned off in Supabase Auth settings."
+                        : error.message,
+                    );
+                  }
+                }}
+                className="mt-3 space-y-2"
+              >
+                <input value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} type="password"
+                  placeholder="Password (8+ characters)" aria-label="Password" minLength={8}
+                  className="w-full rounded-xl bg-panel px-4 py-3 text-[15px] outline-none ring-1 ring-line placeholder:text-zinc-600 focus:ring-hot" />
+                <button type="submit" disabled={linkBusy || linkPassword.length < 8}
+                  className="w-full rounded-xl bg-hot py-3 text-[15px] font-semibold text-white disabled:opacity-50">
+                  {linkBusy ? "Saving…" : "Save login"}
+                </button>
+                {linkError && <p className="text-center text-[13px] text-red-400">{linkError}</p>}
+              </form>
+            </>
+          )}
+        </div>
 
         <div className="mx-4 mt-6 flex overflow-hidden rounded-2xl border border-line">
           <div className="flex-1 border-r border-line py-4 text-center">

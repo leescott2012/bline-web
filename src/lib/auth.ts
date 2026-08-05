@@ -45,3 +45,37 @@ export async function startAnonymousSession() {
 export async function signOut() {
   await supabase.auth.signOut();
 }
+
+// The anonymous session lives in this device's storage, so signing out or
+// switching phones used to lose the account outright -- there was no way back
+// in. A password fixes that without introducing email anywhere in the UI.
+//
+// Supabase password auth needs an identifier, so the username is mapped to a
+// synthetic one. Users only ever type a username and a password -- no email
+// appears anywhere in the UI.
+//
+// `.invalid` (RFC 2606) would be the correct reserved TLD, but Supabase's own
+// validator rejects it outright -- verified against the live project. `.local`
+// passes validation and is equally non-routable, so no mail can ever reach a
+// real inbox.
+//
+// REQUIRES "Confirm email" to be OFF in Supabase → Authentication → Sign In /
+// Providers → Email. With it on, Supabase queues a confirmation to an address
+// that cannot receive one and the account stays unusable. Verified: with it on,
+// these calls return "email rate limit exceeded".
+const identifierFor = (username: string) => `${username.trim().toLowerCase()}@bline.local`;
+
+/** Give the account you already have a password, keeping the same @username. */
+export async function attachPassword(username: string, password: string) {
+  return supabase.auth.updateUser({ email: identifierFor(username), password });
+}
+
+/** Returning on a new device, or after signing out. */
+export async function signInWithUsername(username: string, password: string) {
+  return supabase.auth.signInWithPassword({ email: identifierFor(username), password });
+}
+
+/** Has this account been given a way back in yet? */
+export function hasLogin(user: User | null) {
+  return !!user?.email;
+}
