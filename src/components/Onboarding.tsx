@@ -90,7 +90,7 @@ function SignIn({ onBack }: { onBack: () => void }) {
       )}
 
       <p className="text-center text-[14px] text-zinc-400">
-        Your @username and the password you set.
+        Your @username and the password or PIN you set.
       </p>
       <form onSubmit={submit} className="mt-4 space-y-2.5">
         <div className="flex items-center rounded-xl bg-panel px-4 ring-1 ring-line focus-within:ring-hot">
@@ -100,7 +100,7 @@ function SignIn({ onBack }: { onBack: () => void }) {
             className="w-full bg-transparent py-3.5 pl-1 text-[15px] outline-none placeholder:text-zinc-600" />
         </div>
         <input value={password} onChange={(e) => setPassword(e.target.value)} type="password"
-          placeholder="Password" aria-label="Password"
+          placeholder="Password or PIN" aria-label="Password or PIN"
           className="w-full rounded-xl bg-panel px-4 py-3.5 text-[15px] outline-none ring-1 ring-line placeholder:text-zinc-600 focus:ring-hot" />
         <button type="submit" disabled={busy || !username || !password} className={BTN}>
           {busy ? "Signing in…" : "Sign in"}
@@ -147,20 +147,27 @@ function Welcome({ onSignIn }: { onSignIn: () => void }) {
         ))}
       </ul>
 
-      <div className="mt-9 space-y-3">
+      <div className="mt-9">
         <button onClick={start} disabled={busy} className={BTN}>
           {busy ? "Setting up…" : "Get started"}
         </button>
+        {/* Sits with "Get started", which is what it describes -- signing in
+            below obviously does need a password. */}
+        <p className="mt-2 text-center text-[13px] text-zinc-500">
+          No email, no password, nothing to verify.
+        </p>
+      </div>
 
+      <div className="mt-5 flex items-center gap-3">
+        <span className="h-px flex-1 bg-line" />
+        <span className="text-[12px] uppercase tracking-wider text-zinc-500">or</span>
+        <span className="h-px flex-1 bg-line" />
       </div>
       <button onClick={onSignIn}
-        className="mt-4 w-full py-2 text-center text-[14px] font-semibold text-zinc-300">
-        I already have an account
+        className="mt-4 w-full rounded-xl border border-line py-3.5 text-center text-[15px] font-semibold text-zinc-100">
+        Sign in with username
       </button>
-      <p className="mt-2 text-center text-[13px] text-zinc-500">
-        No email, no password, nothing to verify.
-      </p>
-      {error && <p className="mt-2 text-center text-[13px] text-red-400">{error}</p>}
+      {error && <p className="mt-3 text-center text-[13px] text-red-400">{error}</p>}
     </Shell>
   );
 }

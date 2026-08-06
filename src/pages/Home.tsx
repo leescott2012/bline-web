@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, SlidersHorizontal, X, SearchX, ArrowUpDown } from "lucide-react";
+import { Search, SlidersHorizontal, X, SearchX, ArrowUpDown, MapPinPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
+import TellUsSheet from "@/components/TellUsSheet";
 import { useSpots } from "@/lib/spots";
 import { useExploreFilters, applyFilters, setQuery, setSort, type SortKey } from "@/lib/exploreFilters";
 
@@ -24,6 +25,7 @@ export default function Home() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const activeRef = useRef(0);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -192,6 +194,14 @@ export default function Home() {
             <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-10 text-center text-zinc-400">
               <SearchX size={32} />
               <p>No spots match.<br />Try a different search or filter.</p>
+              {/* Landing here often means the place isn't in the app at all,
+                  not that the search was wrong -- two "can't find venue" bug
+                  reports were exactly this. Ask while they're looking. */}
+              <button onClick={() => setSuggesting(true)}
+                className="mt-3 flex items-center gap-1.5 rounded-full border border-line px-5 py-2.5 text-[14px] font-semibold text-zinc-200">
+                <MapPinPlus size={15} />
+                Missing a spot? Tell us
+              </button>
             </div>
           </div>
         </div>
@@ -242,6 +252,16 @@ export default function Home() {
       )}
 
       {/* fixed bottom chrome */}
+
+      <TellUsSheet
+        open={suggesting}
+        onClose={() => setSuggesting(false)}
+        title="Missing a spot?"
+        blurb="Tell us what should be on the BeltLine map and we'll look into adding it."
+        placeholder="Name and roughly where it is — e.g. 'Bar Mercado, Krog Street Market'"
+        source="suggest-place"
+        context={{ searchQuery: filters.query || null }}
+      />
     </Screen>
   );
 }

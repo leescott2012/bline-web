@@ -1,10 +1,12 @@
-import { ChevronLeft, Share, Heart, Star, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, Share, Heart, Star, ChevronRight, Store } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { isOpenNow, closingTimeLabel } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
 import { RICH_DATA } from "@/lib/richData";
 import PhotoCarousel from "@/components/PhotoCarousel";
+import TellUsSheet from "@/components/TellUsSheet";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
 async function shareSpot(name: string) {
@@ -20,6 +22,9 @@ export default function Detail() {
   const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const saved = useFavorites().includes(spot.id);
+  const [claiming, setClaiming] = useState(false);
+  // A park or a mural has no owner to claim it, so don't offer.
+  const isBusiness = !/^park|public art|trail access/i.test(spot.category);
   // Gating on `Parks` alone left a juice bar offering a table booking. A
   // reservation only makes sense somewhere you'd actually hold a table.
   // Deny first: a plain /bar/ match also hit "Juice Bars & Smoothies", which
@@ -152,6 +157,36 @@ export default function Detail() {
           </div>
         </div>
       )}
+
+      {isBusiness && (
+        <div className="px-4 pb-10">
+          <button
+            onClick={() => setClaiming(true)}
+            className="flex w-full items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-4 text-left"
+          >
+            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-hot/15 text-hot">
+              <Store size={18} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">Is this your business?</span>
+              <span className="mt-0.5 block text-[13px] leading-snug text-zinc-400">
+                Reach out and we'll get your hours, photos and details right.
+              </span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-zinc-500" />
+          </button>
+        </div>
+      )}
+
+      <TellUsSheet
+        open={claiming}
+        onClose={() => setClaiming(false)}
+        title={`Claim ${spot.name}`}
+        blurb="Tell us who you are and what we've got wrong — hours, photos, menu, anything."
+        placeholder="I'm the owner/manager of this spot and…"
+        source="claim-business"
+        context={{ spotId: spot.id, spotName: spot.name, address: spot.address }}
+      />
     </Screen>
   );
 }

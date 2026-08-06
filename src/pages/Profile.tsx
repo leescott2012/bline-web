@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace } from "lucide-react";
+import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace, MapPinPlus } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
@@ -7,6 +7,7 @@ import { useSpots } from "@/lib/spots";
 import { useAuth, signOut, attachPassword, hasLogin, addPasskey, passkeysAvailable } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { ProfileAvatar } from "@/components/ProfileCard";
+import TellUsSheet from "@/components/TellUsSheet";
 
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
@@ -47,6 +48,7 @@ export default function Profile() {
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [passkeyState, setPasskeyState] = useState<"idle" | "busy" | "done">("idle");
+  const [suggesting, setSuggesting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -121,7 +123,7 @@ export default function Profile() {
                   </button>
                   <div className="my-3 flex items-center gap-3">
                     <span className="h-px flex-1 bg-line" />
-                    <span className="text-[12px] uppercase tracking-wider text-zinc-500">or set a password</span>
+                    <span className="text-[12px] uppercase tracking-wider text-zinc-500">or set a password / PIN</span>
                     <span className="h-px flex-1 bg-line" />
                   </div>
                 </>
@@ -148,9 +150,13 @@ export default function Profile() {
                 className="mt-3 space-y-2"
               >
                 <input value={linkPassword} onChange={(e) => setLinkPassword(e.target.value)} type="password"
-                  placeholder="Password (8+ characters)" aria-label="Password" minLength={8}
+                  placeholder="Password or 6-digit PIN" aria-label="Password or PIN" minLength={6}
                   className="w-full rounded-xl bg-panel px-4 py-3 text-[15px] outline-none ring-1 ring-line placeholder:text-zinc-600 focus:ring-hot" />
-                <button type="submit" disabled={linkBusy || linkPassword.length < 8}
+                <p className="px-1 text-[12px] text-zinc-500">
+                  At least 6 characters. A 6-digit PIN works — it's quicker to type, but a
+                  longer password is harder for someone else to guess.
+                </p>
+                <button type="submit" disabled={linkBusy || linkPassword.length < 6}
                   className="w-full rounded-xl bg-hot py-3 text-[15px] font-semibold text-white disabled:opacity-50">
                   {linkBusy ? "Saving…" : "Save login"}
                 </button>
@@ -214,11 +220,28 @@ export default function Profile() {
           ))}
         </div>
 
+        <button
+          onClick={() => setSuggesting(true)}
+          className="mx-4 mt-3 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-line px-4 py-3.5 text-left"
+        >
+          <MapPinPlus size={18} className="text-zinc-400" />
+          <span className="flex-1 text-[15px]">Suggest a place or business</span>
+          <ChevronRight size={16} className="text-zinc-500" />
+        </button>
+
         <p className="mt-6 flex items-center justify-center gap-1.5 px-6 text-center text-xs text-zinc-500">
           <Bug size={13} /> Found something off? Tap the bug icon on any screen.
         </p>
       </div>
 
+      <TellUsSheet
+        open={suggesting}
+        onClose={() => setSuggesting(false)}
+        title="Suggest a place"
+        blurb="A business, park or anything else on the BeltLine we're missing."
+        placeholder="Name and roughly where it is — e.g. 'Bar Mercado, Krog Street Market'"
+        source="suggest-place"
+      />
     </Screen>
   );
 }
