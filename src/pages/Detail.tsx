@@ -54,7 +54,7 @@ export default function Detail() {
         {spot.badges.length > 0 && (
           <div className="flex gap-2">
             {spot.badges.map((b) => (
-              <span key={b} className={`rounded px-2 py-1 text-[11px] font-bold text-white ${b === "DEAL" ? "bg-accent" : "bg-[#7c3aed]"}`}>
+              <span key={b} className={`rounded px-2 py-1 text-[11px] font-bold text-on-brand ${b === "DEAL" ? "bg-accent" : "bg-teal"}`}>
                 {b}
               </span>
             ))}
@@ -68,7 +68,7 @@ export default function Detail() {
 
         <button className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]">
           <span className="shrink-0 whitespace-nowrap">
-            {isOpenNow(spot) ? <span className="font-semibold text-mint">Open now</span> : <span className="font-semibold text-hot">Closed</span>}
+            {isOpenNow(spot) ? <span className="font-semibold text-mint">Open now</span> : <span className="font-semibold text-alert">Closed</span>}
             {" "}· Closes {closingTimeLabel(spot.openTill)}
           </span>
           <span className="flex min-w-0 items-center gap-1 text-zinc-400">
@@ -78,12 +78,12 @@ export default function Detail() {
         </button>
 
         <Link href="/trail" className="mt-6 flex items-center gap-4">
-          <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#2a2440]">
+          <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-panel">
             <svg viewBox="0 0 40 40" className="h-full w-full">
-              <rect width="40" height="40" fill="#252036" />
-              <rect x="2" y="4" width="10" height="8" fill="#3d3357" /><rect x="16" y="2" width="9" height="10" fill="#3d3357" />
-              <rect x="28" y="6" width="9" height="12" fill="#3d3357" /><rect x="4" y="24" width="12" height="10" fill="#1e3229" />
-              <path d="M4 34 C 14 26, 18 18, 34 6" stroke="#c026d3" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <rect width="40" height="40" fill="#16161b" />
+              <rect x="2" y="4" width="10" height="8" fill="#2a2a33" /><rect x="16" y="2" width="9" height="10" fill="#2a2a33" />
+              <rect x="28" y="6" width="9" height="12" fill="#2a2a33" /><rect x="4" y="24" width="12" height="10" fill="#0f2418" />
+              <path d="M4 34 C 14 26, 18 18, 34 6" stroke="#60bb46" strokeWidth="2.5" fill="none" strokeLinecap="round" />
             </svg>
           </div>
           <div>
@@ -106,7 +106,7 @@ export default function Detail() {
         </Link>
         {servesMenu && (
           <Link href={`/reserve/${spot.id}`}
-            className="block flex-1 rounded-full bg-[#5b2a86] py-4 text-center text-lg font-semibold">
+            className="block flex-1 rounded-full bg-teal py-4 text-center text-lg font-semibold">
             Reserve a table
           </Link>
         )}

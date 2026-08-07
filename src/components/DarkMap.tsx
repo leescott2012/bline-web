@@ -17,9 +17,9 @@ export default function DarkMap({
       <svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 h-full w-full">
         <rect width="100" height="60" fill="#1b2130" />
         {/* park blobs */}
-        <ellipse cx="20" cy="12" rx="14" ry="8" fill="#1e3229" />
-        <ellipse cx="78" cy="44" rx="16" ry="9" fill="#1e3229" />
-        <ellipse cx="60" cy="10" rx="9" ry="5" fill="#1e3229" />
+        <ellipse cx="20" cy="12" rx="14" ry="8" fill="#0f2418" />
+        <ellipse cx="78" cy="44" rx="16" ry="9" fill="#0f2418" />
+        <ellipse cx="60" cy="10" rx="9" ry="5" fill="#0f2418" />
         {/* roads */}
         <g stroke="#39415a" strokeWidth="0.8" fill="none">
           <path d="M0 30 C 25 26, 70 34, 100 28" />
@@ -34,7 +34,7 @@ export default function DarkMap({
         </g>
         {/* beltline loop */}
         {circle && (
-          <ellipse cx="48" cy="26" rx="17" ry="13" fill="none" stroke="#c026d3" strokeWidth="1"
+          <ellipse cx="48" cy="26" rx="17" ry="13" fill="none" stroke="#60bb46" strokeWidth="1"
             strokeDasharray="2.5 2" strokeLinecap="round" />
         )}
         <text x="34" y="53" fill="#7c86a3" fontSize="6" fontWeight="700" letterSpacing="0.5">Atlanta</text>

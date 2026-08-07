@@ -5,9 +5,20 @@
   --color-panel: #16161b;
   --color-card: #1d1d24;
   --color-line: #2a2a33;
-  --color-accent: #c026d3;
-  --color-hot: #e879f9;
-  --color-mint: #34d399;
+  /* Brand palette, taken from the B-line mark. Light green is the main colour;
+     `accent` and `hot` are both it, because the app has one brand colour and
+     splitting it across two tokens is how the old magenta/pink pair drifted.
+     The other three hues carry meaning rather than decoration. */
+  --color-accent: #60bb46; /* main — light green */
+  --color-hot: #60bb46;
+  --color-teal: #009b74; /* secondary green: deeper fills, ranked second */
+  --color-brand-blue: #0066b3; /* you / route / wayfinding */
+  --color-alert: #e31b23; /* closed, errors, destructive */
+  --color-mint: #60bb46; /* "open now" — same green, kept for call sites */
+
+  /* Brand green is bright: white text on it fails contrast (~2.4:1), so
+     anything filled with it takes ink text instead (~8.9:1). */
+  --color-on-brand: #08150b;
   --font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
 }
 

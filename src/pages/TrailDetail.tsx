@@ -47,7 +47,7 @@ export default function TrailDetail() {
       </div>
 
       <div className="mx-4 -mt-6 rounded-3xl bg-white p-4 text-zinc-900 shadow-xl">
-        <div className="flex gap-2 rounded-full bg-[#c9187e] p-1.5">
+        <div className="flex gap-2 rounded-full bg-accent p-1.5">
           <div className="flex-1 rounded-full bg-[#1b2043] py-2.5 text-center text-white">
             <span className="text-2xl font-bold">2.1</span> <span className="text-sm">mi</span>
           </div>
@@ -58,7 +58,7 @@ export default function TrailDetail() {
         <p className="mt-4 text-sm font-medium">Elevation</p>
         <svg viewBox="0 0 100 20" className="mt-1 w-full">
           <path d="M0 16 C 10 15, 15 10, 22 12 C 30 14, 35 9, 42 11 C 50 13, 55 12, 62 13 C 70 14, 74 6, 82 9 C 90 12, 95 13, 100 14 L 100 20 L 0 20 Z"
-            fill="#f3c6e2" stroke="#c9187e" strokeWidth="0.8" />
+            fill="#bfe6b0" stroke="#60bb46" strokeWidth="0.8" />
         </svg>
         <div className="flex justify-between text-xs text-zinc-500"><span>0 mi</span><span>1 mi</span><span>2 mi</span></div>
       </div>
@@ -67,7 +67,7 @@ export default function TrailDetail() {
         {/* Labelled a preview because that's what it is -- the route and the
             distances are illustrative, not a live fix. Calling it "Start 3D
             Navigation" sent people in expecting directions. */}
-        <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-white shadow-lg shadow-accent/20">
+        <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-on-brand shadow-lg shadow-accent/20">
           3D Preview
         </Link>
       </div>

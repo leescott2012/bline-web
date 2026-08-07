@@ -63,7 +63,7 @@ export default function CrowdPanel({ people }: { people: number }) {
       </p>
       <div className="mt-1.5 flex h-12 items-end justify-between gap-1">
         {heights.map((h, i) => (
-          <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-[#7c3aed] to-hot"
+          <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-teal to-hot"
             style={{ height: `${(h / 64) * 100}%`, opacity: 0.45 + h / 120 }} />
         ))}
       </div>

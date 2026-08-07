@@ -18,7 +18,7 @@ export function ProfileAvatar({ profile, size = 44 }: { profile: Pick<Profile, "
   }
   return (
     <div style={{ width: size, height: size, fontSize: size * 0.38 }}
-      className="grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#c9187e] to-[#7c3aed] font-semibold text-white">
+      className="grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-accent to-teal font-semibold text-white">
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -63,7 +63,7 @@ export default function ProfileCard({ profile, onChange }: { profile: Profile; o
         <button onClick={() => fileRef.current?.click()} aria-label="Change profile photo"
           className="relative shrink-0">
           <ProfileAvatar profile={profile} size={56} />
-          <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full bg-[#c9187e] text-white ring-2 ring-white">
+          <span className="absolute -bottom-0.5 -right-0.5 grid size-6 place-items-center rounded-full bg-accent text-on-brand ring-2 ring-white">
             <Camera size={12} />
           </span>
         </button>
@@ -104,7 +104,7 @@ export default function ProfileCard({ profile, onChange }: { profile: Profile; o
                 <img src={s.img} alt="" className="h-20 w-full rounded-lg object-cover" loading="lazy" />
                 <p className="mt-1 truncate text-[12px] font-medium text-zinc-800">{s.name}</p>
                 <p className="flex items-center gap-1 text-[11px] text-zinc-500">
-                  <Heart size={10} className="fill-[#c9187e] text-[#c9187e]" /> {s.rating}
+                  <Heart size={10} className="fill-accent text-hot" /> {s.rating}
                 </p>
               </Link>
             ))}

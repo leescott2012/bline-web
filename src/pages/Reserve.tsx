@@ -105,7 +105,7 @@ export default function Reserve() {
         </div>
         <Link
           href={`/spot/${spot.id}`}
-          className="mt-4 w-full rounded-full bg-[#5b2a86] py-3.5 text-center text-base font-semibold"
+          className="mt-4 w-full rounded-full bg-teal py-3.5 text-center text-base font-semibold"
         >
           Back to {spot.name}
         </Link>
@@ -214,7 +214,7 @@ export default function Reserve() {
         <button
           onClick={handleConfirm}
           disabled={state.phase === "submitting"}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[#5b2a86] py-3.5 text-base font-semibold disabled:opacity-60"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-teal py-3.5 text-base font-semibold disabled:opacity-60"
         >
           {state.phase === "submitting" ? (
             <>

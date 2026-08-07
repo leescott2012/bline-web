@@ -116,7 +116,7 @@ export default function Profile() {
                       else setPasskeyState("done");
                     }}
                     disabled={passkeyState !== "idle"}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3 text-[15px] font-semibold text-white disabled:opacity-50"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3 text-[15px] font-semibold text-on-brand disabled:opacity-50"
                   >
                     <ScanFace size={18} />
                     {passkeyState === "done" ? "Face ID is set up" : passkeyState === "busy" ? "Setting up…" : "Set up Face ID"}
@@ -157,7 +157,7 @@ export default function Profile() {
                   longer password is harder for someone else to guess.
                 </p>
                 <button type="submit" disabled={linkBusy || linkPassword.length < 6}
-                  className="w-full rounded-xl bg-hot py-3 text-[15px] font-semibold text-white disabled:opacity-50">
+                  className="w-full rounded-xl bg-hot py-3 text-[15px] font-semibold text-on-brand disabled:opacity-50">
                   {linkBusy ? "Saving…" : "Save login"}
                 </button>
                 {linkError && <p className="text-center text-[13px] text-red-400">{linkError}</p>}

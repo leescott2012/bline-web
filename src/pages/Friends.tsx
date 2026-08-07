@@ -25,8 +25,8 @@ export default function Friends() {
     <Screen className="bg-[#fafafa] text-zinc-900">
       <header className="pt-[max(1rem,env(safe-area-inset-top))]">
         <div className="relative px-4 text-center">
-          <p className="text-[22px] font-extrabold tracking-tight text-[#c9187e]">Ⓑ B-line</p>
-          <h1 className="mt-0.5 text-[15px] font-bold tracking-[.08em] text-[#c9187e]">
+          <p className="text-[22px] font-extrabold tracking-tight text-hot">Ⓑ B-line</p>
+          <h1 className="mt-0.5 text-[15px] font-bold tracking-[.08em] text-hot">
             FRIENDS ON THE TRAIL
           </h1>
           <button onClick={() => signOut()}

@@ -52,7 +52,7 @@ function StyleCard({ slot, def, t, isActive, reduced, onTap }: {
         <MapStylePreview def={def} />
         {isCenter && isActive && (
           <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-accent text-white shadow-lg">
+            className="absolute right-3 top-3 grid size-8 place-items-center rounded-full bg-accent text-on-brand shadow-lg">
             <Check size={16} strokeWidth={3} />
           </motion.span>
         )}

@@ -15,7 +15,7 @@ import { refreshProfile } from "@/lib/profile";
 
 const USERNAME_RE = /^[a-z0-9_.]{3,20}$/;
 
-const BTN = "w-full rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-white disabled:opacity-50";
+const BTN = "w-full rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-on-brand disabled:opacity-50";
 
 function Shell({ children, onBack }: { children: React.ReactNode; onBack?: () => void }) {
   return (
@@ -77,7 +77,7 @@ function SignIn({ onBack }: { onBack: () => void }) {
               if (err) { setError(err.message); setBusy(false); }
             }}
             disabled={busy}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-white disabled:opacity-50"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-hot py-3.5 text-[15px] font-semibold text-on-brand disabled:opacity-50"
           >
             <ScanFace size={18} /> Sign in with Face ID
           </button>
@@ -175,7 +175,7 @@ function Welcome({ onSignIn }: { onSignIn: () => void }) {
 // Step 2 -- the handle other people search for. The location sentence sits here
 // rather than on its own screen so iOS's permission prompt, which fires moments
 // later, arrives with a reason already on screen.
-function UsernamePicker({ userId }: { userId: string }) {
+function UsernamePicker({ userId, onSignIn }: { userId: string; onSignIn: () => void }) {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -240,7 +240,16 @@ function UsernamePicker({ userId }: { userId: string }) {
         {error && <p className="text-center text-[13px] text-red-400">{error}</p>}
       </form>
 
-      <p className="mt-5 text-center text-[13px] leading-relaxed text-zinc-500">
+      {/* Tapping "Get started" mints the anonymous session immediately, so from
+          here on the welcome screen never shows again -- someone who already
+          has an account and tapped the wrong button had only the back arrow.
+          Say it plainly instead. */}
+      <button onClick={onSignIn}
+        className="mt-5 w-full py-2 text-center text-[14px] font-semibold text-zinc-300">
+        Already have an account? Sign in
+      </button>
+
+      <p className="mt-3 text-center text-[13px] leading-relaxed text-zinc-500">
         B-line uses your location to put you on the trail map and keep the crowd
         map live. You can turn sharing off any time in Friends.
       </p>
@@ -250,7 +259,17 @@ function UsernamePicker({ userId }: { userId: string }) {
 
 export default function Onboarding({ userId }: { userId?: string }) {
   const [signingIn, setSigningIn] = useState(false);
-  if (userId) return <UsernamePicker userId={userId} />;
+  // Checked before `userId`: signing in from the username step signs the
+  // throwaway anonymous session out first, and this has to keep showing the
+  // sign-in form across that transition rather than falling back to welcome.
   if (signingIn) return <SignIn onBack={() => setSigningIn(false)} />;
+  if (userId) {
+    return (
+      <UsernamePicker
+        userId={userId}
+        onSignIn={async () => { await signOut(); setSigningIn(true); }}
+      />
+    );
+  }
   return <Welcome onSignIn={() => setSigningIn(true)} />;
 }

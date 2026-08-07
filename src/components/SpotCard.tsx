@@ -6,7 +6,7 @@ import { useFavorites, toggleFav } from "@/lib/favorites";
 
 // HT badge palette: first badge teal "SOLID"-style, deals magenta
 const badgeColor = (b: string, first: boolean) =>
-  b === "DEAL" || b === "PERKS" ? "bg-accent" : first ? "bg-[#0d7d84]" : "bg-[#7c3aed]";
+  b === "DEAL" || b === "PERKS" ? "bg-accent" : first ? "bg-brand-blue" : "bg-teal";
 
 export default function SpotCard({ spot, photoClass = "aspect-[488/200]", autoPhotos = false }: { spot: Spot; photoClass?: string; autoPhotos?: boolean }) {
   const favs = useFavorites();

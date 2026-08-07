@@ -14,7 +14,7 @@ import {
 // action buttons. Brand pink stands in for Instagram blue on primary actions.
 const CARD = "rounded-2xl bg-white p-4 shadow-sm";
 const FIELD = "w-full rounded-xl bg-[#efefef] px-4 py-3 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500";
-const BTN_PRIMARY = "shrink-0 rounded-lg bg-[#c9187e] px-4 py-1.5 text-[13px] font-semibold text-white disabled:opacity-50";
+const BTN_PRIMARY = "shrink-0 rounded-lg bg-accent px-4 py-1.5 text-[13px] font-semibold text-on-brand disabled:opacity-50";
 const BTN_NEUTRAL = "shrink-0 rounded-lg bg-[#efefef] px-4 py-1.5 text-[13px] font-semibold text-zinc-900 disabled:opacity-50";
 
 // Instagram's row shape: avatar, stacked name/handle, trailing action.
@@ -100,7 +100,7 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
               // position you sent would sit there until it aged out.
               if (!next) clearLocation(userId);
             }}
-            className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${sharing ? "bg-[#c9187e]" : "bg-zinc-300"}`}>
+            className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${sharing ? "bg-accent" : "bg-zinc-300"}`}>
             <span className={`block size-6 rounded-full bg-white transition-transform ${sharing ? "translate-x-5" : ""}`} />
           </button>
         </div>

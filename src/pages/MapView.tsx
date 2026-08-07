@@ -227,7 +227,7 @@ export default function MapView() {
       onPress: toggle3D,
       render: (press) => (
         <button aria-label={threeD ? "Switch to 2D map" : "Switch to 3D map"} aria-pressed={threeD}
-          onClick={press} className={`${CTRL} ${threeD ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
+          onClick={press} className={`${CTRL} ${threeD ? "bg-accent text-on-brand" : CTRL_OFF}`}>
           <span className="text-[15px] font-bold tracking-tight">{threeD ? "2D" : "3D"}</span>
         </button>
       ),
@@ -238,7 +238,7 @@ export default function MapView() {
       onPress: () => setHeat((h) => !h),
       render: (press) => (
         <button aria-label={heat ? "Hide crowd heatmap" : "Show crowd heatmap"} aria-pressed={heat}
-          onClick={press} className={`${CTRL} ${heat ? "bg-[#c9187e] text-white" : CTRL_OFF}`}>
+          onClick={press} className={`${CTRL} ${heat ? "bg-accent text-on-brand" : CTRL_OFF}`}>
           <Flame size={20} />
         </button>
       ),
