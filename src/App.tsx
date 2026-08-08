@@ -21,6 +21,7 @@ import Filters from "@/pages/Filters";
 import Saved from "@/pages/Saved";
 import Profile from "@/pages/Profile";
 import BugBin from "@/pages/BugBin";
+import Playground3D from "@/pages/Playground3D";
 
 // Nobody reaches the app without an identity, so the crowd heatmap sees every
 // user rather than the fraction who happened to open the Friends tab.
@@ -36,7 +37,7 @@ function Gate({ children }: { children: React.ReactNode }) {
   usePublishLocation(user?.id, !!profile?.sharing_enabled);
 
   // The bug bin is an internal tool, not the app -- don't lock admins out of it.
-  if (path === "/bug-bin") return <>{children}</>;
+  if (path === "/bug-bin" || path === "/playground-3d") return <>{children}</>;
   if (loading || (user && profileLoading)) return null;
   if (!user || !profile) return <Onboarding userId={user?.id} />;
   return <>{children}</>;
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="/saved" component={Saved} />
             <Route path="/profile" component={Profile} />
             <Route path="/bug-bin" component={BugBin} />
+            <Route path="/playground-3d" component={Playground3D} />
             <Route>404</Route>
           </Switch>
           <FloatingNav />
