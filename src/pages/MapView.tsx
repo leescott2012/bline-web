@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Flame, Layers, LocateFixed } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -38,6 +38,9 @@ type Ctrl = {
 
 export default function MapView() {
   const [, nav] = useLocation();
+  const openLandmarkScene = useCallback((id: string) => {
+    if (id === "ponce-city") nav("/playground-3d?scene=ponce-corridor&autoplay=1");
+  }, [nav]);
   const spots = useSpots();
   const interests = useMapInterests();
   const activeInterests = getActiveInterests(interests);
@@ -257,7 +260,13 @@ export default function MapView() {
 
   return (
     <Screen className="overflow-hidden">
-      <RealMapEnhanced zoom={12.1} autoPitch={false} onMap={(m) => { mapRef.current = m; setMapReady(true); }} className="absolute inset-0" />
+      <RealMapEnhanced
+        zoom={12.1}
+        autoPitch={false}
+        onMap={(m) => { mapRef.current = m; setMapReady(true); }}
+        onLandmarkClick={openLandmarkScene}
+        className="absolute inset-0"
+      />
 
       {/* Filter chip -- opens a sheet, does not sit over the map. */}
       <InterestSelector open={filtersOpen} onOpenChange={setFiltersOpen} />

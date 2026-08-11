@@ -62,7 +62,16 @@ const PHOTOREAL_STYLE: maplibregl.StyleSpecification = {
 
 // Flagship landmarks that deserve special visual treatment
 const LANDMARKS = {
-  "ponce-city": { lng: -84.3657, lat: 33.7729, name: "Ponce City Market", emoji: "🏛️" },
+  // Trail-side reference point the user marked in Apple Maps Look Around:
+  // 33.773053, -84.364502. This is deliberately on the BeltLine-facing PCM
+  // edge rather than the shopping-centre centroid, which is across the block.
+  "ponce-city": {
+    lng: -84.364502,
+    lat: 33.773053,
+    name: "Ponce City Market",
+    emoji: "🏛️",
+    scene: "ponce-corridor",
+  },
   "krog-street": { lng: -84.3641, lat: 33.7569, name: "Krog Street Market", emoji: "🍽️" },
 };
 
@@ -75,6 +84,7 @@ export default function RealMapEnhanced({
   autoPitch = true,
   photoreal = false,
   onMap,
+  onLandmarkClick,
 }: {
   className?: string;
   interactive?: boolean;
@@ -85,6 +95,8 @@ export default function RealMapEnhanced({
   /** Aerial imagery under extruded buildings, the way Google/Apple render 3D. */
   photoreal?: boolean;
   onMap?: (m: maplibregl.Map) => void;
+  /** Opens a branded landmark scene from its trail-side map marker. */
+  onLandmarkClick?: (id: string) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
   const mapStyle = useMapStyle();
@@ -199,10 +211,19 @@ export default function RealMapEnhanced({
         // ── Flagship landmarks with custom styling ──
         Object.entries(LANDMARKS).forEach(([id, landmark]) => {
           const d = document.createElement("div");
-          // Was an emoji, which renders as a tofu box wherever the emoji font
-          // is missing. A styled marker is legible everywhere.
-          d.innerHTML = `<div class="bline-landmark" style="width:14px;height:14px;border-radius:9999px;background:#c026d3;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45)"></div>`;
-          d.title = landmark.name;
+          const isScene = "scene" in landmark;
+          // The Ponce marker is a clear 3D-scene entry point, not an ambiguous
+          // POI dot. Other flagship locations retain the compact landmark pin.
+          d.innerHTML = isScene
+            ? `<button type="button" aria-label="Open Ponce City Market 3D turn-by-turn preview" style="display:flex;align-items:center;gap:6px;padding:7px 10px 7px 7px;border:0;border-radius:999px;background:#17141d;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.35);font:700 11px/1 system-ui;white-space:nowrap;cursor:pointer"><span style="display:grid;place-items:center;width:24px;height:24px;border-radius:999px;background:linear-gradient(145deg,#f0abfc,#a21caf);box-shadow:inset 0 1px 2px rgba(255,255,255,.55)">3D</span><span>Ponce preview</span></button>`
+            : `<div class="bline-landmark" style="width:14px;height:14px;border-radius:9999px;background:#c026d3;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.45)"></div>`;
+          d.title = isScene ? "Open Ponce City Market 3D turn-by-turn preview" : landmark.name;
+          if (isScene) {
+            d.querySelector("button")?.addEventListener("click", (event) => {
+              event.stopPropagation();
+              onLandmarkClick?.(id);
+            });
+          }
           new maplibregl.Marker({ element: d, anchor: "bottom" })
             .setLngLat([landmark.lng, landmark.lat])
             .addTo(map);
@@ -317,7 +338,7 @@ export default function RealMapEnhanced({
       ro.disconnect();
       map.remove();
     };
-  }, [interactive, zoom, center[0], center[1], decorations, autoPitch, photoreal, mapStyle.key]);
+  }, [interactive, zoom, center[0], center[1], decorations, autoPitch, photoreal, mapStyle.key, onLandmarkClick]);
 
   return (
     <div className={className}>

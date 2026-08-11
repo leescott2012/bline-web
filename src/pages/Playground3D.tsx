@@ -1,295 +1,306 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Screen from "@/components/Screen";
-import { ArrowLeft, Navigation2, ArrowUp, CornerUpRight, Play, X } from "lucide-react";
+import { ArrowLeft, ArrowUp, CornerUpRight, Navigation2, Play, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { cumulative, posAt } from "@/lib/routing";
+import {
+  PONCE_SCENE,
+  PONCE_TRAIL_ROUTE,
+} from "@/lib/ponceScene";
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
+// Mapbox public access tokens are intentionally client-visible. The env variable
+// can override this in any deployment, while this user-supplied default keeps
+// the published 3D preview functional without a local .env file.
+const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)
+  ?? "pk.eyJ1IjoibGVlc2NvdHQyMDEyIiwiYSI6ImNtc2t5ajZzbjAzbzUzNHB2dXJhaHQwNHMifQ.MApArcHvIbUpisiak_yMzA";
+const METERS_TO_MILES = 0.000621371;
+const WALKING_MPH = 3;
 
-// Sample route coordinates for Eastside Trail near Ponce
-const ROUTE_COORDINATES: [number, number][] = [
-  [-84.3657, 33.7729], // Ponce City Market
-  [-84.3658, 33.7716],
-  [-84.3659, 33.7703],
-  [-84.3660, 33.7690],
-  [-84.3662, 33.7675],
-  [-84.3665, 33.7660],
-  [-84.3668, 33.7645],
-];
+function formatDistance(miles: number) {
+  if (miles < 0.15) return `${Math.max(50, Math.round(miles * 5280 / 25) * 25)} ft`;
+  return `${miles.toFixed(1)} mi`;
+}
 
-const ROUTE_STEPS = [
-  { at: 0, text: "Continue on Eastside Trail", dist: "350 ft", next: "then bear right toward Ponce City Market" },
-  { at: 0.4, text: "Keep left on Eastside Trail", dist: "0.1 mi", next: "passing Historic Fourth Ward Park" },
-  { at: 0.8, text: "Approaching Krog Street", dist: "200 ft", next: "destination on your right" },
-];
+function formatArrival(minutes: number) {
+  const arrival = new Date(Date.now() + minutes * 60_000);
+  return arrival.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }).replace(" ", "");
+}
+
+function createTreeMarker() {
+  const tree = document.createElement("div");
+  tree.setAttribute("aria-hidden", "true");
+  tree.style.cssText = [
+    "width:26px",
+    "height:36px",
+    "position:relative",
+    "filter:drop-shadow(0 3px 3px rgba(0,0,0,.22))",
+    "pointer-events:none",
+  ].join(";");
+  tree.innerHTML = `
+    <span style="position:absolute;left:11px;bottom:0;width:4px;height:15px;border-radius:4px;background:#59412d"></span>
+    <span style="position:absolute;left:1px;top:9px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 27%,#b4d867 0 10%,#4e9c4d 42%,#226a3b 100%);box-shadow:-6px 5px 0 -1px #347a42,6px 5px 0 -1px #5fa84d,0 -5px 0 0 #71b85b"></span>
+  `;
+  return tree;
+}
+
+function createPuck() {
+  const puck = document.createElement("div");
+  puck.setAttribute("aria-label", "Navigation position");
+  puck.innerHTML = `
+    <div style="display:grid;place-items:center;width:52px;height:52px;border-radius:999px;background:#fff;box-shadow:0 10px 24px rgba(0,0,0,.35),0 0 0 1px rgba(0,0,0,.12)">
+      <div id="puck-arrow" style="display:grid;place-items:center;width:40px;height:40px;border-radius:999px;background:#1976f3;color:#fff;transition:transform 120ms linear">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2 4.5 20.29l.71.71L12 18l6.79 3 .71-.71L12 2Z"/></svg>
+      </div>
+    </div>
+  `;
+  return puck;
+}
 
 export default function Playground3D() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const puckRef = useRef<mapboxgl.Marker | null>(null);
-  const [, setLoc] = useLocation();
-  
-  const [isNavigating, setIsNavigating] = useState(false);
-  const [progress, setProgress] = useState(0); // 0 to 1
+  const animationRef = useRef<number | null>(null);
+  const [, setLocation] = useLocation();
+  const startsActive = new URLSearchParams(window.location.search).get("autoplay") === "1";
+  const [isNavigating, setIsNavigating] = useState(startsActive);
+  const [progress, setProgress] = useState(0);
   const [isRecentered, setIsRecentered] = useState(true);
-
-  const cumDist = useRef(cumulative(ROUTE_COORDINATES));
+  const [mapReady, setMapReady] = useState(false);
+  const cumulativeDistance = useMemo(() => cumulative(PONCE_TRAIL_ROUTE), []);
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!mapContainerRef.current || !MAPBOX_TOKEN) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
-
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/standard",
-      center: ROUTE_COORDINATES[0],
-      zoom: 18.2,
-      pitch: 60,
-      bearing: -15,
+      // Satellite ground context carries the actual vegetation, paths, and
+      // surface texture. It is materially closer to the user's reference than
+      // the generic vector ground used in the initial QC pass.
+      style: "mapbox://styles/mapbox/standard-satellite",
+      center: PONCE_TRAIL_ROUTE[0],
+      zoom: PONCE_SCENE.camera.zoom,
+      pitch: PONCE_SCENE.camera.pitch,
+      bearing: PONCE_SCENE.camera.bearing,
       antialias: true,
+      attributionControl: true,
     });
-
     mapRef.current = map;
+    // The route view must remain full-bleed while Screen completes its mobile
+    // transition and whenever its viewport changes. Without this observer,
+    // Mapbox can retain a short initial canvas and leave a dark empty lower half.
+    const resizeObserver = new ResizeObserver(() => map.resize());
+    resizeObserver.observe(mapContainerRef.current);
 
     map.on("style.load", () => {
-      map.setConfigProperty('basemap', 'lightPreset', 'dusk');
-      
-      map.addSource("route", {
+      map.resize();
+      // The user reference is bright, open and daylight-led; a dark preset
+      // made PCM unreadable and failed the side-by-side review.
+      map.setConfigProperty("basemap", "lightPreset", "day");
+
+      // Do not impersonate PCM with a generic 3D facade. Satellite ground and
+      // Mapbox's real building data remain the honest baseline until a licensed
+      // scan or a verified PCM 3D model is available.
+      map.setFog({
+        color: "#d9edff",
+        "high-color": "#acd6f3",
+        "horizon-blend": 0.16,
+        "space-color": "#d9edff",
+        "star-intensity": 0,
+      });
+
+      map.addSource("ponce-route", {
         type: "geojson",
         lineMetrics: true,
         data: {
           type: "Feature",
           properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: ROUTE_COORDINATES,
-          },
+          geometry: { type: "LineString", coordinates: PONCE_TRAIL_ROUTE },
         },
       });
-
-      // Signature Purple Glow
+      // The user requested a bright green route ribbon. The wide translucent
+      // layer creates the route's ground-level glow without faking pavement.
       map.addLayer({
-        id: "route-line",
+        id: "ponce-route-glow",
         type: "line",
-        source: "route",
-        layout: { "line-join": "round", "line-cap": "round" },
+        source: "ponce-route",
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: { "line-color": "#30ff47", "line-width": 26, "line-opacity": 0.28, "line-blur": 9 },
+      });
+      map.addLayer({
+        id: "ponce-route-core",
+        type: "line",
+        source: "ponce-route",
+        layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": "#d946ef",
-          "line-width": 10,
-          "line-opacity": 0.9,
+          "line-width": 9,
+          "line-opacity": 0.98,
           "line-gradient": [
-            "interpolate",
-            ["linear"],
-            ["line-progress"],
-            0, "#d946ef",
-            1, "#a21caf"
-          ]
+            "interpolate", ["linear"], ["line-progress"],
+            0, "#d8ff47",
+            0.52, "#30ff47",
+            1, "#00b933",
+          ],
         },
       });
 
-      map.addLayer({
-        id: "route-glow",
-        type: "line",
-        source: "route",
-        layout: { "line-join": "round", "line-cap": "round" },
-        paint: {
-          "line-color": "#d946ef",
-          "line-width": 24,
-          "line-opacity": 0.25,
-          "line-blur": 12,
-        },
-      });
-
-      // User Puck
-      const puckEl = document.createElement("div");
-      puckEl.className = "puck-container";
-      puckEl.innerHTML = `
-        <div class="flex size-14 items-center justify-center rounded-full bg-white shadow-2xl ring-1 ring-black/5">
-          <div class="flex size-10 items-center justify-center rounded-full bg-blue-600 text-white transition-transform duration-300" id="puck-arrow">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
-          </div>
-        </div>
-      `;
-      
-      puckRef.current = new mapboxgl.Marker({ element: puckEl, rotationAlignment: "map" })
-        .setLngLat(ROUTE_COORDINATES[0])
+      const buildingLabel = document.createElement("button");
+      buildingLabel.type = "button";
+      buildingLabel.setAttribute("aria-label", "Ponce City Market landmark");
+      buildingLabel.style.cssText = "border:0;border-radius:12px;background:rgba(255,255,255,.95);padding:8px 12px;box-shadow:0 8px 22px rgba(0,0,0,.28);font:800 13px/1.1 system-ui;color:#1c1917;cursor:default";
+      buildingLabel.textContent = "Ponce City Market";
+      new mapboxgl.Marker({ element: buildingLabel, anchor: "bottom" })
+        .setLngLat([-84.36535, 33.77282])
         .addTo(map);
 
-      // Murals
-      const muralEl = document.createElement("div");
-      muralEl.className = "mural-decal";
-      muralEl.style.width = "120px";
-      muralEl.style.height = "80px";
-      muralEl.style.backgroundImage = `url(https://images.unsplash.com/photo-1561059488-916d69792237?w=400&q=80)`;
-      muralEl.style.backgroundSize = "cover";
-      muralEl.style.borderRadius = "4px";
-      muralEl.style.transform = "rotateY(20deg)";
-      
-      new mapboxgl.Marker({ element: muralEl })
-        .setLngLat([-84.3654, 33.7725])
+      puckRef.current = new mapboxgl.Marker({ element: createPuck(), anchor: "center", rotationAlignment: "map" })
+        .setLngLat(PONCE_TRAIL_ROUTE[0])
         .addTo(map);
-
-      // Landmark Label
-      const landmarkEl = document.createElement("div");
-      landmarkEl.innerHTML = `
-        <div class="rounded-xl bg-white px-4 py-2 shadow-2xl ring-1 ring-black/5">
-          <p class="text-sm font-black text-black text-center leading-none">Ponce City Market</p>
-          <p class="text-[9px] font-bold uppercase tracking-widest text-zinc-400 mt-1">🏛️ Landmark</p>
-        </div>
-      `;
-      new mapboxgl.Marker({ element: landmarkEl, anchor: "bottom" })
-        .setLngLat([-84.3657, 33.7729])
-        .addTo(map);
+      setMapReady(true);
     });
 
     map.on("dragstart", () => setIsRecentered(false));
-
-    return () => map.remove();
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      resizeObserver.disconnect();
+      map.remove();
+    };
   }, []);
 
-  // Navigation Animation Loop
   useEffect(() => {
-    if (!isNavigating || !mapRef.current || !puckRef.current) return;
+    if (!isNavigating || !mapReady || !mapRef.current || !puckRef.current) return;
+    const startedAt = performance.now();
+    const demoDuration = 22_000;
 
-    let startTime = Date.now();
-    const duration = 20000; // 20 seconds for the demo trip
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const p = Math.min(elapsed / duration, 1);
-      setProgress(p);
-
-      const { pos, brg } = posAt(p, ROUTE_COORDINATES, cumDist.current);
-      
+    const animate = (now: number) => {
+      const nextProgress = Math.min((now - startedAt) / demoDuration, 1);
+      setProgress(nextProgress);
+      const { pos, brg } = posAt(nextProgress, PONCE_TRAIL_ROUTE, cumulativeDistance);
       puckRef.current?.setLngLat(pos);
-      const arrow = puckRef.current?.getElement().querySelector("#puck-arrow") as HTMLElement;
+      const arrow = puckRef.current?.getElement().querySelector("#puck-arrow") as HTMLElement | null;
       if (arrow) arrow.style.transform = `rotate(${brg}deg)`;
 
       if (isRecentered) {
-        mapRef.current?.easeTo({
-          center: pos,
-          bearing: brg,
-          duration: 0,
-        });
+        mapRef.current?.jumpTo({ center: pos, bearing: brg, pitch: PONCE_SCENE.camera.pitch });
       }
-
-      if (p < 1) {
-        requestAnimationFrame(animate);
+      if (nextProgress < 1) {
+        animationRef.current = requestAnimationFrame(animate);
       } else {
         setIsNavigating(false);
       }
     };
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [cumulativeDistance, isNavigating, isRecentered, mapReady]);
 
-    const frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [isNavigating, isRecentered]);
+  const routeMiles = cumulativeDistance[cumulativeDistance.length - 1] * METERS_TO_MILES;
+  const totalMinutes = Math.max(1, Math.ceil((routeMiles / WALKING_MPH) * 60));
+  const remainingMiles = routeMiles * (1 - progress);
+  const remainingMinutes = Math.max(0, Math.ceil(totalMinutes * (1 - progress)));
+  const approaching = progress >= 0.72;
+  const primaryInstruction = approaching ? "Ponce City Market ahead" : "Continue on Eastside Trail";
+  const secondaryInstruction = approaching ? "destination beside the trail" : "brick corridor and park edge ahead";
 
-  const currentStep = ROUTE_STEPS.reduce((prev, curr) => (progress >= curr.at ? curr : prev), ROUTE_STEPS[0]);
+  const resetPreview = () => {
+    setIsNavigating(false);
+    setProgress(0);
+    setIsRecentered(true);
+    puckRef.current?.setLngLat(PONCE_TRAIL_ROUTE[0]);
+    mapRef.current?.easeTo({
+      center: PONCE_TRAIL_ROUTE[0],
+      zoom: PONCE_SCENE.camera.zoom,
+      pitch: PONCE_SCENE.camera.pitch,
+      bearing: PONCE_SCENE.camera.bearing,
+      duration: 650,
+    });
+  };
 
   return (
-    <Screen className="bg-black overflow-hidden">
-      {/* Top Banner */}
-      <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20">
-        <div className="overflow-hidden rounded-[2.5rem] bg-black/95 shadow-2xl backdrop-blur-2xl ring-1 ring-white/10">
-          <div className="flex items-center gap-5 px-6 py-6">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white text-black shadow-lg">
-              <ArrowUp size={40} strokeWidth={3} />
+    <Screen className="overflow-hidden bg-[#1e2722]" style={{ height: "100dvh" }}>
+      <div ref={mapContainerRef} className="absolute inset-0" style={{ height: "100dvh" }} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(5,12,8,.18)_100%)]" />
+
+      <button
+        aria-label="Back to map"
+        onClick={() => setLocation("/map")}
+        className="absolute left-4 top-[max(0.75rem,env(safe-area-inset-top))] z-30 grid size-10 place-items-center rounded-full bg-black/45 text-white shadow-lg backdrop-blur-md ring-1 ring-white/15 active:scale-95"
+      >
+        <ArrowLeft size={19} />
+      </button>
+
+      <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 px-12">
+        <div className="overflow-hidden rounded-[2rem] bg-black/[.93] shadow-2xl ring-1 ring-white/10 backdrop-blur-2xl">
+          <div className="flex items-center gap-4 px-5 py-4">
+            <div className="grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-black shadow-lg">
+              <ArrowUp size={35} strokeWidth={3} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[28px] font-black leading-tight tracking-tight text-white">
-                {currentStep.dist}
-              </p>
-              <p className="truncate text-[20px] font-bold text-zinc-400">
-                {currentStep.text}
-              </p>
+              <p className="text-[27px] font-black leading-none tracking-tight text-white">{formatDistance(remainingMiles)}</p>
+              <p className="mt-1 truncate text-[17px] font-semibold text-zinc-400">{primaryInstruction}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 border-t border-white/5 bg-white/5 px-6 py-4">
-            <CornerUpRight size={22} className="text-zinc-500" />
-            <p className="text-[17px] font-bold text-zinc-300">
-              {currentStep.next}
-            </p>
+          <div className="flex items-center gap-3 border-t border-white/10 bg-white/[.06] px-5 py-3">
+            <CornerUpRight size={19} className="shrink-0 text-zinc-500" />
+            <p className="truncate text-[14px] font-semibold text-zinc-300">{secondaryInstruction}</p>
           </div>
-          <div className="h-1.5 w-full bg-white/10">
-            <div 
-              className="h-full bg-[#d946ef] transition-all duration-300 ease-linear shadow-[0_0_12px_#d946ef]"
-              style={{ width: `${progress * 100}%` }}
-            />
+          <div className="h-1.5 bg-white/10">
+            <div className="h-full bg-[#30ff47] shadow-[0_0_14px_#30ff47] transition-[width] duration-150" style={{ width: `${progress * 100}%` }} />
           </div>
         </div>
       </div>
 
-      <div ref={mapContainerRef} className="h-full w-full" />
-
-      {/* Navigation Controls */}
       {!isNavigating && progress === 0 && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
-          <button 
-            onClick={() => setIsNavigating(true)}
-            className="group flex flex-col items-center gap-4 active:scale-95 transition-transform"
-          >
-            <div className="flex size-24 items-center justify-center rounded-full bg-hot text-white shadow-[0_0_40px_rgba(255,59,48,0.5)] ring-4 ring-white/20">
-              <Play size={40} fill="currentColor" className="ml-2" />
-            </div>
-            <p className="text-xl font-black text-white uppercase tracking-[0.2em] drop-shadow-lg">Start TBT</p>
+        <div className="absolute inset-0 z-25 grid place-items-center bg-black/10">
+          <button onClick={() => setIsNavigating(true)} className="grid place-items-center gap-3 active:scale-95">
+            <span className="grid size-20 place-items-center rounded-full bg-[#30e85a] text-[#062c10] shadow-[0_0_35px_rgba(48,232,90,.55)] ring-4 ring-white/30">
+              <Play size={33} fill="currentColor" />
+            </span>
+            <span className="rounded-full bg-black/65 px-4 py-2 text-[13px] font-black uppercase tracking-[.17em] text-white backdrop-blur-md">Start TBT preview</span>
           </button>
         </div>
       )}
 
       {isNavigating && (
-        <button 
-          onClick={() => { setIsNavigating(false); setProgress(0); puckRef.current?.setLngLat(ROUTE_COORDINATES[0]); }}
-          className="absolute right-6 top-[300px] z-20 flex size-12 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md ring-1 ring-white/20 active:scale-90"
+        <button
+          aria-label="Exit turn-by-turn preview"
+          onClick={resetPreview}
+          className="absolute right-5 top-[232px] z-20 grid size-11 place-items-center rounded-full bg-black/65 text-white shadow-lg backdrop-blur-md ring-1 ring-white/15 active:scale-95"
         >
           <X size={20} />
         </button>
       )}
 
-      {/* Recenter */}
-      {!isRecentered && isNavigating && (
-        <button 
+      {!isRecentered && (
+        <button
           onClick={() => setIsRecentered(true)}
-          className="absolute bottom-40 left-6 z-20 flex items-center gap-2 rounded-full bg-white px-6 py-4 font-black text-blue-600 shadow-2xl active:scale-95 ring-1 ring-black/5"
+          className="absolute bottom-40 left-5 z-20 flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-bold text-blue-600 shadow-2xl active:scale-95"
         >
-          <Navigation2 size={20} fill="currentColor" />
+          <Navigation2 size={18} fill="currentColor" />
           Recenter
         </button>
       )}
 
-      {/* Bottom Card */}
       <div className="absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20">
-        <div className="flex items-center justify-between rounded-[3rem] bg-white/95 px-10 py-8 shadow-2xl backdrop-blur-md ring-1 ring-black/5">
-          <div className="text-center">
-            <p className="text-[32px] font-black text-black tracking-tighter">3:29</p>
-            <p className="text-[14px] font-bold uppercase tracking-widest text-zinc-500">arrival</p>
+        <div className="grid grid-cols-3 rounded-[2rem] bg-white/[.96] px-7 py-5 text-center shadow-2xl ring-1 ring-black/5 backdrop-blur-md">
+          <div>
+            <p className="text-[28px] font-black leading-none tracking-tighter text-zinc-950">{formatArrival(remainingMinutes)}</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[.13em] text-zinc-500">arrival</p>
           </div>
-          <div className="text-center">
-            <p className="text-[32px] font-black text-black tracking-tighter">{Math.max(0, Math.round(3 * (1 - progress)))}</p>
-            <p className="text-[14px] font-bold uppercase tracking-widest text-zinc-500">min</p>
+          <div>
+            <p className="text-[28px] font-black leading-none tracking-tighter text-zinc-950">{remainingMinutes}</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[.13em] text-zinc-500">min</p>
           </div>
-          <div className="text-center">
-            <p className="text-[32px] font-black text-black tracking-tighter">{(0.2 * (1 - progress)).toFixed(1)}</p>
-            <p className="text-[14px] font-bold uppercase tracking-widest text-zinc-500">mi</p>
+          <div>
+            <p className="text-[28px] font-black leading-none tracking-tighter text-zinc-950">{remainingMiles.toFixed(1)}</p>
+            <p className="mt-1 text-[11px] font-bold uppercase tracking-[.13em] text-zinc-500">mi</p>
           </div>
         </div>
       </div>
-      
-      {/* Trail Label */}
-      <div className="absolute left-1/2 top-[82%] z-20 -translate-x-1/2">
-        <div className="rounded-lg bg-white/90 px-3 py-1 text-center shadow-lg backdrop-blur-sm ring-1 ring-black/5">
-          <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Eastside Trail</p>
-        </div>
-      </div>
-
-      <button
-        onClick={() => setLoc("/")}
-        className="absolute left-4 top-4 z-50 flex size-10 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md active:scale-90 ring-1 ring-white/10"
-      >
-        <ArrowLeft size={20} />
-      </button>
     </Screen>
   );
 }
