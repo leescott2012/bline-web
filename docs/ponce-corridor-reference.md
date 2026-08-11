@@ -102,3 +102,7 @@ Opening `/playground-3d?scene=ponce-corridor&autoplay=1` starts the moving puck 
 ## Final visual QC outcome
 
 The current active preview now aligns with the reference on the core navigation shell: full-bleed mobile composition, black rounded instruction card, large directional icon, branded bright-green path, centered location puck, and white three-column arrival card. It does not yet match the reference’s corridor-world rendering: the preview uses real satellite ground and the true trail corridor, while the reference has stylized/photorealistic 3D building geometry, visible mural faces, and volumetric landscaping. This gap is intentionally not faked. Closing it requires a licensed high-quality PCM exterior model or a ground-captured Gaussian Splat/photogrammetry asset, plus rights-cleared mural texture capture.
+
+## Deployment observation
+
+The pushed commit is available in the local preview and passes production build. The observed `bline-web.vercel.app` route still served the pre-update onboarding gate during this check, so the public deployment has not yet reflected commit `e3884cb` (or is connected to a different Vercel workspace than the configured integration). The GitHub `main` push succeeded; deployment ownership/status could not be queried through the available Vercel workspace, which contains only `dumpster-web-manus`.
