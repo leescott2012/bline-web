@@ -117,7 +117,6 @@ export default function RealMapEnhanced({
       ...(autoPitch ? { pitch: 0 } : {}),
     });
 
-    onMap?.(map);
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(el.current);
 
@@ -318,6 +317,9 @@ export default function RealMapEnhanced({
       } catch {
         /* sky unsupported */
       }
+      // Consumers add layers after the base style and verified trail layers are
+      // ready. Calling them earlier raced style loading on map-style changes.
+      onMap?.(map);
     });
 
     // ── Auto-pitch: smooth 3D tilt on zoom ──

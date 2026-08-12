@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Flame, Layers, LocateFixed, Toilet } from "lucide-react";
+import { ChevronLeft, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
-import CrowdPanel from "@/components/CrowdPanel";
+import CrowdPanel, { CrowdMetrics } from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
-import { places } from "@/lib/places";
+import { places, trailSegments } from "@/lib/places";
 import { restrooms } from "@/lib/restrooms";
 import { useCrowd } from "@/lib/crowd";
 import { useMapInterests, getActiveInterests, interestOf, INTERESTS } from "@/lib/mapInterests";
@@ -22,7 +22,40 @@ const PIN_MIN_ZOOM = 13.2;
 const PITCH_3D = 60;
 
 const HEAT_SOURCE = "crowd-density";
-const HEAT_LAYER = "crowd-heat";
+const HEAT_GLOW_LAYER = "crowd-ribbon-glow";
+const HEAT_LAYER = "crowd-ribbon";
+
+// The supplied density data is point-based, while the Figma reference calls
+// for a traffic-style trail ribbon. Score the existing verified corridor
+// segments against those points; this changes only presentation, not the data
+// source or its live/seeded merge semantics.
+function crowdRibbon(points: { lng: number; lat: number; weight: number }[]) {
+  const RADIUS = 0.0035; // roughly a few walkable blocks at this latitude
+  const raw = trailSegments.map((segment) => {
+    const step = Math.max(1, Math.floor(segment.coords.length / 72));
+    let total = 0;
+    let samples = 0;
+    for (let i = 0; i < segment.coords.length; i += step) {
+      const [lng, lat] = segment.coords[i];
+      const score = points.reduce((sum, point) => {
+        const distance = Math.hypot(lng - point.lng, lat - point.lat);
+        return distance >= RADIUS ? sum : sum + point.weight * (1 - distance / RADIUS);
+      }, 0);
+      total += score;
+      samples += 1;
+    }
+    return { segment, score: samples ? total / samples : 0 };
+  });
+  const peak = Math.max(...raw.map((item) => item.score), 1);
+  return {
+    type: "FeatureCollection" as const,
+    features: raw.map(({ segment, score }) => ({
+      type: "Feature" as const,
+      properties: { density: Math.max(0.08, score / peak) },
+      geometry: { type: "LineString" as const, coordinates: segment.coords },
+    })),
+  };
+}
 
 // One shared shape for every map control so the column reads as a set.
 const CTRL = "grid size-12 place-items-center rounded-full backdrop-blur transition-colors";
@@ -53,6 +86,7 @@ export default function MapView() {
   // Assigning a ref doesn't re-render, so map-dependent effects would run once
   // with `null` and never again. This flips when the map exists.
   const [mapReady, setMapReady] = useState(false);
+  const [mapGeneration, setMapGeneration] = useState(0);
   // 120 pins over the whole city is a pile, not a map. They appear once you're
   // close enough for them to be distinguishable.
   const [zoom, setZoom] = useState(12.1);
@@ -132,7 +166,7 @@ export default function MapView() {
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([place.lng, place.lat]).addTo(map));
     }
     return () => { pins.current.forEach((m) => m.remove()); pins.current = []; };
-  }, [spots, activeKey, nav, mapReady, zoom]);
+  }, [spots, activeKey, nav, mapReady, mapGeneration, zoom]);
 
   // These units are announced by the City and BeltLine by locality only. Each
   // marker is intentionally labelled "near" because it uses a verified trail-
@@ -172,7 +206,7 @@ export default function MapView() {
     });
 
     return () => { restroomPins.current.forEach((marker) => marker.remove()); restroomPins.current = []; };
-  }, [mapReady, restroomsVisible]);
+  }, [mapReady, mapGeneration, restroomsVisible]);
 
   // Toggling a filter below the pin threshold used to do nothing at all: the
   // map opens at 12.1 and pins need 13.2, so the control looked broken. Turning
@@ -183,7 +217,7 @@ export default function MapView() {
     const map = mapRef.current;
     if (!map || !activeKey || map.getZoom() >= PIN_MIN_ZOOM) return;
     map.easeTo({ zoom: PIN_MIN_ZOOM + 0.4, duration: 600 });
-  }, [activeKey, mapReady]);
+  }, [activeKey, mapReady, mapGeneration]);
 
   // Keep the label honest if a gesture flattens the map out from under us.
   useEffect(() => {
@@ -198,54 +232,45 @@ export default function MapView() {
     map.on("pitchend", sync);
     map.on("dragstart", collapse);
     return () => { map.off("pitchend", sync); map.off("dragstart", collapse); map.off("zoomend", onZoom); };
-  }, [mapReady]);
+  }, [mapReady, mapGeneration]);
 
-  // Live crowd density: aggregated grid counts from everyone sharing right now,
-  // layered over the seeded baseline so the map is never blank. Polls while the
-  // heatmap is open -- see src/lib/crowd.ts.
+  // Live crowd density is aggregated as points. In heat mode it is translated
+  // into a trail-aligned ribbon, matching the Figma conditions view while
+  // keeping the existing verified BeltLine geometry and density pipeline.
   const crowd = useCrowd(heat);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     if (!heat) {
-      if (map.getLayer(HEAT_LAYER)) map.removeLayer(HEAT_LAYER);
+      [HEAT_LAYER, HEAT_GLOW_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
       if (map.getSource(HEAT_SOURCE)) map.removeSource(HEAT_SOURCE);
       return;
     }
-    const data: GeoJSON.FeatureCollection = {
-      type: "FeatureCollection",
-      features: crowd.points.map((pt) => ({
-        type: "Feature",
-        properties: { weight: pt.weight },
-        geometry: { type: "Point", coordinates: [pt.lng, pt.lat] },
-      })),
-    };
+    const data = crowdRibbon(crowd.points);
     const existing = map.getSource(HEAT_SOURCE) as maplibregl.GeoJSONSource | undefined;
-    if (existing) { existing.setData(data); return; }
+    if (existing) {
+      existing.setData(data);
+      return;
+    }
 
     map.addSource(HEAT_SOURCE, { type: "geojson", data });
+    const color = ["interpolate", ["linear"], ["get", "density"], 0.08, "#5bd05b", 0.32, "#b8e84c", 0.54, "#ffd33d", 0.72, "#ff8a2a", 1, "#ef3b38"] as maplibregl.ExpressionSpecification;
+    map.addLayer({
+      id: HEAT_GLOW_LAYER,
+      type: "line",
+      source: HEAT_SOURCE,
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": color, "line-width": 18, "line-opacity": 0.24, "line-blur": 8 },
+    });
     map.addLayer({
       id: HEAT_LAYER,
-      type: "heatmap",
+      type: "line",
       source: HEAT_SOURCE,
-      paint: {
-        "heatmap-weight": ["get", "weight"],
-        "heatmap-intensity": ["interpolate", ["linear"], ["zoom"], 10, 1, 16, 3],
-        "heatmap-color": [
-          "interpolate", ["linear"], ["heatmap-density"],
-          0, "rgba(0,0,0,0)",
-          0.2, "#4ade4a",
-          0.4, "#facc15",
-          0.6, "#fb923c",
-          0.8, "#ef4444",
-          1, "#b91c1c",
-        ],
-        "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 16, 16, 38],
-        "heatmap-opacity": 0.72,
-      },
+      layout: { "line-cap": "round", "line-join": "round" },
+      paint: { "line-color": color, "line-width": 6, "line-opacity": 0.96 },
     });
-  }, [heat, crowd, mapReady]);
+  }, [heat, crowd, mapReady, mapGeneration]);
 
   const CONTROLS: Ctrl[] = [
     {
@@ -294,7 +319,7 @@ export default function MapView() {
       onPress: () => setHeat((h) => !h),
       render: (press) => (
         <button aria-label={heat ? "Hide crowd heatmap" : "Show crowd heatmap"} aria-pressed={heat}
-          onClick={press} className={`${CTRL} ${heat ? "bg-accent text-on-brand" : CTRL_OFF}`}>
+          onClick={press} className={`${CTRL} ${heat ? "bg-fuchsia-500 text-white" : CTRL_OFF}`}>
           <Flame size={20} />
         </button>
       ),
@@ -316,22 +341,40 @@ export default function MapView() {
       <RealMapEnhanced
         zoom={12.1}
         autoPitch={false}
-        onMap={(m) => { mapRef.current = m; setMapReady(true); }}
+        onMap={(m) => { mapRef.current = m; setMapReady(true); setMapGeneration((generation) => generation + 1); }}
         onLandmarkClick={openLandmarkScene}
         className="absolute inset-0"
       />
 
-      {/* Filter chip -- opens a sheet, does not sit over the map. */}
-      <InterestSelector open={filtersOpen} onOpenChange={setFiltersOpen} />
+      {/* Figma darkens the base map while preserving a readable, navigation-
+          first corridor. An in-place veil avoids resetting the live MapLibre
+          instance and does not modify the user's saved map-style preference. */}
+      {heat && <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] bg-[#101827]/55" />}
 
-      {/* right-anchored so it clears the filter chip on the left; gap-4 because
-          shrink-wrapping ran the two labels together as "Eastside TrailWhen". */}
-      <header className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 max-w-[58%]">
-        <div className="flex items-center gap-3 rounded-full bg-[#101014]/90 px-3.5 py-2.5 text-[13px] backdrop-blur">
-          <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
-          <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>
-        </div>
-      </header>
+      {/* Filters belong to the exploration map. Figma's crowd screen is a
+          focused conditions view, so it deliberately removes competing chrome. */}
+      {!heat && <InterestSelector open={filtersOpen} onOpenChange={setFiltersOpen} />}
+
+      {heat ? (
+        <section className="absolute inset-x-4 top-[max(0.75rem,env(safe-area-inset-top))] z-10">
+          <div className="relative flex min-h-8 items-center pl-7 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+            <button aria-label="Exit crowd-density view" onClick={() => setHeat(false)} className="absolute left-0 grid size-7 place-items-center">
+              <ChevronLeft size={30} strokeWidth={2.5} aria-hidden="true" />
+            </button>
+            <h1 className="whitespace-nowrap text-[14px] font-extrabold tracking-[0.08em]">TRAIL CONDITIONS <span className="font-medium text-zinc-300">/ CROWD-DENSITY</span></h1>
+          </div>
+          <CrowdMetrics people={crowd.people} />
+        </section>
+      ) : (
+        /* Right-anchored so it clears the filter chip on the left; gap-4 because
+           shrink-wrapping ran the two labels together as "Eastside TrailWhen". */
+        <header className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-10 max-w-[58%]">
+          <div className="flex items-center gap-3 rounded-full bg-[#101014]/90 px-3.5 py-2.5 text-[13px] backdrop-blur">
+            <p><span className="text-zinc-400">Where — </span><span className="font-bold">Eastside Trail</span></p>
+            <p><span className="text-zinc-400">When — </span><span className="font-bold">Open now</span></p>
+          </div>
+        </header>
+      )}
 
       {/* Idle, the controls compact into a staggered stack -- one thumb-sized
           target instead of four circles down the edge of the map. Tap it and
@@ -397,8 +440,8 @@ export default function MapView() {
           spot deck here any more -- the map tab shows the map. Browsing spots
           is Explore's job; tapping a pin here opens that spot directly. */}
       {heat && (
-        <div className="absolute inset-x-0 z-10" style={{ bottom: "var(--bline-nav-space)" }}>
-          <CrowdPanel people={crowd.people} />
+        <div className="absolute inset-x-0 z-10" style={{ bottom: "calc(var(--bline-nav-space) + 0.45rem)" }}>
+          <CrowdPanel />
         </div>
       )}
 
