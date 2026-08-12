@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Flame, Layers, LocateFixed } from "lucide-react";
+import { Flame, Layers, LocateFixed, Toilet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
@@ -9,6 +9,7 @@ import CrowdPanel from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
 import { places } from "@/lib/places";
+import { restrooms } from "@/lib/restrooms";
 import { useCrowd } from "@/lib/crowd";
 import { useMapInterests, getActiveInterests, interestOf, INTERESTS } from "@/lib/mapInterests";
 
@@ -47,6 +48,7 @@ export default function MapView() {
   const mapRef = useRef<maplibregl.Map | null>(null);
   const [threeD, setThreeD] = useState(false);
   const [heat, setHeat] = useState(false);
+  const [restroomsVisible, setRestroomsVisible] = useState(false);
   const [open, setOpen] = useState(false);
   // Assigning a ref doesn't re-render, so map-dependent effects would run once
   // with `null` and never again. This flips when the map exists.
@@ -131,6 +133,46 @@ export default function MapView() {
     }
     return () => { pins.current.forEach((m) => m.remove()); pins.current = []; };
   }, [spots, activeKey, nav, mapReady, zoom]);
+
+  // These units are announced by the City and BeltLine by locality only. Each
+  // marker is intentionally labelled "near" because it uses a verified trail-
+  // access anchor, not an invented exact unit coordinate.
+  const restroomPins = useRef<maplibregl.Marker[]>([]);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    restroomPins.current.forEach((marker) => marker.remove());
+    restroomPins.current = [];
+    if (!restroomsVisible) return;
+
+    const bounds = new maplibregl.LngLatBounds();
+    for (const restroom of restrooms) {
+      bounds.extend([restroom.lng, restroom.lat]);
+      const el = document.createElement("button");
+      el.className = "bline-restroom-pin";
+      el.setAttribute("aria-label", restroom.name);
+      el.textContent = "WC";
+      el.onclick = (event) => {
+        event.stopPropagation();
+        map.easeTo({ center: [restroom.lng, restroom.lat], zoom: Math.max(map.getZoom(), 15.5), duration: 500 });
+        new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: "220px" })
+          .setLngLat([restroom.lng, restroom.lat])
+          .setHTML(`<strong>${restroom.name}</strong><p>${restroom.detail}</p><a href="${restroom.sourceUrl}" target="_blank" rel="noreferrer">Official location announcement</a>`)
+          .addTo(map);
+      };
+      restroomPins.current.push(new maplibregl.Marker({ element: el }).setLngLat([restroom.lng, restroom.lat]).addTo(map));
+    }
+    // The four announced localities span the corridor. Bring them into the
+    // actual mobile map viewport rather than leaving edge markers half outside
+    // the frame at the default Eastside-focused camera position.
+    map.fitBounds(bounds, {
+      padding: { top: 112, right: 56, bottom: 136, left: 56 },
+      maxZoom: 13.8,
+      duration: 650,
+    });
+
+    return () => { restroomPins.current.forEach((marker) => marker.remove()); restroomPins.current = []; };
+  }, [mapReady, restroomsVisible]);
 
   // Toggling a filter below the pin threshold used to do nothing at all: the
   // map opens at 12.1 and pins need 13.2, so the control looked broken. Turning
@@ -236,6 +278,17 @@ export default function MapView() {
       ),
     },
     {
+      key: "restrooms",
+      label: "Public restrooms",
+      onPress: () => setRestroomsVisible((visible) => !visible),
+      render: (press) => (
+        <button aria-label={restroomsVisible ? "Hide public restrooms" : "Show public restrooms"} aria-pressed={restroomsVisible}
+          onClick={press} className={`${CTRL} ${restroomsVisible ? "bg-accent text-on-brand" : CTRL_OFF}`}>
+          <Toilet size={20} />
+        </button>
+      ),
+    },
+    {
       key: "heat",
       label: "Crowd heatmap",
       onPress: () => setHeat((h) => !h),
@@ -319,7 +372,7 @@ export default function MapView() {
         </div>
       )}
 
-      {activeInterests.length === 0 && !heat && (
+      {activeInterests.length === 0 && !heat && !restroomsVisible && (
         <div className="absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
           <button onClick={() => setFiltersOpen(true)}
@@ -329,7 +382,7 @@ export default function MapView() {
         </div>
       )}
 
-      {activeInterests.length > 0 && zoom < PIN_MIN_ZOOM && !heat && (
+      {activeInterests.length > 0 && zoom < PIN_MIN_ZOOM && !heat && !restroomsVisible && (
         <div className="absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
           <button

@@ -224,3 +224,22 @@ body {
   box-shadow: 0 1px 5px rgb(0 0 0 / 40%);
   cursor: pointer;
 }
+
+/* City-announced Throne restrooms. "WC" is text-based so the marker never
+   depends on an emoji font or pretends to be a rated venue pin. */
+.bline-restroom-pin {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: #0d65d9;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 45%);
+  color: #fff;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
