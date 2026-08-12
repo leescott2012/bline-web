@@ -52,8 +52,9 @@ export const spots: Spot[] = [
     "ratings": "12,504",
     "openTill": "11p",
     "badges": [],
-    "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_3.jpg/1280px-Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_3.jpg",
-    "imgs": ["https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_4.jpg/1280px-Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_4.jpg", "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_3.jpg/1280px-Midtown_Atlanta_skyline_from_Piedmont_Park%2C_March_2018_3.jpg"],
+    // Bundled from the prior Wikimedia sources so the native app does not depend on an external image request.
+    "img": "/images/piedmont-park-skyline.jpg",
+    "imgs": ["/images/piedmont-park-skyline.jpg", "/images/piedmont-park-skyline-2.jpg"],
     "price": 0,
     "wasPrice": 0,
     "lng": -84.3725,
