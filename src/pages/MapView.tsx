@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
@@ -385,29 +385,40 @@ export default function MapView() {
           target instead of four circles down the edge of the map. Tap it and
           they fan out. Dragging the map collapses them again, so the map is
           never competing with its own chrome. */}
-      <div className="absolute right-3 z-10 flex flex-col-reverse items-end"
+      <div className="absolute right-3 z-10 flex flex-col items-end"
         style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
-        {CONTROLS.map(({ key, label, render, onPress }, i) => (
-          <motion.div
-            key={key}
-            initial={false}
-            animate={
-              open
-                ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
-                : // Collapsed: a vertical deck. Each circle sits a little higher
-                  // and a little smaller than the one in front, so the stack
-                  // reads as depth without drifting sideways off the edge.
-                  { marginTop: -34 - i * 3, x: 0, scale: 1 - i * 0.08, opacity: 1 - i * 0.2 }
-            }
-            transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
-            style={{ zIndex: CONTROLS.length - i }}
-          >
-            {render(
-              open ? () => { onPress(); armIdle(); } : () => setOpen(true),
-              open,
-            )}
-          </motion.div>
-        ))}
+        <div className="flex flex-col-reverse items-end">
+          {CONTROLS.map(({ key, label, render, onPress }, i) => (
+            <motion.div
+              key={key}
+              initial={false}
+              animate={
+                open
+                  ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
+                  : // Collapsed: a vertical deck. Each circle sits a little higher
+                    // and a little smaller than the one in front, so the stack
+                    // reads as depth without drifting sideways off the edge.
+                    { marginTop: -34 - i * 3, x: 0, scale: 1 - i * 0.08, opacity: 1 - i * 0.2 }
+              }
+              transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
+              style={{ zIndex: CONTROLS.length - i }}
+            >
+              {render(
+                open ? () => { onPress(); armIdle(); } : () => setOpen(true),
+                open,
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        <button
+          aria-label={open ? "Retract map controls" : "Expand map controls"}
+          aria-expanded={open}
+          onClick={() => setOpen((isOpen) => !isOpen)}
+          className={`${CTRL} mt-2 border border-white/10 ${CTRL_OFF}`}
+        >
+          {open ? <ChevronDown size={21} /> : <ChevronUp size={21} />}
+        </button>
       </div>
 
       {locateError && (
