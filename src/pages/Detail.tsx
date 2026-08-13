@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, Share, Heart, Star, ChevronRight, Store } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
-import { isOpenNow, closingTimeLabel } from "@/lib/data";
+import { isOpenNow, hoursStatusLabel } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
 import { RICH_DATA } from "@/lib/richData";
 import PhotoCarousel from "@/components/PhotoCarousel";
@@ -69,7 +69,7 @@ export default function Detail() {
         <button className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]">
           <span className="shrink-0 whitespace-nowrap">
             {isOpenNow(spot) ? <span className="font-semibold text-mint">Open now</span> : <span className="font-semibold text-alert">Closed</span>}
-            {" "}· Closes {closingTimeLabel(spot.openTill)}
+            {" "}· {hoursStatusLabel(spot)}
           </span>
           <span className="flex min-w-0 items-center gap-1 text-zinc-400">
             <span className="truncate">{spot.address}</span>

@@ -2,6 +2,7 @@ import { Bell, ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useSpots } from "@/lib/spots";
+import { hoursStatusLabel } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 
 import { useFavorites, toggleFav } from "@/lib/favorites";
@@ -52,13 +53,13 @@ export default function Saved() {
                     <div>
                       <h3 className="text-[18px] font-bold">{s.name}</h3>
                       <p className="mt-1 flex items-center gap-1.5 text-[13px] text-zinc-400">
-                        <ThumbsUp size={13} /> {s.loved}% loved · {s.area}
+                        {s.loved > 0 && <><ThumbsUp size={13} /> {s.loved}% loved · </>}{s.area}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-3xl font-bold text-hot">{s.rating}</p>
                       <p className="text-xs text-zinc-400">{s.ratings} ratings</p>
-                      <p className="text-xs text-zinc-400 underline">Open till {s.openTill}</p>
+                      <p className="text-xs text-zinc-400 underline">{hoursStatusLabel(s)}</p>
                     </div>
                   </div>
                 </Link>

@@ -1,6 +1,6 @@
 import { ThumbsUp, Heart } from "lucide-react";
 import { Link } from "wouter";
-import type { Spot } from "@/lib/data";
+import { hoursStatusLabel, type Spot } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
@@ -32,13 +32,13 @@ export default function SpotCard({ spot, photoClass = "aspect-[488/200]", autoPh
         <div className="min-w-0">
           <h3 className="text-[18px] font-bold leading-tight">{spot.name}</h3>
           <p className="mt-1.5 flex items-center gap-1.5 text-[13px] text-zinc-300">
-            <ThumbsUp size={13} /> {spot.loved}% | {spot.area}
+            {spot.loved > 0 && <><ThumbsUp size={13} /> {spot.loved}% | </>}{spot.area}
           </p>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-[26px] font-bold leading-none text-hot">{spot.rating}</p>
           <p className="mt-1.5 text-[13px] text-zinc-400">{spot.ratings} ratings</p>
-          <p className="mt-0.5 text-[13px] text-zinc-400 underline">Open till {spot.openTill}</p>
+          <p className="mt-0.5 text-[13px] text-zinc-400 underline">{hoursStatusLabel(spot)}</p>
         </div>
       </div>
     </Link>

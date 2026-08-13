@@ -6,7 +6,10 @@ export type Spot = {
   loved: number;
   rating: number;
   ratings: string;
+  // Legacy display fallback for venues without a weekly schedule.
   openTill: string;
+  // Prefer this source-backed schedule whenever it is available.
+  weeklyHours?: WeeklyHours;
   badges: string[];
   img: string;
   imgs: string[];
@@ -19,6 +22,9 @@ export type Spot = {
   reservation_link?: string;
   website?: string;
 };
+
+export type Weekday = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
+export type WeeklyHours = Partial<Record<Weekday, { opens: string; closes: string } | null>>;
 
 // ponytail: real data sourced from AJC, Yelp, and official sites
 export const spots: Spot[] = [
@@ -433,6 +439,35 @@ export const spots: Spot[] = [
     "address": "660 Irwin St. NE, Atlanta",
     "walk": "On the Eastside Trail",
     "website": "https://www.lingeringshade.com/"
+  },
+  {
+    "id": "the-james-room",
+    "name": "The James Room",
+    "category": "Cocktail Bar",
+    "area": "Inman Park",
+    "loved": 0,
+    "rating": 3.8,
+    "ratings": "317",
+    "openTill": "2a",
+    "weeklyHours": {
+      "mon": null,
+      "tue": { "opens": "5p", "closes": "12a" },
+      "wed": { "opens": "5p", "closes": "1a" },
+      "thu": { "opens": "5p", "closes": "1a" },
+      "fri": { "opens": "5p", "closes": "2a" },
+      "sat": { "opens": "5p", "closes": "2a" },
+      "sun": { "opens": "5p", "closes": "10p" }
+    },
+    "badges": [],
+    "img": "https://s3-media0.fl.yelpcdn.com/bphoto/CJhly5ah0SurNIFnq49ebg/258s.jpg",
+    "imgs": ["https://s3-media0.fl.yelpcdn.com/bphoto/CJhly5ah0SurNIFnq49ebg/258s.jpg"],
+    "price": 0,
+    "wasPrice": 0,
+    "lng": -84.3653939,
+    "lat": 33.7564632,
+    "address": "661 Auburn Ave NE, Suite 280, Atlanta",
+    "walk": "On the Eastside Trail",
+    "website": "https://thejamesroom.com/"
   },
   {
     "id": "krog-street",
@@ -924,21 +959,83 @@ export const spots: Spot[] = [
   }
 ];
 
+const WEEKDAY_KEYS: Weekday[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+
+function clockMinutes(value: string): number | null {
+  const match = /^(\d{1,2})([ap])$/i.exec(value.trim());
+  if (!match) return null;
+  const hour = Number(match[1]) % 12;
+  return (match[2].toLowerCase() === "p" ? hour + 12 : hour) * 60;
+}
+
+function currentWeekday(date = new Date()): Weekday {
+  return WEEKDAY_KEYS[date.getDay()];
+}
+
+function minutesSinceMidnight(date = new Date()): number {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function activeWeeklyWindow(spot: Spot, date = new Date()) {
+  const weeklyHours = spot.weeklyHours;
+  if (!weeklyHours) return null;
+
+  const dayIndex = date.getDay();
+  const today = weeklyHours[WEEKDAY_KEYS[dayIndex]];
+  const nowMinutes = minutesSinceMidnight(date);
+
+  // First honour an after-midnight window opened on the previous calendar day.
+  const previous = weeklyHours[WEEKDAY_KEYS[(dayIndex + 6) % 7]];
+  if (previous) {
+    const previousOpens = clockMinutes(previous.opens);
+    const previousCloses = clockMinutes(previous.closes);
+    if (previousOpens !== null && previousCloses !== null && previousCloses <= previousOpens && nowMinutes < previousCloses) {
+      return { open: true, closes: previous.closes, opens: null };
+    }
+  }
+
+  if (!today) return { open: false, closes: null, opens: null };
+  const opens = clockMinutes(today.opens);
+  const closes = clockMinutes(today.closes);
+  if (opens === null || closes === null) return { open: false, closes: null, opens: null };
+
+  const closesNextDay = closes <= opens;
+  const isOpen = nowMinutes >= opens && (closesNextDay || nowMinutes < closes);
+  return { open: isOpen, closes: today.closes, opens: isOpen ? null : today.opens };
+}
+
 export function isOpenNow(spot: Spot): boolean {
+  const scheduled = activeWeeklyWindow(spot);
+  if (scheduled) return scheduled.open;
+
+  // Legacy fallback for records that still have only the historical close-time field.
   const now = new Date();
   const hours = now.getHours();
   const till = spot.openTill.toLowerCase();
-  let closeHour = 22; // default 10p
-  if (till.includes("p")) closeHour = parseInt(till) + 12;
-  if (till.includes("a")) closeHour = parseInt(till);
+  let closeHour = 22;
+  if (till.includes("p")) closeHour = parseInt(till, 10) + 12;
+  if (till.includes("a")) closeHour = parseInt(till, 10);
   if (till === "12a") closeHour = 24;
   return hours < closeHour;
 }
 
 export function closingTimeLabel(till: string): string {
-  if (till === "12a") return "Midnight";
-  if (till === "1a") return "1:00 AM";
-  return till.replace("p", ":00 PM");
+  const minutes = clockMinutes(till);
+  if (minutes === null) return till;
+  if (minutes === 0) return "Midnight";
+  const hour24 = Math.floor(minutes / 60);
+  const hour = hour24 % 12 || 12;
+  return `${hour}:00 ${hour24 < 12 ? "AM" : "PM"}`;
+}
+
+export function hoursStatusLabel(spot: Spot): string {
+  const scheduled = activeWeeklyWindow(spot);
+  if (scheduled) {
+    if (scheduled.open && scheduled.closes) return `Closes ${closingTimeLabel(scheduled.closes)}`;
+    if (scheduled.opens) return `Opens ${closingTimeLabel(scheduled.opens)}`;
+    return "Closed today";
+  }
+  return isOpenNow(spot) ? `Closes ${closingTimeLabel(spot.openTill)}` : "Closed";
 }
 
 export const menuPicks = [
