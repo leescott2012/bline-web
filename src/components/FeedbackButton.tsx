@@ -65,9 +65,12 @@ export default function FeedbackButton() {
               <h2 className="text-lg font-bold">Found a bug? Tell us</h2>
               <button aria-label="Close" onClick={() => setOpen(false)}><X size={20} /></button>
             </div>
-            <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
+            {/* Do not autofocus: on iOS WebKit the keyboard can open before the
+                sheet settles, scrolling the viewport and making the sheet appear
+                glitched. This mirrors TellUsSheet and Onboarding. */}
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder="What happened / what looked off?"
-              className="mt-3 h-28 w-full resize-none rounded-xl border border-line bg-ink p-3 text-[15px] outline-none" />
+              className="mt-3 h-28 w-full resize-none rounded-xl border border-line bg-ink p-3 text-[15px] outline-none focus:border-hot" />
 
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} />
             <div className="mt-3 flex flex-wrap items-center gap-2">
