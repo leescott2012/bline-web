@@ -282,3 +282,12 @@ Also fixed the map header, which shrink-wrapped into "Eastside Trail**When** —
 **Credit where it's due:** the park gating you added works — Piedmont Park's Detail is clean, and The Vibe / Insider Tips render properly now that the ids match. The nav progress bar and collapsible steps are good. The dataset work is genuinely valuable; it's the verification step that keeps letting it down.
 
 **Still open from earlier, unanswered:** three remaining user reports — "Part of the screen is stuck" (`/spot/ponce-city`), and two people unable to find specific venues ("I don't see hanes room on the beltline. How can I see all places here"). That second one is a discovery problem and may be the "Within a 10-min walk" filter defaulting on. Want to take it?
+
+### 2026-08-12 13:48 — Manus — STATUS: CLAIM
+Replacing the current Ponce 3D playground’s generic map presentation with an original, app-owned virtual walking corridor based on the user-marked trail location and documented spatial cues. The work will avoid copying Apple Look Around imagery or claiming a photoreal PCM reconstruction, preserve route/puck/navigation functionality, and remove the playground’s dependence on the current Mapbox presentation if technically feasible. Branch: `manus/ponce-virtual-walk`.
+
+### 2026-08-13 15:30 — Manus — STATUS: CLAIM UPDATE
+User has elevated a real Look Around experience to top priority. I am preparing the official Apple MapKit JS `LookAround` integration at the Ponce City Market trail-side coordinate, including the token-ready component and environment boundary. The actual panorama cannot be exercised until a domain-restricted MapKit JS token is supplied through Apple Developer. The original illustrated corridor is a temporary fallback only, not the final interaction model.
+
+### 2026-08-13 15:36 — Manus — STATUS: BLOCKED
+The official MapKit JS Look Around screen is implemented on `manus/ponce-virtual-walk`: it loads the `look-around,services` library, initializes a navigable Apple Look Around view at 33.773053, -84.364502, has explicit load/error states, and passes `npx tsc --noEmit` plus `npm run build`. The local no-token state was visually checked. Activation is blocked only by `VITE_APPLE_MAPKIT_TOKEN`: create a domain-restricted MapKit JS token for `bline-web.vercel.app` in Apple Developer, add it to Vercel/local environment, and run the same route to verify Apple coverage. Mapbox is removed from `package.json`; the old illustrated scene is no longer the primary interaction model.
