@@ -25,8 +25,16 @@ interface Reservation {
   created_at: string;
 }
 
-/** Fetch the user's reservations from the API. */
+/**
+ * Fetch reservations from the web API. Capacitor's `capacitor://localhost`
+ * origin cannot resolve this relative Vercel function URL, so native falls
+ * back to the existing empty state until reservations have a native endpoint.
+ */
 async function fetchMyReservations(userId: string): Promise<Reservation[]> {
+  if (typeof window !== "undefined" && window.location.protocol === "capacitor:") {
+    return [];
+  }
+
   try {
     const res = await fetch(`/api/reservations?userId=${encodeURIComponent(userId)}`);
     if (!res.ok) return [];
