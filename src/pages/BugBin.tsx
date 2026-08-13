@@ -16,7 +16,7 @@ interface BugReportRow {
   url: string | null;
   user_agent: string | null;
   viewport: string | null;
-  context: { screenshot?: string; [k: string]: unknown } | null;
+  context: { screenshot?: string; screenshots?: string[]; [k: string]: unknown } | null;
   status: string;
   admin_note: string | null;
   created_at: string;
@@ -107,7 +107,11 @@ export default function BugBin() {
       {error && <p className="mx-4 mt-3 text-sm text-red-400">{error}</p>}
 
       <div className="mx-4 mt-4 space-y-3">
-        {reports.map((r) => (
+        {reports.map((r) => {
+          // old rows saved a single context.screenshot string; new rows save
+          // context.screenshots: string[]. Support both.
+          const shots = r.context?.screenshots ?? (r.context?.screenshot ? [r.context.screenshot] : []);
+          return (
           <div key={r.id} className="rounded-2xl border border-line bg-panel p-3">
             <div className="flex items-center justify-between gap-2 text-[10px] uppercase tracking-widest text-zinc-500">
               <span className="truncate text-accent">{r.source}</span>
@@ -121,16 +125,22 @@ export default function BugBin() {
             {r.admin_note && (
               <p className="mt-1.5 break-words rounded-lg bg-ink p-2 text-xs text-zinc-400">{r.admin_note}</p>
             )}
-            {r.context?.screenshot && (
-              <img
-                src={r.context.screenshot}
-                alt="Attached screenshot"
-                className="mt-2 max-h-64 rounded-lg border border-line"
-              />
+            {shots.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {shots.map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt="Attached screenshot"
+                    className="max-h-64 rounded-lg border border-line"
+                  />
+                ))}
+              </div>
             )}
             {r.url && <p className="mt-2 truncate font-mono text-[10px] text-zinc-500">{r.url}</p>}
           </div>
-        ))}
+          );
+        })}
         {!loading && reports.length === 0 && !error && (
           <p className="text-center text-sm text-zinc-500">No reports loaded yet.</p>
         )}
