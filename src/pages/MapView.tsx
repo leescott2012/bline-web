@@ -241,7 +241,12 @@ export default function MapView() {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    // A style transition or component cleanup can briefly leave a MapLibre Map
+    // instance in the ref after its internal style has been removed. Calling
+    // getSource/getLayer in that interval throws from MapLibre's style object.
+    // The next onMap callback advances mapGeneration once the replacement style
+    // is loaded, which re-runs this effect safely.
+    if (!map || !map.isStyleLoaded()) return;
     if (!heat) {
       [HEAT_LAYER, HEAT_GLOW_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
       if (map.getSource(HEAT_SOURCE)) map.removeSource(HEAT_SOURCE);
