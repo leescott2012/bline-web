@@ -52,6 +52,9 @@ export default function NavigateEnhanced() {
 
   const mapRef = useRef<maplibregl.Map | null>(null);
   const puckRef = useRef<maplibregl.Marker | null>(null);
+  // A ref assignment does not render. Track each ready map so route effects
+  // also run when MapLibre finishes loading after route data is available.
+  const [mapGeneration, setMapGeneration] = useState(0);
   const follow = useRef(true);
   const raf = useRef(0);
   const prev = useRef({ si: -1, mi: "", min: -1 });
@@ -100,6 +103,11 @@ export default function NavigateEnhanced() {
   useEffect(() => {
     const map = mapRef.current;
     if (!map || route === undefined) return;
+
+    const onDragStart = () => {
+      follow.current = false;
+      setRecenterVisible(true);
+    };
 
     const draw = () => {
       if (map.getSource("route")) {
@@ -174,16 +182,17 @@ export default function NavigateEnhanced() {
           .addTo(map);
 
         map.jumpTo({ center: routeCoords[0], zoom: 15.5, pitch: 55 });
-        map.on("dragstart", () => {
-          follow.current = false;
-          setRecenterVisible(true);
-        });
+        map.on("dragstart", onDragStart);
       }
     };
 
     if (map.isStyleLoaded()) draw();
     else map.once("load", draw);
-  }, [route, routeCoords]);
+    return () => {
+      map.off("load", draw);
+      map.off("dragstart", onDragStart);
+    };
+  }, [route, routeCoords, mapGeneration]);
 
   useEffect(() => {
     const src = mapRef.current?.getSource("route") as maplibregl.GeoJSONSource | undefined;
@@ -307,7 +316,10 @@ export default function NavigateEnhanced() {
         autoPitch={false}
         zoom={15.5}
         center={routeCoords[0]}
-        onMap={(m) => (mapRef.current = m)}
+        onMap={(m) => {
+          mapRef.current = m;
+          setMapGeneration((generation) => generation + 1);
+        }}
         className="absolute inset-0"
       />
 
