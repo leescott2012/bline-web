@@ -22,6 +22,7 @@ const PIN_MIN_ZOOM = 13.2;
 const PITCH_3D = 60;
 
 const HEAT_SOURCE = "crowd-density";
+const HEAT_HALO_LAYER = "crowd-ribbon-halo";
 const HEAT_GLOW_LAYER = "crowd-ribbon-glow";
 const HEAT_LAYER = "crowd-ribbon";
 
@@ -31,28 +32,33 @@ const HEAT_LAYER = "crowd-ribbon";
 // source or its live/seeded merge semantics.
 function crowdRibbon(points: { lng: number; lat: number; weight: number }[]) {
   const RADIUS = 0.0035; // roughly a few walkable blocks at this latitude
-  const raw = trailSegments.map((segment) => {
-    const step = Math.max(1, Math.floor(segment.coords.length / 72));
-    let total = 0;
-    let samples = 0;
-    for (let i = 0; i < segment.coords.length; i += step) {
-      const [lng, lat] = segment.coords[i];
+  const raw = trailSegments.flatMap((segment) => {
+    // The old renderer averaged an entire source segment into one color. Break
+    // each verified LineString into short, contiguous pieces so colors and the
+    // glow travel *along* the actual trail geometry, as in the Figma reference.
+    const chunkSize = Math.max(1, Math.ceil((segment.coords.length - 1) / 64));
+    const chunks: { coords: [number, number][]; score: number }[] = [];
+
+    for (let start = 0; start < segment.coords.length - 1; start += chunkSize) {
+      const end = Math.min(segment.coords.length - 1, start + chunkSize);
+      const coords = segment.coords.slice(start, end + 1) as [number, number][];
+      const [lng, lat] = coords[Math.floor(coords.length / 2)];
       const score = points.reduce((sum, point) => {
         const distance = Math.hypot(lng - point.lng, lat - point.lat);
         return distance >= RADIUS ? sum : sum + point.weight * (1 - distance / RADIUS);
       }, 0);
-      total += score;
-      samples += 1;
+      chunks.push({ coords, score });
     }
-    return { segment, score: samples ? total / samples : 0 };
+    return chunks;
   });
+
   const peak = Math.max(...raw.map((item) => item.score), 1);
   return {
     type: "FeatureCollection" as const,
-    features: raw.map(({ segment, score }) => ({
+    features: raw.map(({ coords, score }) => ({
       type: "Feature" as const,
       properties: { density: Math.max(0.08, score / peak) },
-      geometry: { type: "LineString" as const, coordinates: segment.coords },
+      geometry: { type: "LineString" as const, coordinates: coords },
     })),
   };
 }
@@ -248,7 +254,7 @@ export default function MapView() {
     // is loaded, which re-runs this effect safely.
     if (!map || !map.isStyleLoaded()) return;
     if (!heat) {
-      [HEAT_LAYER, HEAT_GLOW_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+      [HEAT_LAYER, HEAT_GLOW_LAYER, HEAT_HALO_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
       if (map.getSource(HEAT_SOURCE)) map.removeSource(HEAT_SOURCE);
       return;
     }
@@ -260,20 +266,32 @@ export default function MapView() {
     }
 
     map.addSource(HEAT_SOURCE, { type: "geojson", data });
-    const color = ["interpolate", ["linear"], ["get", "density"], 0.08, "#5bd05b", 0.32, "#b8e84c", 0.54, "#ffd33d", 0.72, "#ff8a2a", 1, "#ef3b38"] as maplibregl.ExpressionSpecification;
+    const color = ["interpolate", ["linear"], ["get", "density"], 0.08, "#55d86a", 0.32, "#a9e85c", 0.54, "#f2db42", 0.72, "#ff982f", 1, "#f23e3e"] as maplibregl.ExpressionSpecification;
+    const roundedTrail = { "line-cap": "round", "line-join": "round" } as const;
+
+    // Three passes make the color feel bonded to the corridor: a broad, soft
+    // halo, a tighter bloom, then a crisp centerline. They all use the official
+    // corridor coordinates—not an inferred route or a radial point heatmap.
+    map.addLayer({
+      id: HEAT_HALO_LAYER,
+      type: "line",
+      source: HEAT_SOURCE,
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 34, "line-opacity": 0.2, "line-blur": 14 },
+    });
     map.addLayer({
       id: HEAT_GLOW_LAYER,
       type: "line",
       source: HEAT_SOURCE,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": color, "line-width": 18, "line-opacity": 0.24, "line-blur": 8 },
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 20, "line-opacity": 0.42, "line-blur": 7 },
     });
     map.addLayer({
       id: HEAT_LAYER,
       type: "line",
       source: HEAT_SOURCE,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": color, "line-width": 6, "line-opacity": 0.96 },
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 6.5, "line-opacity": 0.98 },
     });
   }, [heat, crowd, mapReady, mapGeneration]);
 
