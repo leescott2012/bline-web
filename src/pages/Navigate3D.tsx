@@ -105,47 +105,47 @@ export default function Navigate3D() {
         center={route?.coordinates?.[0] ?? [destSpot.lng, destSpot.lat]}
         autoPitch={false}
         onMap={(map) => {
+          // RealMapEnhanced calls onMap only after this style has loaded. Adding
+          // another `load` listener here misses the already-dispatching event,
+          // leaving the 3D route absent. Initialize against the ready map now.
           mapRef.current = map;
-          
-          map.on('load', () => {
-            map.setPitch(WALK_PITCH);
-            if (route && !map.getSource('route')) {
-              map.addSource('route', {
-                type: 'geojson',
-                data: {
-                  type: 'Feature',
-                  properties: {},
-                  geometry: {
-                    type: 'LineString',
-                    coordinates: route.coordinates
-                  }
-                }
-              });
+          map.setPitch(WALK_PITCH);
+          if (route && !map.getSource('route')) {
+            map.addSource('route', {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: route.coordinates,
+                },
+              },
+            });
 
-              map.addLayer({
-                id: 'route-glow',
-                type: 'line',
-                source: 'route',
-                paint: {
-                  'line-color': '#d946ef',
-                  'line-width': 12,
-                  'line-opacity': 0.3,
-                  'line-blur': 6
-                }
-              });
+            map.addLayer({
+              id: 'route-glow',
+              type: 'line',
+              source: 'route',
+              paint: {
+                'line-color': '#d946ef',
+                'line-width': 12,
+                'line-opacity': 0.3,
+                'line-blur': 6,
+              },
+            });
 
-              map.addLayer({
-                id: 'route-main',
-                type: 'line',
-                source: 'route',
-                paint: {
-                  'line-color': '#d946ef',
-                  'line-width': 4,
-                  'line-opacity': 0.9
-                }
-              });
-            }
-          });
+            map.addLayer({
+              id: 'route-main',
+              type: 'line',
+              source: 'route',
+              paint: {
+                'line-color': '#d946ef',
+                'line-width': 4,
+                'line-opacity': 0.9,
+              },
+            });
+          }
         }}
         className="absolute inset-0"
       />
