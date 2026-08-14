@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace, MapPinPlus } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
@@ -14,58 +14,17 @@ const links = [
   { icon: SlidersHorizontal, label: "Search Preferences", href: "/filters" },
 ];
 
-interface Reservation {
-  id: string;
-  spot_id: string;
-  spot_name: string;
-  guests: number;
-  day_label: string;
-  time_label: string;
-  status: string;
-  created_at: string;
-}
-
-/**
- * Fetch reservations from the web API. Capacitor's `capacitor://localhost`
- * origin cannot resolve this relative Vercel function URL, so native falls
- * back to the existing empty state until reservations have a native endpoint.
- */
-async function fetchMyReservations(userId: string): Promise<Reservation[]> {
-  if (typeof window !== "undefined" && window.location.protocol === "capacitor:") {
-    return [];
-  }
-
-  try {
-    const res = await fetch(`/api/reservations?userId=${encodeURIComponent(userId)}`);
-    if (!res.ok) return [];
-    return res.json();
-  } catch {
-    return [];
-  }
-}
-
 export default function Profile() {
   const spots = useSpots();
   const favs = useFavorites();
   const { user } = useAuth();
   // The gate guarantees both a user and a profile before any screen renders.
   const { profile } = useProfile();
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [resvLoading, setResvLoading] = useState(false);
   const [linkPassword, setLinkPassword] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [passkeyState, setPasskeyState] = useState<"idle" | "busy" | "done">("idle");
   const [suggesting, setSuggesting] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    setResvLoading(true);
-    fetchMyReservations(user.id).then((r) => {
-      setReservations(r);
-      setResvLoading(false);
-    });
-  }, [user]);
 
   if (!profile) return null;
   const name = profile.display_name || profile.username;
@@ -186,36 +145,11 @@ export default function Profile() {
         </div>
 
         <div className="mx-4 mt-6">
-          <h2 className="mb-3 text-lg font-bold">My Reservations</h2>
-            {resvLoading ? (
-              <p className="text-sm text-zinc-500">Loading…</p>
-            ) : reservations.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-6 text-center text-zinc-400">
-                <CalendarDays size={28} />
-                <p className="text-sm">No upcoming reservations.<br />Tap “Reserve a table” on any spot to book.</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line">
-                {reservations.map((r) => (
-                  <Link key={r.id} href={`/spot/${r.spot_id}`} className="flex items-center justify-between px-4 py-3.5">
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold">{r.spot_name}</p>
-                      <p className="mt-0.5 text-sm text-zinc-400">
-                        {r.day_label} · {r.time_label} · {r.guests} {r.guests === 1 ? "guest" : "guests"}
-                      </p>
-                    </div>
-                    <div className="ml-3 flex shrink-0 items-center gap-2">
-                      <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                        r.status === "confirmed" ? "bg-mint/20 text-mint" : "bg-zinc-700 text-zinc-400"
-                      }`}>
-                        {r.status}
-                      </span>
-                      <ChevronRight size={16} className="text-zinc-500" />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
+          <h2 className="mb-3 text-lg font-bold">Restaurant bookings</h2>
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-panel px-6 py-6 text-center text-zinc-400">
+            <CalendarDays size={28} />
+            <p className="text-sm">Availability and confirmation happen directly with the restaurant&apos;s booking provider.<br />Open an eligible spot to book on OpenTable or Resy.</p>
+          </div>
         </div>
 
         <div className="mx-4 mt-6 divide-y divide-line overflow-hidden rounded-2xl border border-line">

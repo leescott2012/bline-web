@@ -1,7 +1,8 @@
-import { Bell, ThumbsUp, Heart } from "lucide-react";
+import { Bell, MapPin, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useSpots } from "@/lib/spots";
+import { hasVerifiedRating } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 
 import { useFavorites, toggleFav } from "@/lib/favorites";
@@ -52,13 +53,19 @@ export default function Saved() {
                     <div>
                       <h3 className="text-[18px] font-bold">{s.name}</h3>
                       <p className="mt-1 flex items-center gap-1.5 text-[13px] text-zinc-400">
-                        <ThumbsUp size={13} /> {s.loved}% loved · {s.area}
+                        <MapPin size={13} /> On the BeltLine · {s.area}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-3xl font-bold text-hot">{s.rating}</p>
-                      <p className="text-xs text-zinc-400">{s.ratings} ratings</p>
-                      <p className="text-xs text-zinc-400 underline">Open till {s.openTill}</p>
+                      {hasVerifiedRating(s) ? (
+                        <>
+                          <p className="text-3xl font-bold text-hot">{s.rating}</p>
+                          <p className="text-xs text-zinc-400">{s.ratings} ratings</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-zinc-400">Rating unavailable</p>
+                      )}
+                      <p className={`${hasVerifiedRating(s) ? "" : "mt-1"} text-xs text-zinc-400 underline`}>Open till {s.openTill}</p>
                     </div>
                   </div>
                 </Link>

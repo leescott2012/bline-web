@@ -8,6 +8,7 @@ import RealMapEnhanced from "@/components/RealMapEnhanced";
 import CrowdPanel, { CrowdMetrics } from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
+import { hasVerifiedRating } from "@/lib/data";
 import { places, trailSegments } from "@/lib/places";
 import { restrooms } from "@/lib/restrooms";
 import { useCrowd } from "@/lib/crowd";
@@ -148,8 +149,8 @@ export default function MapView() {
       const el = document.createElement("button");
       el.className = "bline-spot-pin";
       el.style.background = INTERESTS[id].color;
-      el.setAttribute("aria-label", `${spot.name} — ${spot.category}`);
-      el.textContent = spot.rating.toFixed(1);
+      el.setAttribute("aria-label", hasVerifiedRating(spot) ? `${spot.name} — ${spot.rating.toFixed(1)} rating` : `${spot.name} — ${spot.category}`);
+      el.textContent = hasVerifiedRating(spot) ? spot.rating.toFixed(1) : "•";
       el.onclick = (e) => { e.stopPropagation(); nav(`/spot/${spot.id}`); };
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([spot.lng, spot.lat]).addTo(map));
     }
