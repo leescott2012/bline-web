@@ -10,6 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "sync": "vite build && cap sync",
+    "ios:prepare": "npm ci && vite build && cap sync ios",
     "ios": "vite build && cap sync ios && cap open ios",
     "android": "vite build && cap sync android && cap open android"
   },
