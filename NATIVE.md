@@ -10,10 +10,14 @@ The native iOS + Android apps are **this same web app** wrapped with [Capacitor]
 ## Build & run
 
 ```bash
-# iOS (needs Xcode) — builds web, syncs, and opens the Xcode project.
+# First install the locked Capacitor packages. This is required before Xcode can
+# resolve the local CapApp-SPM Swift package in a GitHub clone.
+npm ci
+
+# Build the web bundle, synchronize native dependencies, and open Xcode.
 npm run ios
 
-# Or open ios/App/App.xcodeproj manually after npm run sync.
+# Or run `npm run sync` and open ios/App/App.xcodeproj manually.
 # Select the App scheme, then run on an iOS 15+ simulator or a provisioned device.
 
 # Android (needs Android Studio + SDK + JDK 17) — builds web, syncs, opens Android Studio.
@@ -23,7 +27,7 @@ npm run android
 npm run sync
 ```
 
-`npm run ios` / `android` = `vite build` → `cap sync` → open the native IDE. The committed Xcode shell is `ios/App/App.xcodeproj`; the current web bundle is regenerated in `ios/App/App/public/` during each sync and is intentionally excluded from Git.
+`npm run ios` / `android` = `vite build` → `cap sync` → open the native IDE. The committed Xcode shell is `ios/App/App.xcodeproj`; the current web bundle is regenerated in `ios/App/App/public/` during each sync and is intentionally excluded from Git. Capacitor 8 also generates `ios/App/CapApp-SPM/Package.swift`, which refers to the locally installed Capacitor plugin packages in `node_modules/@capacitor/`. Therefore run `npm ci` before opening the Xcode project from a fresh GitHub clone, then use `npm run sync` to regenerate the native package manifest.
 
 ## Machine requirements
 
