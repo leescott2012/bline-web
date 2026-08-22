@@ -195,7 +195,9 @@ export default function NavigateEnhanced() {
   }, [route, routeCoords, mapGeneration]);
 
   useEffect(() => {
-    const src = mapRef.current?.getSource("route") as maplibregl.GeoJSONSource | undefined;
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    const src = map.getSource("route") as maplibregl.GeoJSONSource | undefined;
     src?.setData({
       type: "Feature",
       properties: { name: step.name ?? "" },
