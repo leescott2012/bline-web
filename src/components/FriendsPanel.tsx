@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { MessageSquare, Search, X } from "lucide-react";
 import { SAMPLE_CONTACTS, inviteByText } from "@/lib/contacts";
 import ProfileCard, { ProfileAvatar } from "@/components/ProfileCard";
+import LocationShareSheet from "@/components/LocationShareSheet";
 import { setProfile } from "@/lib/profile";
 import { clearLocation } from "@/lib/location";
 import {
-  acceptRequest, listFriendships, removeFriendship, searchProfiles, sendRequest,
-  setSharingEnabled, type FriendEdge, type Profile,
+  acceptRequest, grantLocationShare, listFriendships, removeFriendship, revokeLocationShare,
+  searchProfiles, sendRequest, setSharingEnabled, type FriendEdge, type Profile,
 } from "@/lib/friends";
 
 // Instagram's visual language: near-white surfaces, a pill search field with no
@@ -41,11 +42,18 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 export default function FriendsPanel({ profile }: { profile: Profile }) {
   const userId = profile.id;
-  const sharing = profile.sharing_enabled ?? true;
+  // Off by default -- see supabase-location-migration-v2.sql. Falls back to
+  // false, not true, so a not-yet-loaded profile never briefly reads as
+  // "sharing on".
+  const sharing = profile.sharing_enabled ?? false;
   const [edges, setEdges] = useState<FriendEdge[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // Person to prompt for per-friend location consent, shown right after
+  // their request is accepted. Not just a boolean -- we need their username
+  // and id for the sheet and the grant.
+  const [shareTarget, setShareTarget] = useState<Profile | null>(null);
 
   const refresh = useCallback(async () => {
     setEdges(await listFriendships(userId));
@@ -117,7 +125,7 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
             autoCapitalize="none"
             autoCorrect="off"
             aria-label="Search people by username"
-            className="w-full bg-transparent py-3 text-[15px] text-zinc-900 outline-none placeholder:text-zinc-500"
+            className="w-full bg-transparent py-3 text-[16px] text-zinc-900 outline-none placeholder:text-zinc-500"
           />
           {query && (
             <button aria-label="Clear search" onClick={() => setQuery("")} className="shrink-0 text-zinc-500">
@@ -162,7 +170,12 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
             {incoming.map((e) => (
               <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={e.other.status ? e.other.status : `@${e.other.username}`} avatar={e.other}>
                 <button disabled={busyId === e.id}
-                  onClick={() => act(e.id, () => acceptRequest(e.id))}
+                  onClick={async () => {
+                    await act(e.id, () => acceptRequest(e.id));
+                    // Accepting only makes you friends -- it grants nothing.
+                    // Ask separately whether to also share location with them.
+                    setShareTarget(e.other);
+                  }}
                   className={BTN_PRIMARY}>
                   Confirm
                 </button>
@@ -189,7 +202,13 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
             {accepted.map((e) => (
               <Row key={e.id} title={e.other.display_name || e.other.username} subtitle={e.other.status ? e.other.status : `@${e.other.username}`} avatar={e.other}>
                 <button disabled={busyId === e.id}
-                  onClick={() => act(e.id, () => removeFriendship(e.id))}
+                  onClick={() => act(e.id, async () => {
+                    await removeFriendship(e.id);
+                    // Ending the friendship should end any location grant you
+                    // gave them too -- RLS scopes this delete to grants you
+                    // own, so it's a no-op if you never shared with them.
+                    await revokeLocationShare(userId, e.other.id);
+                  })}
                   className={BTN_NEUTRAL}>
                   Remove
                 </button>
@@ -225,6 +244,16 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
           ))}
         </ul>
       </div>
+
+      <LocationShareSheet
+        open={!!shareTarget}
+        username={shareTarget?.username ?? ""}
+        onClose={() => setShareTarget(null)}
+        onShare={async () => {
+          if (shareTarget) await grantLocationShare(userId, shareTarget.id);
+          setShareTarget(null);
+        }}
+      />
     </div>
   );
 }
