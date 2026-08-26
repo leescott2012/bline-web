@@ -169,6 +169,12 @@ export default function MapView() {
       el.onclick = (e) => {
         e.stopPropagation();
         map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16), duration: 500 });
+        // Zooming in was the only thing this handler did, so a tap never
+        // showed the place's own info. Match the restroom-pin popup below.
+        new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: "220px" })
+          .setLngLat([place.lng, place.lat])
+          .setHTML(place.detail ? `<strong>${place.name}</strong><p>${place.detail}</p>` : `<strong>${place.name}</strong>`)
+          .addTo(map);
       };
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([place.lng, place.lat]).addTo(map));
     }
