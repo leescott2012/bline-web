@@ -1,6 +1,6 @@
 import { MapPin, Heart } from "lucide-react";
 import { Link } from "wouter";
-import { hasVerifiedRating, type Spot } from "@/lib/data";
+import { hasVerifiedRating, hoursStatusLabel, type Spot } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 
@@ -45,7 +45,7 @@ export default function SpotCard({ spot, photoClass = "aspect-[488/200]", autoPh
           ) : (
             <p className="text-[13px] text-zinc-400">Rating unavailable</p>
           )}
-          <p className={`${hasRating ? "mt-0.5" : "mt-1.5"} text-[13px] text-zinc-400 underline`}>Open till {spot.openTill}</p>
+          <p className={`${hasRating ? "mt-0.5" : "mt-1.5"} text-[13px] text-zinc-400 underline`}>{hoursStatusLabel(spot)}</p>
         </div>
       </div>
     </Link>

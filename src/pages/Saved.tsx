@@ -2,7 +2,7 @@ import { Bell, MapPin, Heart } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useSpots } from "@/lib/spots";
-import { hasVerifiedRating } from "@/lib/data";
+import { hasVerifiedRating, hoursStatusLabel } from "@/lib/data";
 import PhotoCarousel from "@/components/PhotoCarousel";
 
 import { useFavorites, toggleFav } from "@/lib/favorites";
@@ -65,7 +65,7 @@ export default function Saved() {
                       ) : (
                         <p className="text-xs text-zinc-400">Rating unavailable</p>
                       )}
-                      <p className={`${hasVerifiedRating(s) ? "" : "mt-1"} text-xs text-zinc-400 underline`}>Open till {s.openTill}</p>
+                      <p className={`${hasVerifiedRating(s) ? "" : "mt-1"} text-xs text-zinc-400 underline`}>{hoursStatusLabel(s)}</p>
                     </div>
                   </div>
                 </Link>

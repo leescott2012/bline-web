@@ -28,6 +28,7 @@ create table if not exists public.spots (
   rating      numeric(3,1) not null default 4.0,
   ratings     text        not null default '0',
   "openTill"  text        not null default '10p',
+  "weeklyHours" jsonb,
   badges      text[]      not null default '{}',
   img         text        not null default '',
   imgs        text[]      not null default '{}',
@@ -52,6 +53,9 @@ begin
   end if;
   if not exists (select 1 from information_schema.columns where table_name='spots' and column_name='website') then
     alter table public.spots add column website text;
+  end if;
+  if not exists (select 1 from information_schema.columns where table_name='spots' and column_name='weeklyHours') then
+    alter table public.spots add column "weeklyHours" jsonb;
   end if;
 end $$;
 
