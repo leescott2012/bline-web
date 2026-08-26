@@ -26,6 +26,31 @@ export type Spot = {
 export type Weekday = "sun" | "mon" | "tue" | "wed" | "thu" | "fri" | "sat";
 export type WeeklyHours = Partial<Record<Weekday, { opens: string; closes: string } | null>>;
 
+/**
+ * The offline catalog historically assigned 4.5 / 500 to venues awaiting
+ * review-source enrichment. Treat that repeated fallback as unknown rather
+ * than displaying it as a customer rating.
+ */
+export function hasVerifiedRating(spot: Pick<Spot, "rating" | "ratings">): boolean {
+  return !(spot.rating === 4.5 && spot.ratings === "500");
+}
+
+export type BookingProvider = "OpenTable" | "Resy";
+
+/** Returns a bookable provider only for a verified provider-domain URL. */
+export function getBookingProvider(spot: Pick<Spot, "reservation_link">): BookingProvider | null {
+  const url = spot.reservation_link;
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    if (host === "opentable.com" || host.endsWith(".opentable.com")) return "OpenTable";
+    if (host === "resy.com" || host.endsWith(".resy.com")) return "Resy";
+  } catch {
+    // Invalid or non-web catalog URLs are not eligible for booking handoff.
+  }
+  return null;
+}
+
 // ponytail: real data sourced from AJC, Yelp, and official sites
 export const spots: Spot[] = [
   {

@@ -20,25 +20,32 @@ function shrink(file: File): Promise<string> {
   });
 }
 
+const MAX_SCREENSHOTS = 4;
+
 export default function FeedbackButton() {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
-  const [img, setImg] = useState<string | null>(null);
+  const [imgs, setImgs] = useState<string[]>([]);
   const [sent, setSent] = useState(false);
   const [failed, setFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const reset = () => { setText(""); setImg(null); };
+  const reset = () => { setText(""); setImgs([]); };
 
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) setImg(await shrink(f));
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_SCREENSHOTS);
+    e.target.value = ""; // allow re-picking the same file(s) later
+    if (!files.length) return;
+    const shrunk = await Promise.all(files.map(shrink));
+    setImgs((prev) => [...prev, ...shrunk].slice(0, MAX_SCREENSHOTS));
   };
 
+  const removeAt = (i: number) => setImgs((prev) => prev.filter((_, idx) => idx !== i));
+
   const send = async () => {
-    if (!text.trim() && !img) return;
+    if (!text.trim() && !imgs.length) return;
     setFailed(false);
-    const ok = await reportBug("feedback", text.trim() || "(screenshot only)", img ? { screenshot: img } : undefined);
+    const ok = await reportBug("feedback", text.trim() || "(screenshot only)", imgs.length ? { screenshots: imgs } : undefined);
     if (!ok) { setFailed(true); return; }
     setSent(true);
     setTimeout(() => { setOpen(false); setSent(false); reset(); }, 1200);
@@ -58,25 +65,31 @@ export default function FeedbackButton() {
               <h2 className="text-lg font-bold">Found a bug? Tell us</h2>
               <button aria-label="Close" onClick={() => setOpen(false)}><X size={20} /></button>
             </div>
-            <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)}
+            {/* Do not autofocus: on iOS WebKit the keyboard can open before the
+                sheet settles, scrolling the viewport and making the sheet appear
+                glitched. This mirrors TellUsSheet and Onboarding. */}
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
               placeholder="What happened / what looked off?"
-              className="mt-3 h-28 w-full resize-none rounded-xl border border-line bg-ink p-3 text-[15px] outline-none" />
+              className="mt-3 h-28 w-full resize-none rounded-xl border border-line bg-ink p-3 text-[15px] outline-none focus:border-hot" />
 
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFile} />
-            {img ? (
-              <div className="relative mt-3 inline-block">
-                <img src={img} alt="attachment" className="h-24 rounded-lg border border-line object-cover" />
-                <button aria-label="Remove attachment" onClick={() => setImg(null)}
-                  className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-black text-white">
-                  <X size={14} />
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={onFile} />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {imgs.map((src, i) => (
+                <div key={i} className="relative inline-block">
+                  <img src={src} alt="attachment" className="h-24 rounded-lg border border-line object-cover" />
+                  <button aria-label="Remove attachment" onClick={() => removeAt(i)}
+                    className="absolute -right-2 -top-2 grid size-6 place-items-center rounded-full bg-black text-white">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {imgs.length < MAX_SCREENSHOTS && (
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-zinc-300">
+                  <ImagePlus size={16} /> Attach screenshot
                 </button>
-              </div>
-            ) : (
-              <button onClick={() => fileRef.current?.click()}
-                className="mt-3 flex items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-zinc-300">
-                <ImagePlus size={16} /> Attach screenshot
-              </button>
-            )}
+              )}
+            </div>
 
             {failed && (
               <p className="mt-3 text-sm text-red-400">Couldn't send — try again in a moment.</p>
@@ -84,7 +97,7 @@ export default function FeedbackButton() {
 
             <button onClick={send}
               className="mt-3 w-full rounded-full bg-accent py-3 font-semibold disabled:opacity-50"
-              disabled={(!text.trim() && !img) || sent}>
+              disabled={(!text.trim() && !imgs.length) || sent}>
               {sent ? "Sent — thank you! 🙌" : "Send feedback"}
             </button>
           </div>

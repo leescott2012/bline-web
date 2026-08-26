@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import maplibregl from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { getMapStyleDef } from "@/lib/mapStyle";
 import Screen from "@/components/Screen";
 import { ArrowLeft, ArrowUp, CornerUpRight, Navigation2, Play, X } from "lucide-react";
 import { useLocation } from "wouter";
@@ -10,11 +11,9 @@ import {
   PONCE_TRAIL_ROUTE,
 } from "@/lib/ponceScene";
 
-// Mapbox public access tokens are intentionally client-visible. The env variable
-// can override this in any deployment, while this user-supplied default keeps
-// the published 3D preview functional without a local .env file.
-const MAPBOX_TOKEN = (import.meta.env.VITE_MAPBOX_ACCESS_TOKEN as string | undefined)
-  ?? "pk.eyJ1IjoibGVlc2NvdHQyMDEyIiwiYSI6ImNtc2t5ajZzbjAzbzUzNHB2dXJhaHQwNHMifQ.MApArcHvIbUpisiak_yMzA";
+// The 3D playground uses the same free, keyless Esri imagery style as the
+// production Map selector. It deliberately does not require a paid Mapbox token.
+const SATELLITE_STYLE = getMapStyleDef("satellite").style;
 const METERS_TO_MILES = 0.000621371;
 const WALKING_MPH = 3;
 
@@ -60,8 +59,8 @@ function createPuck() {
 
 export default function Playground3D() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
-  const puckRef = useRef<mapboxgl.Marker | null>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const puckRef = useRef<maplibregl.Marker | null>(null);
   const animationRef = useRef<number | null>(null);
   const [, setLocation] = useLocation();
   const startsActive = new URLSearchParams(window.location.search).get("autoplay") === "1";
@@ -72,45 +71,30 @@ export default function Playground3D() {
   const cumulativeDistance = useMemo(() => cumulative(PONCE_TRAIL_ROUTE), []);
 
   useEffect(() => {
-    if (!mapContainerRef.current || !MAPBOX_TOKEN) return;
+    if (!mapContainerRef.current) return;
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    const map = new mapboxgl.Map({
+    const map = new maplibregl.Map({
       container: mapContainerRef.current,
-      // Satellite ground context carries the actual vegetation, paths, and
-      // surface texture. It is materially closer to the user's reference than
-      // the generic vector ground used in the initial QC pass.
-      style: "mapbox://styles/mapbox/standard-satellite",
+      // Keyless satellite imagery provides real ground context without a paid
+      // Mapbox dependency or a client-visible access token.
+      style: SATELLITE_STYLE,
       center: PONCE_TRAIL_ROUTE[0],
       zoom: PONCE_SCENE.camera.zoom,
       pitch: PONCE_SCENE.camera.pitch,
       bearing: PONCE_SCENE.camera.bearing,
-      antialias: true,
-      attributionControl: true,
     });
     mapRef.current = map;
     // The route view must remain full-bleed while Screen completes its mobile
     // transition and whenever its viewport changes. Without this observer,
-    // Mapbox can retain a short initial canvas and leave a dark empty lower half.
+    // the map canvas can retain a short initial height and leave a dark empty lower half.
     const resizeObserver = new ResizeObserver(() => map.resize());
     resizeObserver.observe(mapContainerRef.current);
 
     map.on("style.load", () => {
       map.resize();
-      // The user reference is bright, open and daylight-led; a dark preset
-      // made PCM unreadable and failed the side-by-side review.
-      map.setConfigProperty("basemap", "lightPreset", "day");
-
-      // Do not impersonate PCM with a generic 3D facade. Satellite ground and
-      // Mapbox's real building data remain the honest baseline until a licensed
-      // scan or a verified PCM 3D model is available.
-      map.setFog({
-        color: "#d9edff",
-        "high-color": "#acd6f3",
-        "horizon-blend": 0.16,
-        "space-color": "#d9edff",
-        "star-intensity": 0,
-      });
+      // Do not impersonate PCM with a generic 3D facade. Satellite ground is
+      // the honest baseline until a licensed scan or verified PCM 3D model is
+      // available; the real route and landmark markers remain explicit.
 
       map.addSource("ponce-route", {
         type: "geojson",
@@ -152,11 +136,11 @@ export default function Playground3D() {
       buildingLabel.setAttribute("aria-label", "Ponce City Market landmark");
       buildingLabel.style.cssText = "border:0;border-radius:12px;background:rgba(255,255,255,.95);padding:8px 12px;box-shadow:0 8px 22px rgba(0,0,0,.28);font:800 13px/1.1 system-ui;color:#1c1917;cursor:default";
       buildingLabel.textContent = "Ponce City Market";
-      new mapboxgl.Marker({ element: buildingLabel, anchor: "bottom" })
+      new maplibregl.Marker({ element: buildingLabel, anchor: "bottom" })
         .setLngLat([-84.36535, 33.77282])
         .addTo(map);
 
-      puckRef.current = new mapboxgl.Marker({ element: createPuck(), anchor: "center", rotationAlignment: "map" })
+      puckRef.current = new maplibregl.Marker({ element: createPuck(), anchor: "center", rotationAlignment: "map" })
         .setLngLat(PONCE_TRAIL_ROUTE[0])
         .addTo(map);
       setMapReady(true);

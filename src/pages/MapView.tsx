@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { ChevronLeft, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronUp, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
@@ -8,6 +8,7 @@ import RealMapEnhanced from "@/components/RealMapEnhanced";
 import CrowdPanel, { CrowdMetrics } from "@/components/CrowdPanel";
 import InterestSelector from "@/components/InterestSelector";
 import { useSpots } from "@/lib/spots";
+import { hasVerifiedRating } from "@/lib/data";
 import { places, trailSegments } from "@/lib/places";
 import { restrooms } from "@/lib/restrooms";
 import { useCrowd } from "@/lib/crowd";
@@ -22,6 +23,7 @@ const PIN_MIN_ZOOM = 13.2;
 const PITCH_3D = 60;
 
 const HEAT_SOURCE = "crowd-density";
+const HEAT_HALO_LAYER = "crowd-ribbon-halo";
 const HEAT_GLOW_LAYER = "crowd-ribbon-glow";
 const HEAT_LAYER = "crowd-ribbon";
 
@@ -31,28 +33,33 @@ const HEAT_LAYER = "crowd-ribbon";
 // source or its live/seeded merge semantics.
 function crowdRibbon(points: { lng: number; lat: number; weight: number }[]) {
   const RADIUS = 0.0035; // roughly a few walkable blocks at this latitude
-  const raw = trailSegments.map((segment) => {
-    const step = Math.max(1, Math.floor(segment.coords.length / 72));
-    let total = 0;
-    let samples = 0;
-    for (let i = 0; i < segment.coords.length; i += step) {
-      const [lng, lat] = segment.coords[i];
+  const raw = trailSegments.flatMap((segment) => {
+    // The old renderer averaged an entire source segment into one color. Break
+    // each verified LineString into short, contiguous pieces so colors and the
+    // glow travel *along* the actual trail geometry, as in the Figma reference.
+    const chunkSize = Math.max(1, Math.ceil((segment.coords.length - 1) / 64));
+    const chunks: { coords: [number, number][]; score: number }[] = [];
+
+    for (let start = 0; start < segment.coords.length - 1; start += chunkSize) {
+      const end = Math.min(segment.coords.length - 1, start + chunkSize);
+      const coords = segment.coords.slice(start, end + 1) as [number, number][];
+      const [lng, lat] = coords[Math.floor(coords.length / 2)];
       const score = points.reduce((sum, point) => {
         const distance = Math.hypot(lng - point.lng, lat - point.lat);
         return distance >= RADIUS ? sum : sum + point.weight * (1 - distance / RADIUS);
       }, 0);
-      total += score;
-      samples += 1;
+      chunks.push({ coords, score });
     }
-    return { segment, score: samples ? total / samples : 0 };
+    return chunks;
   });
+
   const peak = Math.max(...raw.map((item) => item.score), 1);
   return {
     type: "FeatureCollection" as const,
-    features: raw.map(({ segment, score }) => ({
+    features: raw.map(({ coords, score }) => ({
       type: "Feature" as const,
       properties: { density: Math.max(0.08, score / peak) },
-      geometry: { type: "LineString" as const, coordinates: segment.coords },
+      geometry: { type: "LineString" as const, coordinates: coords },
     })),
   };
 }
@@ -142,8 +149,8 @@ export default function MapView() {
       const el = document.createElement("button");
       el.className = "bline-spot-pin";
       el.style.background = INTERESTS[id].color;
-      el.setAttribute("aria-label", `${spot.name} — ${spot.category}`);
-      el.textContent = spot.rating.toFixed(1);
+      el.setAttribute("aria-label", hasVerifiedRating(spot) ? `${spot.name} — ${spot.rating.toFixed(1)} rating` : `${spot.name} — ${spot.category}`);
+      el.textContent = hasVerifiedRating(spot) ? spot.rating.toFixed(1) : "•";
       el.onclick = (e) => { e.stopPropagation(); nav(`/spot/${spot.id}`); };
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([spot.lng, spot.lat]).addTo(map));
     }
@@ -162,6 +169,12 @@ export default function MapView() {
       el.onclick = (e) => {
         e.stopPropagation();
         map.easeTo({ center: [place.lng, place.lat], zoom: Math.max(map.getZoom(), 16), duration: 500 });
+        // Zooming in was the only thing this handler did, so a tap never
+        // showed the place's own info. Match the restroom-pin popup below.
+        new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: "220px" })
+          .setLngLat([place.lng, place.lat])
+          .setHTML(place.detail ? `<strong>${place.name}</strong><p>${place.detail}</p>` : `<strong>${place.name}</strong>`)
+          .addTo(map);
       };
       pins.current.push(new maplibregl.Marker({ element: el }).setLngLat([place.lng, place.lat]).addTo(map));
     }
@@ -241,9 +254,14 @@ export default function MapView() {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    // A style transition or component cleanup can briefly leave a MapLibre Map
+    // instance in the ref after its internal style has been removed. Calling
+    // getSource/getLayer in that interval throws from MapLibre's style object.
+    // The next onMap callback advances mapGeneration once the replacement style
+    // is loaded, which re-runs this effect safely.
+    if (!map || !map.isStyleLoaded()) return;
     if (!heat) {
-      [HEAT_LAYER, HEAT_GLOW_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+      [HEAT_LAYER, HEAT_GLOW_LAYER, HEAT_HALO_LAYER].forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
       if (map.getSource(HEAT_SOURCE)) map.removeSource(HEAT_SOURCE);
       return;
     }
@@ -255,20 +273,32 @@ export default function MapView() {
     }
 
     map.addSource(HEAT_SOURCE, { type: "geojson", data });
-    const color = ["interpolate", ["linear"], ["get", "density"], 0.08, "#5bd05b", 0.32, "#b8e84c", 0.54, "#ffd33d", 0.72, "#ff8a2a", 1, "#ef3b38"] as maplibregl.ExpressionSpecification;
+    const color = ["interpolate", ["linear"], ["get", "density"], 0.08, "#55d86a", 0.32, "#a9e85c", 0.54, "#f2db42", 0.72, "#ff982f", 1, "#f23e3e"] as maplibregl.ExpressionSpecification;
+    const roundedTrail = { "line-cap": "round", "line-join": "round" } as const;
+
+    // Three passes make the color feel bonded to the corridor: a broad, soft
+    // halo, a tighter bloom, then a crisp centerline. They all use the official
+    // corridor coordinates—not an inferred route or a radial point heatmap.
+    map.addLayer({
+      id: HEAT_HALO_LAYER,
+      type: "line",
+      source: HEAT_SOURCE,
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 34, "line-opacity": 0.2, "line-blur": 14 },
+    });
     map.addLayer({
       id: HEAT_GLOW_LAYER,
       type: "line",
       source: HEAT_SOURCE,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": color, "line-width": 18, "line-opacity": 0.24, "line-blur": 8 },
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 20, "line-opacity": 0.42, "line-blur": 7 },
     });
     map.addLayer({
       id: HEAT_LAYER,
       type: "line",
       source: HEAT_SOURCE,
-      layout: { "line-cap": "round", "line-join": "round" },
-      paint: { "line-color": color, "line-width": 6, "line-opacity": 0.96 },
+      layout: roundedTrail,
+      paint: { "line-color": color, "line-width": 6.5, "line-opacity": 0.98 },
     });
   }, [heat, crowd, mapReady, mapGeneration]);
 
@@ -380,29 +410,40 @@ export default function MapView() {
           target instead of four circles down the edge of the map. Tap it and
           they fan out. Dragging the map collapses them again, so the map is
           never competing with its own chrome. */}
-      <div className="absolute right-3 z-10 flex flex-col-reverse items-end"
+      <div className="absolute right-3 z-10 flex flex-col items-end"
         style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
-        {CONTROLS.map(({ key, label, render, onPress }, i) => (
-          <motion.div
-            key={key}
-            initial={false}
-            animate={
-              open
-                ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
-                : // Collapsed: a vertical deck. Each circle sits a little higher
-                  // and a little smaller than the one in front, so the stack
-                  // reads as depth without drifting sideways off the edge.
-                  { marginTop: -34 - i * 3, x: 0, scale: 1 - i * 0.08, opacity: 1 - i * 0.2 }
-            }
-            transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
-            style={{ zIndex: CONTROLS.length - i }}
-          >
-            {render(
-              open ? () => { onPress(); armIdle(); } : () => setOpen(true),
-              open,
-            )}
-          </motion.div>
-        ))}
+        <div className="flex flex-col-reverse items-end">
+          {CONTROLS.map(({ key, label, render, onPress }, i) => (
+            <motion.div
+              key={key}
+              initial={false}
+              animate={
+                open
+                  ? { marginTop: 10, x: 0, scale: 1, opacity: 1 }
+                  : // Collapsed: a vertical deck. Each circle sits a little higher
+                    // and a little smaller than the one in front, so the stack
+                    // reads as depth without drifting sideways off the edge.
+                    { marginTop: -34 - i * 3, x: 0, scale: 1 - i * 0.08, opacity: 1 - i * 0.2 }
+              }
+              transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 420, damping: 32 }}
+              style={{ zIndex: CONTROLS.length - i }}
+            >
+              {render(
+                open ? () => { onPress(); armIdle(); } : () => setOpen(true),
+                open,
+              )}
+            </motion.div>
+          ))}
+        </div>
+
+        <button
+          aria-label={open ? "Retract map controls" : "Expand map controls"}
+          aria-expanded={open}
+          onClick={() => setOpen((isOpen) => !isOpen)}
+          className={`${CTRL} mt-2 border border-white/10 ${CTRL_OFF}`}
+        >
+          {open ? <ChevronDown size={21} /> : <ChevronUp size={21} />}
+        </button>
       </div>
 
       {locateError && (

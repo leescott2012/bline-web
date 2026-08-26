@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { distM, isOpenNow, walkMinutesFromTrail, type Spot } from "@/lib/data";
+import { distM, hasVerifiedRating, isOpenNow, walkMinutesFromTrail, type Spot } from "@/lib/data";
 
 // localStorage-backed Explore search/filter/sort state. Same module-store +
 // useSyncExternalStore pattern as favorites.ts / mapStyle.ts — no Redux/Context.
@@ -92,7 +92,7 @@ function categoryOf(spot: Spot): string {
 
 export function matchesFilters(spot: Spot, f: ExploreFilters): boolean {
   if (f.category && categoryOf(spot) !== f.category) return false;
-  if (spot.rating < f.minRating) return false;
+  if (f.minRating > 0 && (!hasVerifiedRating(spot) || spot.rating < f.minRating)) return false;
   if (walkMinutesFromTrail(spot.lng, spot.lat) > f.maxWalkMinutes) return false;
   // ponytail: openNow defaults to false (not gating) even though the wireframe
   // shows it "on" by default — isOpenNow() is a same-day estimate with no real
@@ -107,7 +107,14 @@ export function matchesFilters(spot: Spot, f: ExploreFilters): boolean {
 const PONCE_CITY_MARKET: [number, number] = [-84.366, 33.7726];
 
 export function sortSpots(list: Spot[], sort: SortKey): Spot[] {
-  if (sort === "rating") return [...list].sort((a, b) => b.rating - a.rating);
+  if (sort === "rating") {
+    return [...list].sort((a, b) => {
+      const aVerified = hasVerifiedRating(a);
+      const bVerified = hasVerifiedRating(b);
+      if (aVerified !== bVerified) return aVerified ? -1 : 1;
+      return aVerified ? b.rating - a.rating : 0;
+    });
+  }
   if (sort === "nearest")
     return [...list].sort(
       (a, b) => distM([a.lng, a.lat], PONCE_CITY_MARKET) - distM([b.lng, b.lat], PONCE_CITY_MARKET)

@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { ChevronLeft, Share, Heart, Star, ChevronRight, Store } from "lucide-react";
+import { ChevronLeft, Share, Heart, Star, ChevronRight, ExternalLink, Store } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
-import { isOpenNow, hoursStatusLabel } from "@/lib/data";
+import { getBookingProvider, hasVerifiedRating, isOpenNow, hoursStatusLabel } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
 import { RICH_DATA } from "@/lib/richData";
 import PhotoCarousel from "@/components/PhotoCarousel";
 import TellUsSheet from "@/components/TellUsSheet";
 import { useFavorites, toggleFav } from "@/lib/favorites";
+import { openExternalLink } from "@/lib/external";
 
 async function shareSpot(name: string) {
   const data = { title: name, text: `Check out ${name} on B-line`, url: location.href };
@@ -22,16 +23,12 @@ export default function Detail() {
   const spots = useSpots();
   const spot = spots.find((s) => s.id === id) ?? spots[0];
   const saved = useFavorites().includes(spot.id);
+  const hasRating = hasVerifiedRating(spot);
+  const mapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${spot.name}, ${spot.address}, Atlanta, GA`)}`;
+  const bookingProvider = getBookingProvider(spot);
   const [claiming, setClaiming] = useState(false);
   // A park or a mural has no owner to claim it, so don't offer.
   const isBusiness = !/^park|public art|trail access/i.test(spot.category);
-  // Gating on `Parks` alone left a juice bar offering a table booking. A
-  // reservation only makes sense somewhere you'd actually hold a table.
-  // Deny first: a plain /bar/ match also hit "Juice Bars & Smoothies", which
-  // is how a smoothie shop ended up offering a table booking.
-  const NO_TABLE = /juice bar|smoothie|coffee bar|salad bar|bakery|bagel|^park|public art|trail access|gift shop|ice cream|gelato|candy|food truck/i;
-  const SIT_DOWN = /eats|restaurant|brewer|bar|pizza|barbecue|bbq|steak|seafood|kitchen|cookhouse|tavern|grill|burger|chinese|thai|mexican|sushi|diner/i;
-  const servesMenu = !NO_TABLE.test(spot.category) && SIT_DOWN.test(spot.category);
   return (
     <Screen className="pb-28">
       <div className="relative h-80">
@@ -62,11 +59,23 @@ export default function Detail() {
         )}
         <h1 className="mt-3 text-3xl font-bold">{spot.name}</h1>
         <p className="mt-2 flex items-center gap-1.5 text-[15px] text-zinc-400">
-          <Star size={16} fill="currentColor" className="text-zinc-300" />
-          <span className="text-zinc-200">{spot.rating}</span> · {spot.ratings} ratings · {spot.category}
+          {hasRating && (
+            <>
+              <Star size={16} fill="currentColor" className="text-zinc-300" />
+              <span className="text-zinc-200">{spot.rating}</span> · {spot.ratings} ratings ·
+            </>
+          )}
+          {spot.category}
         </p>
 
-        <button className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]">
+        <a
+          href={mapSearchUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`View ${spot.name} in maps`}
+          onClick={(event) => { void openExternalLink(event, mapSearchUrl); }}
+          className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-line px-4 py-3 text-left text-[15px]"
+        >
           <span className="shrink-0 whitespace-nowrap">
             {isOpenNow(spot) ? <span className="font-semibold text-mint">Open now</span> : <span className="font-semibold text-alert">Closed</span>}
             {" "}· {hoursStatusLabel(spot)}
@@ -75,7 +84,7 @@ export default function Detail() {
             <span className="truncate">{spot.address}</span>
             <ChevronRight size={14} className="shrink-0" />
           </span>
-        </button>
+        </a>
 
         <Link href="/trail" className="mt-6 flex items-center gap-4">
           <div className="grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl bg-panel">
@@ -104,11 +113,16 @@ export default function Detail() {
           className="block flex-1 rounded-full border border-line py-4 text-center text-lg font-semibold">
           Directions
         </Link>
-        {servesMenu && (
-          <Link href={`/reserve/${spot.id}`}
-            className="block flex-1 rounded-full bg-teal py-4 text-center text-lg font-semibold">
-            Reserve a table
-          </Link>
+        {bookingProvider && spot.reservation_link && (
+          <a
+            href={spot.reservation_link}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(event) => { void openExternalLink(event, spot.reservation_link!); }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-teal py-4 text-center text-lg font-semibold"
+          >
+            Book on {bookingProvider} <ExternalLink size={17} aria-hidden="true" />
+          </a>
         )}
       </div>
 
