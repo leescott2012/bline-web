@@ -35,8 +35,9 @@ export default function Privacy() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="August 26, 2026">
       <P>
-        B-line is operated by <Strong>Chamillion Collective</Strong> ("B-line," "we,"
-        "us"). Contact: <A href="mailto:ariyaonellc@outlook.com">ariyaonellc@outlook.com</A>.
+        B-line is operated by <Strong>Ariya One LLC</Strong>, d/b/a <Strong>Chamillion
+        Collective</Strong>, a Georgia limited liability company ("B-line," "we," "us").
+        Contact: <A href="mailto:ariyaonellc@outlook.com">ariyaonellc@outlook.com</A>.
         This page describes exactly what we collect, why, where it lives, and
         how to delete it.
       </P>
@@ -49,9 +50,11 @@ export default function Privacy() {
         <LI><Strong>Location powers three features.</Strong> Centering the map, live
           sharing with friends you choose, and an anonymous crowd-density
           count. We describe exactly what's stored for each below.</LI>
-        <LI><Strong>Live location sharing defaults to on</Strong> the moment you have an
-          account, and turning it off immediately deletes your stored
-          position — there's no history to "turn off" retroactively.</LI>
+        <LI><Strong>Live location sharing defaults to off</Strong>, and turning it on
+          doesn't share anything by itself — a specific friend only sees your
+          position after you say yes to a one-time prompt sharing with them,
+          and turning sharing off entirely deletes your stored position
+          immediately.</LI>
         <LI><Strong>The crowd heatmap never reveals anyone's exact location.</Strong> It's
           rounded to city-block-sized cells and only shown once at least
           three people are in a cell.</LI>
@@ -86,13 +89,17 @@ export default function Privacy() {
       <P>Your device location is used in four different ways, with different sensitivity:</P>
       <UL>
         <LI><Strong>Live sharing with friends (highest sensitivity).</Strong> While you're
-          signed in and location sharing is on, your device checks in
-          roughly every 20 seconds and we store your <Strong>current</Strong> latitude,
-          longitude, GPS accuracy, and (on the native app) approximate
-          battery level. This is a single row per account that gets
-          overwritten each update — <Strong>we do not keep a location history.</Strong>
-          Sharing is on by default when your account is created; you can
-          turn it off at any time from Friends settings, and doing so
+          signed in, location sharing is on, and a specific friend has an
+          active grant from you, your device checks in roughly every 20
+          seconds and we store your <Strong>current</Strong> latitude, longitude, GPS
+          accuracy, and (on the native app) approximate battery level. This
+          is a single row per account that gets overwritten each update —
+          <Strong>we do not keep a location history.</Strong> Sharing defaults to <Strong>off</Strong>
+          for every account, and turning it on is not enough on its own:
+          each friend only gains access once you tap "Share" on a
+          "Share your location with @username?" prompt shown after you
+          accept their friend request, and you can revoke that at any time.
+          Turning the sharing switch off at any time from Friends settings
           deletes the stored row immediately.</LI>
         <LI><Strong>Turn-by-turn navigation.</Strong> While an active walking route is on
           screen, your position is used to move the on-screen marker and
@@ -132,12 +139,13 @@ export default function Privacy() {
         either of you removes the connection, that record is deleted.
       </P>
       <P>
-        Your profile info (username, display name, avatar, status) and, when
-        location sharing is on, your live position, battery level, and
-        saved/favorited spots are the categories of information a friend
-        connection is designed to make visible to accepted friends, gated by
-        your sharing switch. You control the sharing switch at all times and
-        can remove a friend to end that connection.
+        Your profile info (username, display name, avatar, status) and
+        saved/favorited spots are visible to accepted friends. Your live
+        position and battery level are visible only to a friend you've
+        specifically granted access to — requiring both your sharing switch
+        to be on and a per-friend "Share" you gave that person (see above).
+        You control both at all times and can remove a friend to end that
+        connection.
       </P>
       <P>
         <Strong>Your contacts are never read.</Strong> The "invite a friend" feature does
