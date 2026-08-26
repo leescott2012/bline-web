@@ -35,9 +35,8 @@ export default function Privacy() {
   return (
     <LegalLayout title="Privacy Policy" lastUpdated="August 26, 2026">
       <P>
-        B-line is operated by <Strong>Ariya One LLC</Strong>, d/b/a <Strong>Chamillion
-        Collective</Strong>, a Georgia limited liability company ("B-line," "we," "us").
-        Contact: <A href="mailto:ariyaonellc@outlook.com">ariyaonellc@outlook.com</A>.
+        B-line is operated by <Strong>Chamillion Collective</Strong> ("B-line," "we,"
+        "us"). Contact: <A href="mailto:ariyaonellc@outlook.com">ariyaonellc@outlook.com</A>.
         This page describes exactly what we collect, why, where it lives, and
         how to delete it.
       </P>
