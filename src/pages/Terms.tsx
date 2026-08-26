@@ -9,7 +9,8 @@
  *   - Reservations: B-line's own request flow, not the merchant of record;
  *     outbound venue links/booking sites are third-party and unaffiliated
  *   - Limitation of liability
- *   - Governing law: Georgia (Ariya One LLC is a Georgia LLC)
+ *   - Governing law: Georgia (Ariya One LLC, the entity behind Chamillion
+ *     Collective, is a Georgia LLC)
  *
  * Not a substitute for an attorney's review before a public launch.
  */
@@ -19,8 +20,7 @@ export default function Terms() {
   return (
     <LegalLayout title="Terms of Service" lastUpdated="August 26, 2026">
       <P>
-        B-line is operated by <Strong>Ariya One LLC</Strong>, d/b/a <Strong>Chamillion
-        Collective</Strong>, a Georgia limited liability company ("B-line," "we,"
+        B-line is operated by <Strong>Chamillion Collective</Strong> ("B-line," "we,"
         "us"). By using B-line you agree to these terms. They're written in
         plain English — if something's unclear, email
         <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
