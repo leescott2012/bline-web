@@ -21,6 +21,8 @@ import Filters from "@/pages/Filters";
 import Saved from "@/pages/Saved";
 import Profile from "@/pages/Profile";
 import BugBin from "@/pages/BugBin";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 import Playground3D from "@/pages/Playground3D";
 
 // Nobody reaches the app without an identity, so the crowd heatmap sees every
@@ -37,7 +39,9 @@ function Gate({ children }: { children: React.ReactNode }) {
   usePublishLocation(user?.id, !!profile?.sharing_enabled);
 
   // The bug bin is an internal tool, not the app -- don't lock admins out of it.
-  if (path === "/bug-bin" || path === "/playground-3d") return <>{children}</>;
+  // Privacy/Terms are exempt too so logged-out users and App Store/Play Store
+  // reviewers can reach them without going through anonymous sign-up first.
+  if (path === "/bug-bin" || path === "/playground-3d" || path === "/privacy" || path === "/terms") return <>{children}</>;
   if (loading || (user && profileLoading)) return null;
   if (!user || !profile) return <Onboarding userId={user?.id} />;
   return <>{children}</>;
@@ -64,6 +68,8 @@ export default function App() {
             <Route path="/saved" component={Saved} />
             <Route path="/profile" component={Profile} />
             <Route path="/bug-bin" component={BugBin} />
+            <Route path="/privacy" component={Privacy} />
+            <Route path="/terms" component={Terms} />
             <Route path="/playground-3d" component={Playground3D} />
             <Route>404</Route>
           </Switch>
