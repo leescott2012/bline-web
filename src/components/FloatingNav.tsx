@@ -43,6 +43,7 @@ const COLLAPSE_AFTER = 24;
 export default function FloatingNav() {
   const [loc] = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const reducedPref = useReducedMotion();
   const reduced = !!reducedPref;
 
@@ -63,6 +64,24 @@ export default function FloatingNav() {
     return () => document.removeEventListener("scroll", onScroll, { capture: true });
   }, []);
 
+  // Hide the pill while the on-screen keyboard is open. iOS/Android shrink
+  // window.visualViewport.height (but not window.innerHeight) when the
+  // keyboard shows -- the same signal main.tsx already uses to drive
+  // --vv-height. Without this the pill stays pinned right above the keyboard,
+  // covering whatever the user is typing into (e.g. Friends' username
+  // search, Home's and Profile's text fields, ProfileCard's inputs).
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    // Comfortably above URL-bar show/hide jitter (tens of px) but well below
+    // a real keyboard (hundreds of px), so it doesn't false-trigger.
+    const KEYBOARD_DELTA = 150;
+    const onResize = () => setKeyboardOpen(window.innerHeight - vv.height > KEYBOARD_DELTA);
+    vv.addEventListener("resize", onResize);
+    onResize();
+    return () => vv.removeEventListener("resize", onResize);
+  }, []);
+
   const transition = (spring: typeof COLLAPSE | typeof SNAP) => (reduced ? { duration: 0 } : spring);
 
   // after the hooks above, so hook order stays stable across routes
@@ -76,7 +95,10 @@ export default function FloatingNav() {
       className="pointer-events-none absolute inset-x-0 bottom-0 z-30 flex justify-center pb-[max(0.6rem,env(safe-area-inset-bottom))]"
     >
       <motion.div
-        animate={{ scale: collapsed ? 0.86 : 1, opacity: collapsed ? 0.9 : 1 }}
+        animate={{
+          scale: collapsed ? 0.86 : 1,
+          opacity: keyboardOpen ? 0 : collapsed ? 0.9 : 1,
+        }}
         transition={transition(COLLAPSE)}
         // Anchored to the bottom edge so shrinking tucks it toward the screen
         // edge instead of drifting inward from both sides.
@@ -87,7 +109,11 @@ export default function FloatingNav() {
         // Near-opaque on purpose: at 80% over this dark theme the card text
         // behind it read straight through the pill. WKWebView also can't be
         // relied on to frost backdrop-blur, so contrast can't depend on it.
-        className="pointer-events-auto flex items-center gap-1 rounded-full border border-white/15 bg-[#16161c]/95 px-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.55)] backdrop-blur-xl"
+        // pointer-events toggles with keyboardOpen so the hidden pill can't
+        // still eat taps meant for whatever's behind it.
+        className={`flex items-center gap-1 rounded-full border border-white/15 bg-[#16161c]/95 px-2 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.55)] backdrop-blur-xl ${
+          keyboardOpen ? "pointer-events-none" : "pointer-events-auto"
+        }`}
       >
         {TABS.map(({ icon: Icon, label, href }) => {
           const active = loc === href;
