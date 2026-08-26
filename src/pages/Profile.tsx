@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace, MapPinPlus } from "lucide-react";
+import { Heart, SlidersHorizontal, Bug, ChevronRight, LogOut, CalendarDays, KeyRound, Check, ScanFace, MapPinPlus, ShieldCheck, FileText } from "lucide-react";
 import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
@@ -12,6 +12,8 @@ import TellUsSheet from "@/components/TellUsSheet";
 const links = [
   { icon: Heart, label: "My Favorites", href: "/saved" },
   { icon: SlidersHorizontal, label: "Search Preferences", href: "/filters" },
+  { icon: ShieldCheck, label: "Privacy Policy", href: "/privacy" },
+  { icon: FileText, label: "Terms of Service", href: "/terms" },
 ];
 
 export default function Profile() {

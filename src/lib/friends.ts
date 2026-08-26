@@ -94,9 +94,27 @@ export async function removeFriendship(friendshipId: string) {
 // Master "visible to friends" switch, stored on the profile. RLS on `locations`
 // already checks profiles.sharing_enabled, so flipping this off hides your
 // position server-side -- not just in the UI. crowd_density() checks it too, so
-// going invisible also drops you out of the heatmap aggregate.
+// going invisible also drops you out of the heatmap aggregate. Off by default
+// for new accounts (see supabase-location-migration-v2.sql) -- this is the
+// master switch, not consent for any one friend, which is `location_shares`
+// below.
 export async function setSharingEnabled(userId: string, enabled: boolean) {
   return supabase.from("profiles").update({ sharing_enabled: enabled }).eq("id", userId);
+}
+
+// The actual per-friend consent: a friend can only see your position if you
+// have an unexpired row here granting *them* specifically, on top of (not
+// instead of) sharing_enabled above -- see bline_locations_select_shared in
+// supabase-location-migration.sql. RLS restricts inserts to the owner, so
+// this only ever grants your own location, never someone else's.
+export async function grantLocationShare(ownerId: string, viewerId: string) {
+  return supabase.from("location_shares").insert({ owner_id: ownerId, viewer_id: viewerId });
+}
+
+// Revokes a grant you made. RLS restricts deletes to the owner too, so this
+// is a no-op if you never shared with this person.
+export async function revokeLocationShare(ownerId: string, viewerId: string) {
+  return supabase.from("location_shares").delete().eq("owner_id", ownerId).eq("viewer_id", viewerId);
 }
 
 // ── profiles: avatar, status, and a friend's saved spots ───────────────────
