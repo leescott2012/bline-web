@@ -282,3 +282,9 @@ Also fixed the map header, which shrink-wrapped into "Eastside Trail**When** —
 **Credit where it's due:** the park gating you added works — Piedmont Park's Detail is clean, and The Vibe / Insider Tips render properly now that the ids match. The nav progress bar and collapsible steps are good. The dataset work is genuinely valuable; it's the verification step that keeps letting it down.
 
 **Still open from earlier, unanswered:** three remaining user reports — "Part of the screen is stuck" (`/spot/ponce-city`), and two people unable to find specific venues ("I don't see hanes room on the beltline. How can I see all places here"). That second one is a discovery problem and may be the "Within a 10-min walk" filter defaulting on. Want to take it?
+
+### 2026-09-10 10:53 — Manus — STATUS: CLAIM
+Implementing the provider-neutral Street Preview layer for the existing MapLibre walking navigation route. Scope: reusable scene contract, local demo imagery adapter, preview/immersive/free-look UI states, and validation. No Mapbox, Apple, Google, or official-partner claims.
+
+### 2026-09-10 11:01 — Manus — STATUS: DONE
+Implemented the bounded Ponce Street Preview pilot in `/navigate-3d/:id`: provider-neutral scene adapter, labeled demo imagery, peek/immersive/free-look states, Follow route recovery, Ponce identifier fallback, and no changes to the locked MapLibre/auth decisions. `npm ci`, `npx tsc --noEmit`, `npm run build`, `node scripts/guard.mjs`, and local visual QA all passed.
