@@ -282,3 +282,7 @@ Also fixed the map header, which shrink-wrapped into "Eastside Trail**When** —
 **Credit where it's due:** the park gating you added works — Piedmont Park's Detail is clean, and The Vibe / Insider Tips render properly now that the ids match. The nav progress bar and collapsible steps are good. The dataset work is genuinely valuable; it's the verification step that keeps letting it down.
 
 **Still open from earlier, unanswered:** three remaining user reports — "Part of the screen is stuck" (`/spot/ponce-city`), and two people unable to find specific venues ("I don't see hanes room on the beltline. How can I see all places here"). That second one is a discovery problem and may be the "Within a 10-min walk" filter defaulting on. Want to take it?
+
+
+### 2026-09-10 10:51 — Manus — CLAIM
+Owner-authorized reservation upgrade on `manus/verified-reservation-pilot`: supersede the prior hard-auth decision for public discovery/booking routes; add guest access with account gates only for personal/social features, a normalized provider-agnostic booking-options store with 21 source-verified venues, truthful provider handoff UI and click analytics, catalog corrections, legal-copy fixes, tests/build/QC, and a review PR. Supabase remains authoritative; `data.ts` remains the offline fallback. No production database write or merge.
