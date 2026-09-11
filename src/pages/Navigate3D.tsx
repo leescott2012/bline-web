@@ -5,7 +5,7 @@ import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import { useSpots } from "@/lib/spots";
 import { fetchRoute, cumulative, posAt, type RouteResult, type RouteStep } from "@/lib/routing";
-import { sceneForPreview, type StreetPreviewMode } from "@/lib/streetPreview";
+import { sceneForPreview, type StreetPreviewMode, type StreetScene } from "@/lib/streetPreview";
 
 // Pedestrian framing. Walking mode sits far closer and steeper than driving mode.
 const WALK_ZOOM = 18.6;
@@ -53,6 +53,10 @@ export default function Navigate3D() {
   const previewSpotId = destSpot?.name.toLowerCase().includes("ponce city") ? "ponce-city" : destSpot?.id;
   const previewScene = sceneForPreview(previewSpotId, progress / 100);
   const previewOpen = previewMode !== "closed";
+  // Keep the last scene rendered while the panel animates out, so passing the
+  // end of the pilot corridor fades the panel instead of snapping it away.
+  const [lastScene, setLastScene] = useState<StreetScene | null>(null);
+  const displayScene = previewScene ?? lastScene;
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
@@ -81,8 +85,19 @@ export default function Navigate3D() {
   }, []);
 
   useEffect(() => {
+    if (previewScene) setLastScene(previewScene);
+  }, [previewScene]);
+
+  useEffect(() => {
     if (!previewScene && previewMode !== "closed") setPreviewMode("closed");
   }, [previewScene, previewMode]);
+
+  const recenter = () => {
+    const map = mapRef.current;
+    if (!map || !route || cum.current.length < 2) return;
+    const { pos, brg } = posAt(progress / 100, route.coordinates, cum.current);
+    map.easeTo({ center: pos, bearing: brg, zoom: WALK_ZOOM, pitch: WALK_PITCH, duration: 400 });
+  };
 
   const cum = useRef<number[]>([]);
   useEffect(() => {
@@ -168,18 +183,18 @@ export default function Navigate3D() {
         </button>
       )}
 
-      {previewScene && previewOpen && (
-        <section className={`pointer-events-auto absolute inset-x-3 bottom-[12.25rem] z-30 overflow-hidden rounded-[28px] bg-black/95 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl ${expanded ? "" : "max-h-[15rem]"}`} aria-label="Street preview panel">
+      {displayScene && (
+        <section className={`absolute inset-x-3 bottom-[12.25rem] z-30 overflow-hidden rounded-[28px] bg-black/95 shadow-2xl ring-1 ring-white/15 backdrop-blur-xl transition-[opacity,transform] duration-300 ease-out ${previewOpen ? "pointer-events-auto translate-y-0 opacity-100" : "pointer-events-none translate-y-3 opacity-0"} ${expanded ? "" : "max-h-[15rem]"}`} aria-hidden={!previewOpen} aria-label="Street preview panel">
           <div className="flex items-center justify-between px-4 py-3">
             <button type="button" onClick={() => setPreviewMode(expanded ? "peek" : "immersive")} className="flex min-w-0 items-center gap-3 text-left" aria-label={expanded ? "Collapse Street preview" : "Expand Street preview"}>
               {expanded ? <Minimize2 size={18} className="text-accent" /> : <Maximize2 size={18} className="text-accent" />}
-              <span className="min-w-0"><strong className="block text-sm text-white">{previewScene.title}</strong><span className="block truncate text-xs text-zinc-400">{previewScene.distanceLabel} · {previewScene.captureLabel}</span></span>
+              <span className="min-w-0"><strong className="block text-sm text-white">{displayScene.title}</strong><span className="block truncate text-xs text-zinc-400">{displayScene.distanceLabel} · {displayScene.captureLabel}</span></span>
             </button>
             <button type="button" onClick={() => setPreviewMode("closed")} className="rounded-full p-2 text-zinc-400 hover:bg-white/10 hover:text-white" aria-label="Close Street preview"><X size={18} /></button>
           </div>
           <DemoCorridorImage expanded={expanded} freeLook={freeLook} />
           <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <div className="min-w-0"><p className="truncate text-[11px] font-semibold text-zinc-300">{previewScene.providerLabel}</p><p className="truncate text-[10px] text-zinc-500">{previewScene.note}</p></div>
+            <div className="min-w-0"><p className="truncate text-[11px] font-semibold text-zinc-300">{displayScene.providerLabel}</p><p className="truncate text-[10px] text-zinc-500">{displayScene.note}</p></div>
             {freeLook ? (
               <button type="button" onClick={() => setPreviewMode("immersive")} className="shrink-0 rounded-full bg-accent px-3 py-2 text-xs font-bold text-on-brand">Follow route</button>
             ) : (
