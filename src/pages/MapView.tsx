@@ -446,32 +446,37 @@ export default function MapView() {
         </button>
       </div>
 
+      {/* inset-x-0 makes these wrappers span the full width of the screen,
+          including over the right-side map controls -- pointer-events-none
+          on the wrapper (re-enabled on the button itself) stops that
+          invisible band from swallowing taps meant for the controls column,
+          which is what made the expand/collapse chevron unreachable. */}
       {locateError && (
-        <div className="absolute inset-x-0 z-20 flex justify-center"
+        <div className="pointer-events-none absolute inset-x-0 z-20 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 4rem)" }}>
           <button onClick={() => setLocateError(false)}
-            className="rounded-full bg-[#101014]/90 px-4 py-2 text-[13px] font-medium text-zinc-200 backdrop-blur">
+            className="pointer-events-auto rounded-full bg-[#101014]/90 px-4 py-2 text-[13px] font-medium text-zinc-200 backdrop-blur">
             Location unavailable — check Settings
           </button>
         </div>
       )}
 
       {activeInterests.length === 0 && !heat && !restroomsVisible && (
-        <div className="absolute inset-x-0 z-10 flex justify-center"
+        <div className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
           <button onClick={() => setFiltersOpen(true)}
-            className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
+            className="pointer-events-auto rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
             Choose what to show
           </button>
         </div>
       )}
 
       {activeInterests.length > 0 && zoom < PIN_MIN_ZOOM && !heat && !restroomsVisible && (
-        <div className="absolute inset-x-0 z-10 flex justify-center"
+        <div className="pointer-events-none absolute inset-x-0 z-10 flex justify-center"
           style={{ bottom: "calc(var(--bline-nav-space) + 1rem)" }}>
           <button
             onClick={() => mapRef.current?.easeTo({ zoom: PIN_MIN_ZOOM + 0.4, duration: 600 })}
-            className="rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
+            className="pointer-events-auto rounded-full bg-[#101014]/85 px-3.5 py-2 text-[13px] font-medium text-zinc-300 backdrop-blur">
             Zoom in to see spots
           </button>
         </div>
