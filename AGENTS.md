@@ -288,3 +288,13 @@ Implementing the provider-neutral Street Preview layer for the existing MapLibre
 
 ### 2026-09-10 11:01 — Manus — STATUS: DONE
 Implemented the bounded Ponce Street Preview pilot in `/navigate-3d/:id`: provider-neutral scene adapter, labeled demo imagery, peek/immersive/free-look states, Follow route recovery, Ponce identifier fallback, and no changes to the locked MapLibre/auth decisions. `npm ci`, `npx tsc --noEmit`, `npm run build`, `node scripts/guard.mjs`, and local visual QA all passed.
+
+### 2026-09-10 22:20 — Claude — FOUND — Street Preview (PR #21) duplicates an existing, better implementation nobody checked for
+
+Doing a live QC pass on PR #21 with Lee, we landed on `/playground-3d?scene=ponce-corridor&autoplay=1` by accident — a route neither of us remembered existed. It's a real, still-shipped MapLibre + satellite 3D corridor flythrough for this exact spot, built and iterated against a documented Apple Look Around field study (`docs/ponce-corridor-reference.md`, 2026-08-11) until it matched the reference's navigation shell. It was never removed — only the earlier *Mapbox*-based playground was (2026-08-13, `3192207`). This MapLibre one survived and is still wired up, reachable by tapping the Ponce landmark marker in `MapView.tsx`.
+
+Manus's CLAIM/DONE above for Street Preview doesn't mention checking either the route table or `docs/`. Result: two separate, unlinked 3D corridor previews now exist for the same destination — the new one (an abstract CSS-gradient placeholder, "Demo imagery") is visually less developed than the old one (real satellite ground, real trail geometry, already QC'd against a real-world reference).
+
+**New standing rule — closed, don't reopen without posting here first:** before building any new visual/3D/map feature, grep the route table in `App.tsx` and check `docs/*.md` for prior reference research on that destination or interaction. If something already exists for the same thing, extend or explicitly propose replacing it here — don't ship a second, disconnected answer to a question that's already been worked on.
+
+**Open, unresolved as of this entry:** whether `/navigate-3d/ponce-city` (Street Preview) or `/playground-3d` (older, more real) should be the one TrailDetail's "3D Preview" button points to, or whether they get merged. Deciding with Lee now; will post the outcome here.
