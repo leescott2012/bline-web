@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronLeft, Flame, Mail, MapPin, Smartphone, Users } from "lucide-react";
 import { requestOtp, signOut, type OtpChannel, verifyOtp } from "@/lib/auth";
 import { claimUsername } from "@/lib/friends";
@@ -30,6 +30,23 @@ function isValidIdentifier(channel: OtpChannel, identifier: string) {
   return /^\+[1-9]\d{7,14}$/.test(identifier.trim().replace(/[\s().-]/g, ""));
 }
 
+// Limits per browser, per method (email / text): 3 codes an hour, 30s between sends, 3 wrong guesses per code.
+// Resend and "use a different email or number" both count as a send. Supabase throttles server-side too.
+const MAX_SENDS = 3;
+const MAX_WRONG = 3;
+const WINDOW_MS = 60 * 60 * 1000;
+const COOLDOWN_S = 30;
+
+function recentSends(channel: OtpChannel): number[] {
+  try {
+    const all = JSON.parse(localStorage.getItem(`bline_otp_sends_${channel}`) || "[]") as number[];
+    return all.filter((t) => Date.now() - t < WINDOW_MS);
+  } catch { return []; }
+}
+function recordSend(channel: OtpChannel) {
+  try { localStorage.setItem(`bline_otp_sends_${channel}`, JSON.stringify([...recentSends(channel), Date.now()])); } catch { /* server limits still apply */ }
+}
+
 function AuthCode({ onBack }: { onBack: () => void }) {
   const [channel, setChannel] = useState<OtpChannel>("email");
   const [identifier, setIdentifier] = useState("");
@@ -37,8 +54,23 @@ function AuthCode({ onBack }: { onBack: () => void }) {
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sends, setSends] = useState<number[]>(() => recentSends("email"));
+  const [cooldown, setCooldown] = useState(0);
+  const [wrong, setWrong] = useState(0);
+
+  useEffect(() => { setSends(recentSends(channel)); }, [channel]);
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
+  }, [cooldown]);
+
+  const locked = sends.length >= MAX_SENDS;
+  const minutesLeft = locked ? Math.max(1, Math.ceil((sends[0] + WINDOW_MS - Date.now()) / 60000)) : 0;
+  const otherMethod = channel === "email" ? "text" : "email";
 
   const sendCode = async () => {
+    if (recentSends(channel).length >= MAX_SENDS) { setSends(recentSends(channel)); return; }
     if (!isValidIdentifier(channel, identifier)) {
       setError(channel === "email" ? "Enter a valid email address." : "Enter a mobile number with country code, for example +14045551212.");
       return;
@@ -51,6 +83,11 @@ function AuthCode({ onBack }: { onBack: () => void }) {
       setBusy(false);
       return;
     }
+    recordSend(channel);
+    setSends(recentSends(channel));
+    setCode("");
+    setWrong(0);
+    setCooldown(COOLDOWN_S);
     setSent(true);
     setBusy(false);
   };
@@ -65,7 +102,15 @@ function AuthCode({ onBack }: { onBack: () => void }) {
     setError(null);
     const { error: verificationError } = await verifyOtp(channel, identifier, code);
     if (verificationError) {
-      setError(verificationError.message);
+      const n = wrong + 1;
+      setWrong(n);
+      setCode("");
+      if (n >= MAX_WRONG) {
+        setSent(false);
+        setError("Too many wrong codes. Request a new code.");
+      } else {
+        setError(`That code didn't work (${MAX_WRONG - n} tries left).`);
+      }
       setBusy(false);
     }
   };
@@ -97,6 +142,11 @@ function AuthCode({ onBack }: { onBack: () => void }) {
               <Smartphone size={16} /> Text
             </button>
           </div>
+          {locked ? (
+            <p className="mt-3 rounded-xl bg-panel px-4 py-3.5 text-[14px] leading-relaxed text-zinc-300 ring-1 ring-line">
+              Too many codes sent by {channel === "email" ? "email" : "text"}. Try again in about {minutesLeft} min, or switch to <button type="button" onClick={() => changeMethod(otherMethod === "text" ? "phone" : "email")} className="font-semibold text-hot underline">{otherMethod}</button>.
+            </p>
+          ) : (
           <form onSubmit={(event) => { event.preventDefault(); void sendCode(); }} className="mt-3 space-y-2.5">
             <input
               value={identifier}
@@ -113,6 +163,7 @@ function AuthCode({ onBack }: { onBack: () => void }) {
               {busy ? "Sending code…" : `Send code by ${channel === "email" ? "email" : "text"}`}
             </button>
           </form>
+          )}
           {channel === "phone" && <p className="mt-3 text-center text-[12px] leading-relaxed text-zinc-500">Text delivery requires an enabled SMS provider. Standard message rates may apply.</p>}
         </>
       ) : (
@@ -128,7 +179,9 @@ function AuthCode({ onBack }: { onBack: () => void }) {
           />
           <button type="submit" disabled={busy || code.length !== 6} className={BTN}>{busy ? "Verifying…" : "Verify and continue"}</button>
           <button type="button" onClick={() => { setSent(false); setCode(""); setError(null); }} disabled={busy} className="w-full py-2 text-center text-[14px] font-semibold text-zinc-300">Use a different email or number</button>
-          <button type="button" onClick={() => { void sendCode(); }} disabled={busy} className="w-full py-1 text-center text-[13px] text-zinc-500">Resend code</button>
+          <button type="button" onClick={() => { void sendCode(); }} disabled={busy || cooldown > 0 || locked} className="w-full py-1 text-center text-[13px] text-zinc-500 disabled:opacity-50">
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : locked ? `No more resends. Try ${otherMethod} or wait ${minutesLeft} min` : "Resend code"}
+          </button>
         </form>
       )}
       {error && <p role="alert" className="mt-3 text-center text-[13px] leading-relaxed text-red-400">{error}</p>}
