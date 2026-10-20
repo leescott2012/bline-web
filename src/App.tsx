@@ -2,6 +2,7 @@ import { Route, Switch, useLocation } from "wouter";
 import FeedbackButton from "@/components/FeedbackButton";
 import FloatingNav from "@/components/FloatingNav";
 import Onboarding from "@/components/Onboarding";
+import PinGate from "@/components/PinGate";
 import { useAuth } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { usePublishLocation } from "@/lib/location";
@@ -44,7 +45,7 @@ function Gate({ children }: { children: React.ReactNode }) {
   if (path === "/bug-bin" || path === "/playground-3d" || path === "/privacy" || path === "/terms") return <>{children}</>;
   if (loading || (user && profileLoading)) return null;
   if (!user || !profile) return <Onboarding userId={user?.id} />;
-  return <>{children}</>;
+  return <><PinGate />{children}</>;
 }
 
 export default function App() {
