@@ -41,21 +41,27 @@ function normalizePhone(phone: string) {
 }
 
 /**
- * Send a six-digit one-time code. Supabase owns delivery, expiration, and
- * throttling; this client never generates or stores authentication codes.
+ * Send a six-digit one-time code. Requested through /api/otp-send so a per-account
+ * limit (3 per hour, 30s apart) is enforced on the server; Supabase still owns
+ * delivery and expiry, and this client never generates or stores codes.
  */
-export function requestOtp(channel: OtpChannel, identifier: string) {
-  if (channel === "email") {
-    return supabase.auth.signInWithOtp({
-      email: normalizeEmail(identifier),
-      options: { shouldCreateUser: true },
+export async function requestOtp(channel: OtpChannel, identifier: string): Promise<{ error: { message: string } | null }> {
+  try {
+    // Absolute URL: the Capacitor native shell has no same-origin /api. CORS is open on this route.
+    const res = await fetch("https://bline-web.vercel.app/api/otp-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel,
+        identifier: channel === "email" ? normalizeEmail(identifier) : normalizePhone(identifier),
+      }),
     });
+    if (res.ok) return { error: null };
+    const body = await res.json().catch(() => ({}));
+    return { error: { message: body.error || "Could not send the code." } };
+  } catch {
+    return { error: { message: "Network error. Try again." } };
   }
-
-  return supabase.auth.signInWithOtp({
-    phone: normalizePhone(identifier),
-    options: { shouldCreateUser: true },
-  });
 }
 
 /** Verify the code sent by Supabase for the selected delivery channel. */
