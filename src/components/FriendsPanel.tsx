@@ -7,7 +7,7 @@ import { setProfile } from "@/lib/profile";
 import { clearLocation } from "@/lib/location";
 import {
   acceptRequest, grantLocationShare, listFriendships, removeFriendship, revokeLocationShare,
-  searchProfiles, sendRequest, setSharingEnabled, type FriendEdge, type Profile,
+  cleanQuery, searchProfiles, sendRequest, setSharingEnabled, type FriendEdge, type Profile,
 } from "@/lib/friends";
 
 // Instagram's visual language: near-white surfaces, a pill search field with no
@@ -49,6 +49,7 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
   const [edges, setEdges] = useState<FriendEdge[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   // Person to prompt for per-friend location consent, shown right after
   // their request is accepted. Not just a boolean -- we need their username
@@ -63,15 +64,21 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
 
   // debounce so typing doesn't fire a query per keystroke
   useEffect(() => {
-    const t = setTimeout(async () => setResults(await searchProfiles(query, userId)), 250);
-    return () => clearTimeout(t);
+    let stale = false; // drop out-of-order responses
+    if (cleanQuery(query).length < 2) { setResults([]); setLoading(false); return; }
+    setLoading(true);
+    const t = setTimeout(async () => {
+      const r = await searchProfiles(query, userId);
+      if (!stale) { setResults(r); setLoading(false); }
+    }, 250);
+    return () => { stale = true; clearTimeout(t); };
   }, [query, userId]);
 
   const incoming = edges.filter((e) => e.status === "pending" && e.incoming);
   const outgoing = edges.filter((e) => e.status === "pending" && !e.incoming);
   const accepted = edges.filter((e) => e.status === "accepted");
   const edgeByOtherId = new Map(edges.map((e) => [e.other.id, e]));
-  const searching = query.trim().length >= 2;
+  const searching = cleanQuery(query).length >= 2;
 
   const act = async (id: string, fn: () => Promise<unknown>) => {
     setBusyId(id);
@@ -121,7 +128,7 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by username"
+            placeholder="Search by name or @username"
             autoCapitalize="none"
             autoCorrect="off"
             aria-label="Search people by username"
@@ -139,7 +146,8 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
 
         {searching && (
           <ul className="mt-2">
-            {results.length === 0 && <li className="py-2 text-[13px] text-zinc-500">No one found.</li>}
+            {loading && results.length === 0 && <li className="py-2 text-[13px] text-zinc-500">Searching…</li>}
+            {!loading && results.length === 0 && <li className="py-2 text-[13px] text-zinc-500">No one found for “{query.trim()}”.</li>}
             {results.map((p) => {
               const edge = edgeByOtherId.get(p.id);
               return (
