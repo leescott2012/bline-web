@@ -44,9 +44,9 @@ export default function Privacy() {
 
       <H2>The TL;DR</H2>
       <UL>
-        <LI><Strong>No email or phone required.</Strong> Your account is anonymous by
-          default — just a public @username. We never see a real email address
-          or phone number through the sign-up flow.</LI>
+        <LI><Strong>Sign-in uses a one-time code.</Strong> You sign in with your email
+          or phone number, and we send a code to confirm it. Your public profile is
+          just an @username — your email and phone number are never shown to other users.</LI>
         <LI><Strong>Location powers three features.</Strong> Centering the map, live
           sharing with friends you choose, and an anonymous crowd-density
           count. We describe exactly what's stored for each below.</LI>
@@ -68,8 +68,10 @@ export default function Privacy() {
 
       <H2>1. Account information</H2>
       <P>
-        Opening B-line for the first time creates an anonymous account — no
-        email, phone number, or password is required. You then choose a
+        Creating an account asks for your <Strong>email address or mobile phone
+        number</Strong>, which we use to send a one-time sign-in code (message and
+        data rates may apply). It is used only for sign-in and account security, not
+        marketing, and is not visible to other users. No password is required. You then choose a
         public <Strong>@username</Strong> and, optionally, a display name, avatar photo,
         and a short free-text status line. These are stored in our database
         and are visible to other users (your avatar is stored in a public
@@ -179,6 +181,8 @@ export default function Privacy() {
       <H2>Third-party services we use</H2>
       <P>The services below receive data as part of running B-line:</P>
       <UL>
+        <LI><Strong>Twilio</Strong> — delivers sign-in codes by text (and email) and sees your phone
+          number or email to do so. <A href="https://www.twilio.com/legal/privacy">Twilio Privacy Policy</A>.</LI>
         <LI><Strong>Supabase</Strong> — our database, authentication, and file storage
           provider. Holds your account, profile, friendships, live location
           (while sharing is on), favorites, reservations, and
