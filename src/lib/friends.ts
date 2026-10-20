@@ -43,16 +43,26 @@ export async function claimUsername(userId: string, username: string, displayNam
 
 // Username search, Instagram-style. Excludes yourself; the caller filters out
 // people you already have an edge with.
+// Escape LIKE wildcards so typing "_" or "%" doesn't match everyone.
+export const likeEscape = (s: string) => s.replace(/[\\%_]/g, "\\$&");
+
+// Strip a leading "@" (people type it), lowercase, trim.
+export const cleanQuery = (q: string) => q.trim().replace(/^@+/, "").replace(/[,()"]/g, "").toLowerCase(); // , ( ) would break the .or() filter
+
+// Matches username OR display name; names that START with the query come first.
 export async function searchProfiles(query: string, meId: string): Promise<Profile[]> {
-  const q = query.trim().toLowerCase();
+  const q = cleanQuery(query);
   if (q.length < 2) return [];
+  const pat = `%${likeEscape(q)}%`;
   const { data } = await supabase
     .from("profiles")
     .select(COLS)
-    .ilike("username", `%${q}%`)
+    .or(`username.ilike.${pat},display_name.ilike.${pat}`)
     .neq("id", meId)
     .limit(20);
-  return data ?? [];
+  const rank = (p: Profile) =>
+    p.username.toLowerCase().startsWith(q) ? 0 : (p.display_name ?? "").toLowerCase().startsWith(q) ? 1 : 2;
+  return (data ?? []).sort((a, b) => rank(a) - rank(b) || a.username.localeCompare(b.username));
 }
 
 // All edges involving me, each paired with the other person's profile.
