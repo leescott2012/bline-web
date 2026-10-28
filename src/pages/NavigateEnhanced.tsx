@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, CornerUpRight, CornerUpLeft, Flag, Navigation2, X, ChevronDown } from "lucide-react";
+import { ArrowUp, CornerUpRight, CornerUpLeft, Flag, Navigation2, X, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import * as maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
@@ -14,11 +14,12 @@ const TOTAL_MI = 1.4,
   TOTAL_MIN = 28;
 
 
+// Fraction walked along the route, plus how far (m) the walker is from it.
 function progressAlong(
   pos: [number, number],
   route: [number, number][],
   cum: number[]
-): number {
+): { p: number; off: number } {
   const total = cum[cum.length - 1] || 1;
   let best = Infinity,
     bestDist = 0;
@@ -30,8 +31,27 @@ function progressAlong(
       bestDist = cum[i] + distM(route[i], proj);
     }
   }
-  return bestDist / total;
+  return { p: bestDist / total, off: best };
 }
+
+// Off-route = this far from the line on 2 fixes in a row (beyond GPS error).
+const OFF_ROUTE_M = 35;
+const REROUTE_COOLDOWN_MS = 15000;
+// Announce the upcoming turn when it's this close.
+const PREANNOUNCE_M = 45;
+
+const MUTE_KEY = "bline:nav-muted";
+function speak(text: string) {
+  try {
+    if (localStorage.getItem(MUTE_KEY) === "1" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+  } catch {
+    /* voice is a nicety; never break navigation over it */
+  }
+}
+
+const ftText = (m: number) => `${Math.max(50, Math.round((m * 3.28084) / 50) * 50)} feet`;
 
 const fmtClock = (ms: number) => {
   const d = new Date(ms);
@@ -69,22 +89,74 @@ export default function NavigateEnhanced() {
 
   const [locDenied, setLocDenied] = useState<boolean | null>(null);
   const live = useLiveLocation(route !== undefined);
+  const [rerouting, setRerouting] = useState(false);
+  const rr = useRef({ busy: false, last: 0, offCount: 0 });
+  const announced = useRef(-1); // step index already spoken
+  const [muted, setMuted] = useState(() => {
+    try {
+      return localStorage.getItem(MUTE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  const applyRoute = (r: RouteResult) => {
+    setStep(r.steps[0] ?? navSteps[0]);
+    setStepIdx(0);
+    setEta({
+      mi: r.distanceMi.toFixed(1),
+      min: r.durationMin,
+      arr: fmtClock(Date.now() + r.durationMin * 60000),
+    });
+    setRoute(r);
+  };
+
+  const toggleMute = () => {
+    const next = !muted;
+    setMuted(next);
+    try {
+      localStorage.setItem(MUTE_KEY, next ? "1" : "0");
+      if (next) window.speechSynthesis?.cancel();
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // iOS only lets speech start from a tap; prime it on the first touch here.
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        window.speechSynthesis?.speak(new SpeechSynthesisUtterance(""));
+      } catch {
+        /* ignore */
+      }
+    };
+    document.addEventListener("pointerdown", unlock, { once: true });
+    return () => document.removeEventListener("pointerdown", unlock);
+  }, []);
+
+  // Keep the screen on while navigating — directions live in this screen.
+  useEffect(() => {
+    if (!route || !("wakeLock" in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    const acquire = () =>
+      navigator.wakeLock.request("screen").then((l) => (lock = l)).catch(() => {});
+    const onVis = () => document.visibilityState === "visible" && acquire();
+    acquire();
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      document.removeEventListener("visibilitychange", onVis);
+      lock?.release().catch(() => {});
+    };
+  }, [route]);
 
   useEffect(() => {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const origin: [number, number] = [pos.coords.longitude, pos.coords.latitude];
         const r = await fetchRoute(origin, [destSpot.lng, destSpot.lat]);
-        if (r) {
-          setStep(r.steps[0] ?? navSteps[0]);
-          setStepIdx(0);
-          setEta({
-            mi: r.distanceMi.toFixed(1),
-            min: r.durationMin,
-            arr: fmtClock(Date.now() + r.durationMin * 60000),
-          });
-        }
-        setRoute(r);
+        if (r) applyRoute(r);
+        else setRoute(null);
       },
       // No position: say so. Routing from a fixed trail point would show a
       // real-looking route that doesn't start where the walker is.
@@ -183,8 +255,9 @@ export default function NavigateEnhanced() {
           .addTo(map);
 
         map.jumpTo({ center: routeCoords[0], zoom: 15.5, pitch: 55 });
-        map.on("dragstart", onDragStart);
       }
+      // Re-attached on every run (cleanup removes it), incl. after a reroute.
+      map.on("dragstart", onDragStart);
     };
 
     if (map.isStyleLoaded()) draw();
@@ -232,8 +305,31 @@ export default function NavigateEnhanced() {
     if (follow.current)
       map.easeTo({ center: pos, ...(brg == null ? {} : { bearing: brg }), duration: 400 });
 
-    const p = Math.min(1, progressAlong(pos, routeCoords, cum.current));
+    const along = progressAlong(pos, routeCoords, cum.current);
+    const p = Math.min(1, along.p);
     setProgress(p);
+
+    // Off the line (by more than GPS error) on 2 fixes in a row → new route
+    // from where the walker actually is. Old route stays if the fetch fails.
+    const r0 = rr.current;
+    r0.offCount = along.off > Math.max(OFF_ROUTE_M, live.position.accuracy) ? r0.offCount + 1 : 0;
+    if (r0.offCount >= 2 && !r0.busy && Date.now() - r0.last > REROUTE_COOLDOWN_MS && p < 0.97) {
+      r0.busy = true;
+      setRerouting(true);
+      speak("Rerouting");
+      fetchRoute(pos, [destSpot.lng, destSpot.lat])
+        .then((r) => {
+          if (!r) return;
+          prev.current.si = -1;
+          announced.current = -1;
+          cum.current = cumulative(r.coordinates);
+          applyRoute(r);
+        })
+        .finally(() => {
+          Object.assign(rr.current, { busy: false, last: Date.now(), offCount: 0 });
+          setRerouting(false);
+        });
+    }
 
     let si = 0;
     for (let k = 0; k < route.steps.length; k++) if (route.steps[k].at <= p) si = k;
@@ -241,6 +337,18 @@ export default function NavigateEnhanced() {
       prev.current.si = si;
       setStep(route.steps[si]);
       setStepIdx(si);
+      if (announced.current !== si) {
+        announced.current = si;
+        speak(route.steps[si].text);
+      }
+    }
+
+    // Heads-up before the next turn.
+    const next = route.steps[si + 1];
+    const toNext = next ? (next.at - p) * (cum.current[cum.current.length - 1] || 0) : Infinity;
+    if (next && announced.current !== si + 1 && toNext > 0 && toNext <= PREANNOUNCE_M) {
+      announced.current = si + 1;
+      speak(`In ${ftText(toNext)}, ${next.text}`);
     }
 
     const remainMi = route.distanceMi * (1 - p);
@@ -341,6 +449,12 @@ export default function NavigateEnhanced() {
             </div>
           )}
 
+          {rerouting && (
+            <div className="border-t border-white/10 bg-hot/90 px-5 py-2 text-sm font-semibold text-white">
+              Off route — finding a new way…
+            </div>
+          )}
+
           {/* Progress bar */}
           <div className="h-1 bg-black/30">
             <div
@@ -391,17 +505,26 @@ export default function NavigateEnhanced() {
 
       {/* ── Bottom ETA card (premium) ── */}
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-10 space-y-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        {/* Steps toggle */}
-        <button
-          onClick={() => setExpandedSteps(!expandedSteps)}
-          className="flex w-full items-center justify-between rounded-2xl bg-black/70 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black/80"
-        >
-          <span>{routeSteps.length} steps</span>
-          <ChevronDown
-            size={18}
-            className={`transition-transform ${expandedSteps ? "rotate-180" : ""}`}
-          />
-        </button>
+        {/* Steps toggle + voice */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setExpandedSteps(!expandedSteps)}
+            className="flex flex-1 items-center justify-between rounded-2xl bg-black/70 px-4 py-2.5 text-sm font-semibold text-white hover:bg-black/80"
+          >
+            <span>{routeSteps.length} steps</span>
+            <ChevronDown
+              size={18}
+              className={`transition-transform ${expandedSteps ? "rotate-180" : ""}`}
+            />
+          </button>
+          <button
+            onClick={toggleMute}
+            aria-label={muted ? "Turn voice directions on" : "Mute voice directions"}
+            className="flex items-center justify-center rounded-2xl bg-black/70 px-4 text-white hover:bg-black/80"
+          >
+            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </button>
+        </div>
 
         {/* ETA card */}
         <div className="rounded-3xl bg-white/95 p-5 shadow-xl backdrop-blur">
