@@ -107,13 +107,21 @@ export default function FriendsPanel({ profile }: { profile: Profile }) {
             </p>
           </div>
           <button role="switch" aria-checked={sharing} aria-label="Share my location"
-            onClick={() => {
+            onClick={async () => {
               const next = !sharing;
+              // Flip locally first so the publisher stops at once, then confirm
+              // with the server -- the server flag is what friends' reads check.
               setProfile({ ...profile, sharing_enabled: next });
-              setSharingEnabled(userId, next);
+              const { error } = await setSharingEnabled(userId, next);
               // Stopping the publisher isn't enough on its own -- the last
               // position you sent would sit there until it aged out.
-              if (!next) clearLocation(userId);
+              const cleared = next ? null : (await clearLocation(userId)).error;
+              if (error || cleared) {
+                if (next) setProfile({ ...profile, sharing_enabled: false });
+                window.alert(next
+                  ? "Couldn't turn on location sharing. Check your connection and try again."
+                  : "Couldn't confirm sharing is off on our server. Check your connection and try again.");
+              }
             }}
             className={`h-7 w-12 shrink-0 rounded-full p-0.5 transition-colors ${sharing ? "bg-accent" : "bg-zinc-300"}`}>
             <span className={`block size-6 rounded-full bg-white transition-transform ${sharing ? "translate-x-5" : ""}`} />
