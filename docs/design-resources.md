@@ -150,7 +150,102 @@ whether Claude can use it directly, pros, cons, price, verdict.
 
 -->
 
-*(empty — awaiting the list)*
+> **Research method, 2026-10-28:** all five sites below are blocked from Claude's container
+> (the domains don't resolve), so nothing was read from the sites themselves. Findings come
+> from web search and third-party reviews. Confidence is marked per entry. Prices and
+> licences must be checked on the vendor's own page.
+
+### meshgradient.com — shader-based mesh gradient generator
+
+| | |
+|---|---|
+| **What it is** | Browser tool for making mesh gradients; one review calls it shader-based |
+| **Claude can use it** | **Inspiration + partial.** Claude can write its own gradient shader directly (the dropped portfolio draft already did); the site is a place to pick palettes and moods |
+| **Confidence** | Low. One third-party comparison only |
+
+**Pros**
+- Free, per a 2026 comparison.
+- Fits the "cool and artsy" direction; gradients are a large part of that look.
+
+**Cons**
+- The same comparison says export options are limited and it is best for experimenting, not production.
+- Could not confirm export formats or any paid tier.
+
+**Price** *(unverified)*: free.
+
+**Verdict:** use it to find a look, then have Claude rebuild it as code so it is crisp at any size and costs no image weight.
+
+### componentry.dev — **could not identify**
+
+| | |
+|---|---|
+| **Confidence** | None. Search returned nothing about this site |
+
+Searching surfaced only unrelated sites (21st.dev, Untitled UI). Nothing here is known about what componentry.dev offers, its stack, or its price. **Needs a screenshot or a description from Lee** before it can be assessed.
+
+### fffuel.co — free SVG generators for backgrounds, patterns, textures, shapes
+
+| | |
+|---|---|
+| **What it is** | About 67 generators: gradients, patterns, textures, blobs, backgrounds. Outputs SVG |
+| **Claude can use it** | **Integrate.** Lee generates an SVG; Claude drops it into the site. SVG is plain text, so Claude can also edit it |
+| **Confidence** | Medium. Multiple reviews agree on the basics |
+
+**Pros**
+- Free, per directory listings and reviews.
+- SVG output is small and scales cleanly, so it suits both web and the iOS bundle.
+- Textures reportedly usable with no attribution.
+
+**Cons**
+- Licence terms for the generators were not found. A separate 120+ doodle pack is Creative Commons, which is a different thing.
+- Another round trip: Lee generates, Claude integrates.
+
+**Price** *(unverified)*: free.
+
+**Verdict:** good for textures and backgrounds. Read the terms page before using output commercially.
+
+### fontjoy.com — font pairing generator
+
+| | |
+|---|---|
+| **What it is** | Google Experiments project by Jack Qiao (2018). Uses a trained model to suggest font pairings; lock fonts and tune contrast |
+| **Claude can use it** | **Inspiration only**, but the output is usable directly |
+| **Confidence** | Medium-high. Google Experiments page plus several reviews |
+
+**Pros**
+- Free. Fonts come mostly from Google Fonts, so any pairing it suggests can be loaded straight into a page.
+- Quick way to find a pairing when stuck.
+
+**Cons**
+- Google Fonts only, so it will not suggest the more distinctive foundry faces.
+- Reviewers note suggestions skew safe and common, which works against an "artsy" brief.
+
+**Price** *(unverified)*: free.
+
+**Verdict:** a fine starting point. For a distinctive look, pair it with Fontshare (see Typography above).
+
+### skiper-ui.com — animated React component library
+
+| | |
+|---|---|
+| **What it is** | Motion-focused components built on shadcn/ui; installs via the shadcn CLI; animations via Framer Motion or GSAP |
+| **Claude can use it** | **Direct.** Components are code Claude can install and edit in a React project |
+| **Confidence** | Medium. Two listings agree on stack; counts and prices conflict |
+
+**Pros**
+- B-line already uses React and `framer-motion`, so the fit is close.
+- Source is copied into the repo, so Claude can modify it freely.
+- A third-party listing says commercial use is allowed.
+
+**Cons**
+- Needs Tailwind and shadcn setup. B-line has Tailwind 4 but no shadcn, so adopting this means extra setup.
+- Free vs paid split is unclear, and no prices were found.
+- Component count disagrees (70+ vs 103+).
+
+**Price** *(unverified)*: free tier plus paid components, reportedly one-time with lifetime updates.
+
+**Verdict:** the strongest fit for B-line itself. Check which components are free before relying on it.
+
 
 ---
 
