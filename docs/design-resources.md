@@ -12,7 +12,8 @@ for a change, Claude starts with the matching category here before going anywher
 **How prices were checked:** none of these sites load from Claude's cloud container, so
 prices come from web search and third-party listings, not the vendor pages. Each one
 is marked **✓ confirmed** (multiple sources or official announcement agree), **~ reported**
-(one third-party source), or **? unknown**. Check the vendor page before paying.
+(one third-party source), or left **blank** when unknown. Blank cells are
+gaps to fill in. Check the vendor page before paying.
 
 **"Claude can use it" key**
 - **Direct**: code or a library. Claude builds with it end to end.
@@ -87,15 +88,15 @@ and Claude can edit it freely.
 
 | Site | Style | Price | Claude can use it |
 |---|---|---|---|
-| **magicui.design** | Animated landing-page components (marquees, glow, particles) | Free (MIT) + Pro templates ? (price not found) | Direct |
-| **ui.aceternity.com** | Flashy, artsy effects (spotlights, 3D cards, beams). Closest match to "cool and artsy" | Free + Pro ? (price not found) | Direct |
+| **magicui.design** | Animated landing-page components (marquees, glow, particles) | Free (MIT) + Pro: | Direct |
+| **ui.aceternity.com** | Flashy, artsy effects (spotlights, 3D cards, beams). Closest match to "cool and artsy" | Free + Pro: | Direct |
 | **cult-ui.com** | Polished, slightly editorial components | Free + Pro from ~$179 ~ | Direct |
 | **motion-primitives.com** | Small, tasteful animation building blocks | Free ✓ | Direct |
-| **skiper-ui.com** | Motion-heavy components on shadcn | Free + paid one-time ? | Direct (needs shadcn setup) |
+| **skiper-ui.com** | Motion-heavy components on shadcn | Free + paid one-time: | Direct (needs shadcn setup) |
 | **heroui.com** | Full app component system (formerly NextUI). Better for app screens than landing pages | Free (MIT); Pro one-time ~$249 solo / $399 / $799 ~ | Direct |
 | **hyperui.dev** | Plain Tailwind HTML blocks, no React needed | Free ✓ | Direct |
 | **uiverse.io** | Community buttons, loaders, toggles in HTML/CSS | Free (MIT) ✓ | Direct |
-| **componentry.dev** | Could not identify; search found nothing | ? | ? Ask Lee |
+| **componentry.dev** | | | |
 
 **For "cool and artsy":** Aceternity first, then Magic UI. For B-line app screens, HeroUI
 or plain Tailwind; flashy landing-page effects don't belong inside a map app.
@@ -118,7 +119,7 @@ Claude **cannot** author these files. Lee designs, exports, and Claude integrate
 |---|---|---|---|
 | **rive.app** | Interactive animations that react to taps/state (mascots, animated buttons). Light and fast; good fit for B-line | Free plan exports with a Rive splash; paid from ~$9/mo; Voyager ~$25–32/mo ~ | Best pick for motion inside B-line |
 | **lottiefiles.com** | Huge library of ready-made animations + editor | Free: 5 exports; Pro ~$19.99/mo ~ | Free library animations are often usable as-is |
-| **jitter.video** | Motion design for videos and social posts (like Figma for animation) | Freemium; tier prices not found ? | Marketing content, not in-app |
+| **jitter.video** | Motion design for videos and social posts (like Figma for animation) | Freemium: | Marketing content, not in-app |
 | **spline.design** | 3D scenes for the web | Free (watermark); paid ~$12–25/mo ~ | Heavy. Not for B-line (see below) |
 
 ## 8. Inspiration & references
@@ -126,9 +127,9 @@ Claude **cannot** author these files. Lee designs, exports, and Claude integrate
 | Site | What it is | Price | Claude can use it |
 |---|---|---|---|
 | **styles.refero.design** | Library of real site design styles (type, color, layout) broken down | Free basic; Pro paid (~$12/mo reported, unverified) ~ | Reference. Refero has an MCP server on the Pro plan that could let Claude query it directly |
-| **layers.to/explore** | Community gallery of design work | ? (search couldn't separate it from unrelated "Layers" products) | Reference |
-| **variant.com/community** | Could not identify | ? | Ask Lee |
-| **swishy.ai** | Could not identify | ? | Ask Lee |
+| **layers.to/explore** | Community gallery of design work | | Reference |
+| **variant.com/community** | | | |
+| **swishy.ai** | | | |
 
 ## 9. Lee's own
 
@@ -146,7 +147,12 @@ Claude **cannot** author these files. Lee designs, exports, and Claude integrate
 - **Portfolio direction: "cool and artsy."** First draft (cartographic case study) was
   rejected. Visual work is on hold until Lee says go. Keep the portfolio **private**.
 
-## Still unknown — need Lee
+## Gaps to fill
 
-- What **componentry.dev**, **variant.com**, and **swishy.ai** are. Search found nothing.
-- Exact Pro prices for Magic UI, Aceternity, Skiper UI, Jitter.
+Blank cells above are unknown. Any Claude session that can reach these sites should
+research them and fill the blanks in place, marking each price ✓ or ~:
+
+- componentry.dev, variant.com/community, swishy.ai: what they are, price, how Claude can use them
+- Pro prices: Magic UI, Aceternity UI, Skiper UI, Jitter
+- layers.to: price
+- Section 9: summary of Lee's Motion Library.html
