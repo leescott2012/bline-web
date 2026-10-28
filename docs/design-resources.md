@@ -9,6 +9,23 @@ updated: 2026-10-28
 Lee's curated list of design tools, sorted by **what you're trying to do**. When Lee asks
 for a change, Claude starts with the matching category here before going anywhere else.
 
+> [!note] Notes for Claude: read before using or editing this file
+> - **Where this lives:** the master copy is in Lee's Obsidian vault at
+>   `Geniuss Brain/03 Projects/B-line/Design Resource Library.md`. A copy is in the
+>   `leescott2012/bline-web` repo at `docs/design-resources.md`. If you edit one, say so,
+>   so the other can be updated.
+> - **Fill the blanks:** blank cells are unknown, not "none". If you can reach the site,
+>   research it and fill the cell in place. Mark prices ✓ (vendor page or two sources
+>   agree) or ~ (one third-party source). Then tick it off in "Gaps to fill" at the bottom.
+> - **Don't guess.** If you can't verify something, leave it blank.
+> - **Keep the format:** same tables, same columns, same "Claude can use it" terms
+>   (Direct / You make, Claude adds / Reference). Add new tools to the matching category
+>   and to the "I want to…" table if they belong there.
+> - **Update the `updated:` date** in the frontmatter when you change anything.
+> - **Ask Lee before paying for anything** or signing up for an account.
+> - **Lee's Motion Library** (`00 Notes/(C) Motion Library.html`) hasn't been read yet.
+>   If you can open it, summarise it in section 9.
+
 **How prices were checked:** none of these sites load from Claude's cloud container, so
 prices come from web search and third-party listings, not the vendor pages. Each one
 is marked **✓ confirmed** (multiple sources or official announcement agree), **~ reported**
