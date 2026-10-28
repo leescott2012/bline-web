@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, SlidersHorizontal, X, SearchX, ArrowUpDown, MapPinPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMap from "@/components/RealMap";
 import SpotCard from "@/components/SpotCard";
@@ -105,7 +105,8 @@ export default function Home() {
             list, so it wants the whole corridor in frame rather than a
             neighbourhood. autoPitch off keeps it flat -- a tilted backdrop
             fights the cards sitting on top of it. */}
-        <RealMap zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} className="h-full w-full" />
+        <RealMap zoom={12.1} autoPitch={false} onMap={(m) => (mapRef.current = m)} attribution="top-right"
+          className="h-full w-full [--bline-map-ctrl-top:calc(max(0.5rem,env(safe-area-inset-top))+6.75rem)]" />
       </div>
 
       {/* header fixed over the map; fades + lifts away as the list scrolls up.

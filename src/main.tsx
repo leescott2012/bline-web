@@ -3,8 +3,17 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { initSentry } from "./lib/sentry";
+import { setWorkerUrl } from "maplibre-gl";
+import maplibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 
 initSentry();
+
+// MapLibre 6 finds its worker next to its own module via import.meta.url. Once
+// Vite bundles it that file isn't there, and inside the native app the
+// capacitor:// origin fails its http(s) check -> no worker, blank map. Point it
+// at a worker Vite emits as plain .js (older iOS serves .mjs as
+// octet-stream, which a module worker refuses).
+setWorkerUrl(maplibreWorkerUrl);
 
 // Keep the app shell inside the *visible* viewport, not the layout viewport.
 //

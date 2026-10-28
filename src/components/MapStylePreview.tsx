@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapStyleDef } from "@/lib/mapStyle";
 
@@ -20,8 +20,12 @@ export default function MapStylePreview({ def }: { def: MapStyleDef }) {
       center: [-84.373, 33.757],
       zoom: 11.6,
       interactive: false,
-      attributionControl: false,
+      attributionControl: { compact: true }, // required OSM/CARTO/Esri credits — never hide
     });
+    // Non-interactive, so the credits never get the drag that collapses them to the
+    // (i) button; collapse once settled ("idle" -- MapLibre expands it on sourcedata,
+    // after "load") so the line doesn't cover the thumbnail.
+    map.once("idle", () => el.current?.querySelector(".maplibregl-compact-show")?.classList.remove("maplibregl-compact-show"));
     // thumbnails mount before layout settles (0-height flex/scroll children) — keep the
     // canvas matched to its container once real dimensions land.
     const ro = new ResizeObserver(() => map.resize());

@@ -37,15 +37,15 @@ async function fetchWeather(): Promise<WeatherNow | null> {
     if (!cw) return null;
     return { tempF: Math.round(cw.temperature), label: CODE_LABEL[cw.weathercode] ?? "—", code: cw.weathercode };
   } catch {
-    return null; // offline / blocked — caller falls back to a static default
+    return null; // offline / blocked — caller shows "unavailable", never a made-up reading
   }
 }
 
 // Real current conditions from Open-Meteo (free, no API key, CORS-enabled for
 // client-side use). Cached at module scope so re-mounting the panel doesn't
-// refetch every time.
-export function useWeatherNow(): WeatherNow | null {
-  const [weather, setWeather] = useState<WeatherNow | null>(cache);
+// refetch every time. `undefined` = still loading, `null` = failed.
+export function useWeatherNow(): WeatherNow | null | undefined {
+  const [weather, setWeather] = useState<WeatherNow | null | undefined>(cache ?? undefined);
   useEffect(() => {
     if (cache) return;
     if (!inflight) inflight = fetchWeather().then((w) => { cache = w; return w; });

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { beltlineLoop } from "@/lib/data";
 import { trailSegments, parkAreas } from "@/lib/places";
@@ -23,11 +23,12 @@ const PHOTOREAL_STYLE: maplibregl.StyleSpecification = {
       type: "raster",
       tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
-      attribution: "Esri, Maxar, Earthstar Geographics",
+      attribution: "Tiles &copy; Esri &mdash; Esri, Maxar, Earthstar Geographics",
     },
     carto: {
       type: "vector",
       url: "https://tiles.basemaps.cartocdn.com/vector/carto.streets/v1/tiles.json",
+      attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
     },
   },
   layers: [
@@ -83,6 +84,7 @@ export default function RealMapEnhanced({
   decorations = true,
   autoPitch = true,
   photoreal = false,
+  attribution = "bottom-right",
   onMap,
   onLandmarkClick,
 }: {
@@ -94,6 +96,8 @@ export default function RealMapEnhanced({
   autoPitch?: boolean;
   /** Aerial imagery under extruded buildings, the way Google/Apple render 3D. */
   photoreal?: boolean;
+  /** Corner for the required map credits; pick one the screen's overlays leave clear. */
+  attribution?: maplibregl.ControlPosition;
   onMap?: (m: maplibregl.Map) => void;
   /** Opens a branded landmark scene from its trail-side map marker. */
   onLandmarkClick?: (id: string) => void;
@@ -109,13 +113,15 @@ export default function RealMapEnhanced({
       center,
       zoom: zoom - 1.2,
       interactive,
-      attributionControl: false,
+      attributionControl: false, // added below at the screen's chosen corner
       // Omit the key entirely rather than passing undefined: MapLibre treats a
       // present-but-undefined `pitch` as a supplied value, which lands in the
       // camera transform as NaN and throws "Invalid LngLat (NaN, NaN)". Same
       // trap as `bearing` in NavigateEnhanced.
       ...(autoPitch ? { pitch: 0 } : {}),
     });
+    // Required OSM/CARTO/Esri credits — never hide. See .maplibregl-ctrl-* in index.css.
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), attribution);
 
     const ro = new ResizeObserver(() => map.resize());
     ro.observe(el.current);

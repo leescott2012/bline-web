@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Compass, Eye, Loader2, Maximize2, Minimize2, MoreHorizontal, Navigation2, X } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import Screen from "@/components/Screen";
@@ -51,14 +51,28 @@ export default function Navigate3D() {
   const mapRef = useRef<any>(null);
 
   const previewSpotId = destSpot?.name.toLowerCase().includes("ponce city") ? "ponce-city" : destSpot?.id;
-  const previewScene = sceneForPreview(previewSpotId, progress / 100);
+  // Memoised: sceneForPreview returns a fresh object, and the effect below
+  // stores it in state -- unmemoised that re-rendered forever
+  // ("Maximum update depth exceeded").
+  const previewScene = useMemo(() => sceneForPreview(previewSpotId, progress / 100), [previewSpotId, progress]);
   const previewOpen = previewMode !== "closed";
   // Keep the last scene rendered while the panel animates out, so passing the
   // end of the pilot corridor fades the panel instead of snapping it away.
   const [lastScene, setLastScene] = useState<StreetScene | null>(null);
   const displayScene = previewScene ?? lastScene;
 
+  // Set when we can't get the walker's real position. We never fall back to a
+  // fixed origin: a route from somewhere you aren't is a made-up route.
+  const [locError, setLocError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocError("This device can't share its location, so we can't route from where you are.");
+      return;
+    }
+    setLocError(null);
+    setRoute(undefined);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const origin: [number, number] = [pos.coords.longitude, pos.coords.latitude];
@@ -68,16 +82,16 @@ export default function Navigate3D() {
           setStep(r.steps[0]);
         } else setRoute(null);
       },
-      async () => {
-        const origin: [number, number] = [-84.3657, 33.7729];
-        const r = await fetchRoute(origin, [destSpot.lng, destSpot.lat]);
-        if (r) {
-          setRoute(r);
-          setStep(r.steps[0]);
-        } else setRoute(null);
+      (err) => {
+        setLocError(
+          err.code === err.PERMISSION_DENIED
+            ? "Location is off for B-line. Turn it on in Settings to get directions from where you are."
+            : "We couldn't find your location. Check that location is on and try again.",
+        );
       },
+      { timeout: 15_000 },
     );
-  }, [destSpot]);
+  }, [destSpot, attempt]);
 
   useEffect(() => {
     const timer = setInterval(() => setProgress((p) => (p < 100 ? p + 0.2 : 0)), 100);
@@ -115,6 +129,42 @@ export default function Navigate3D() {
     setStep(current);
   }, [progress, route]);
 
+  if (locError) {
+    return (
+      <Screen className="flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <Navigation2 size={32} className="text-zinc-500" />
+        <p className="text-lg font-bold">Location needed</p>
+        <p className="text-sm text-zinc-400">{locError}</p>
+        <div className="flex gap-3">
+          <button onClick={() => setAttempt((a) => a + 1)} className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-on-brand">
+            Try again
+          </button>
+          <button onClick={() => window.history.back()} className="rounded-full border border-line px-5 py-2 text-sm">
+            Go back
+          </button>
+        </div>
+      </Screen>
+    );
+  }
+
+  // No real route (directions service down / offline): say so, same as
+  // NavigateEnhanced. Previously this still rendered the nav UI with "--"
+  // values and a progress bar animating as if a walk were underway.
+  if (route === null) {
+    return (
+      <Screen className="flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <Navigation2 size={32} className="text-zinc-500" />
+        <p className="text-lg font-bold">Directions unavailable</p>
+        <p className="text-sm text-zinc-400">
+          We couldn't get walking directions right now. Check your connection and try again.
+        </p>
+        <button onClick={() => window.history.back()} className="rounded-full border border-line px-5 py-2 text-sm">
+          Go back
+        </button>
+      </Screen>
+    );
+  }
+
   if (route === undefined) {
     return (
       <Screen className="flex items-center justify-center bg-black">
@@ -148,7 +198,7 @@ export default function Navigate3D() {
             map.addLayer({ id: "route-main", type: "line", source: "route", paint: { "line-color": "#d946ef", "line-width": 4, "line-opacity": 0.9 } });
           }
         }}
-        className="absolute inset-0"
+        className="absolute inset-0 [--bline-map-ctrl-bottom:calc(6.5rem+max(1rem,env(safe-area-inset-bottom)))]"
       />
 
       <div className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20">
@@ -204,7 +254,7 @@ export default function Navigate3D() {
         </section>
       )}
 
-      <button type="button" className="pointer-events-auto absolute bottom-32 left-4 z-20 flex items-center gap-2 rounded-full bg-white px-5 py-3 font-bold text-black shadow-xl active:scale-95"><Compass size={18} /> Recenter</button>
+      <button type="button" onClick={recenter} className="pointer-events-auto absolute bottom-32 left-4 z-20 flex items-center gap-2 rounded-full bg-white px-5 py-3 font-bold text-black shadow-xl active:scale-95"><Compass size={18} /> Recenter</button>
 
       <div className="absolute inset-x-3 bottom-[max(1rem,env(safe-area-inset-bottom))] z-20">
         <div className="flex items-center justify-between rounded-[32px] bg-white/95 px-8 py-6 shadow-2xl backdrop-blur-md">

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, ChevronLeft, ChevronUp, Flame, Layers, LocateFixed, Toilet } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import CrowdPanel, { CrowdMetrics } from "@/components/CrowdPanel";
@@ -56,7 +56,8 @@ function crowdRibbon(points: { lng: number; lat: number; weight: number }[]) {
   const peak = Math.max(...raw.map((item) => item.score), 1);
   return {
     type: "FeatureCollection" as const,
-    features: raw.map(({ coords, score }) => ({
+    // No live cells → draw nothing. A uniform "quiet" ribbon would be a claim we can't back.
+    features: points.length === 0 ? [] : raw.map(({ coords, score }) => ({
       type: "Feature" as const,
       properties: { density: Math.max(0.08, score / peak) },
       geometry: { type: "LineString" as const, coordinates: coords },
@@ -373,7 +374,8 @@ export default function MapView() {
         autoPitch={false}
         onMap={(m) => { mapRef.current = m; setMapReady(true); setMapGeneration((generation) => generation + 1); }}
         onLandmarkClick={openLandmarkScene}
-        className="absolute inset-0"
+        attribution="bottom-left"
+        className={`absolute inset-0 ${heat ? "[--bline-map-ctrl-bottom:calc(var(--bline-nav-space)+6rem)]" : "[--bline-map-ctrl-bottom:var(--bline-nav-space)]"}`}
       />
 
       {/* Figma darkens the base map while preserving a readable, navigation-
@@ -393,7 +395,7 @@ export default function MapView() {
             </button>
             <h1 className="whitespace-nowrap text-[14px] font-extrabold tracking-[0.08em]">TRAIL CONDITIONS <span className="font-medium text-zinc-300">/ CROWD-DENSITY</span></h1>
           </div>
-          <CrowdMetrics people={crowd.people} />
+          <CrowdMetrics crowd={crowd} />
         </section>
       ) : (
         /* Right-anchored so it clears the filter chip on the left; gap-4 because

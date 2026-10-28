@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { beltlineLoop, geoPins } from "@/lib/data";
 import { useMapStyle } from "@/lib/mapStyle";
@@ -17,6 +17,7 @@ export default function RealMap({
   center = [-84.381, 33.764] as [number, number],
   decorations = true,
   autoPitch = true,
+  attribution = "bottom-right",
   onMap,
 }: {
   className?: string;
@@ -25,6 +26,8 @@ export default function RealMap({
   center?: [number, number];
   decorations?: boolean;
   autoPitch?: boolean; // auto-tilt to 3D at close zoom, Apple/Google-Maps style
+  /** Corner for the required map credits; pick one the screen's overlays leave clear. */
+  attribution?: maplibregl.ControlPosition;
   onMap?: (m: maplibregl.Map) => void;
 }) {
   const el = useRef<HTMLDivElement>(null);
@@ -40,6 +43,8 @@ export default function RealMap({
       interactive,
       attributionControl: false,
     });
+    // Required OSM/CARTO/Esri credits — never hide. See .maplibregl-ctrl-* in index.css.
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), attribution);
 
     onMap?.(map);
     // keep the canvas matched to its container (it can init before layout settles)

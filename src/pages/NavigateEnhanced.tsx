@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, CornerUpRight, CornerUpLeft, Flag, Navigation2, X, ChevronDown } from "lucide-react";
 import { useLocation, useParams } from "wouter";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import { navRoute, navSteps, distM, nearestPointOnSegment } from "@/lib/data";
@@ -67,6 +67,7 @@ export default function NavigateEnhanced() {
   const [expandedSteps, setExpandedSteps] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  const [locDenied, setLocDenied] = useState<boolean | null>(null);
   const live = useLiveLocation(route !== undefined);
 
   useEffect(() => {
@@ -85,7 +86,9 @@ export default function NavigateEnhanced() {
         }
         setRoute(r);
       },
-      async () => setRoute(await fetchRoute(navRoute[0], [destSpot.lng, destSpot.lat])),
+      // No position: say so. Routing from a fixed trail point would show a
+      // real-looking route that doesn't start where the walker is.
+      (err) => setLocDenied(err.code === err.PERMISSION_DENIED),
       { enableHighAccuracy: true, timeout: 8000 }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -267,6 +270,22 @@ export default function NavigateEnhanced() {
   // No real route (directions service down / offline): say so. This used to
   // play a scripted demo walk with made-up turns, which a walker can't tell
   // apart from real navigation.
+  if (locDenied !== null)
+    return (
+      <Screen className="flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <Navigation2 size={32} className="text-zinc-500" />
+        <p className="text-lg font-bold">Location needed</p>
+        <p className="text-sm text-zinc-400">
+          {locDenied
+            ? "Location is off for B-line. Turn it on in Settings to get directions from where you are."
+            : "We couldn't find your location. Check that location is on and try again."}
+        </p>
+        <button onClick={() => window.history.back()} className="rounded-full border border-line px-5 py-2 text-sm">
+          Go back
+        </button>
+      </Screen>
+    );
+
   if (route === null)
     return (
       <Screen className="flex flex-col items-center justify-center gap-4 px-8 text-center">
@@ -289,11 +308,12 @@ export default function NavigateEnhanced() {
         autoPitch={false}
         zoom={15.5}
         center={routeCoords[0]}
+        attribution="bottom-left"
         onMap={(m) => {
           mapRef.current = m;
           setMapGeneration((generation) => generation + 1);
         }}
-        className="absolute inset-0"
+        className="absolute inset-0 [--bline-map-ctrl-bottom:calc(13.5rem+max(0.75rem,env(safe-area-inset-bottom)))]"
       />
 
       {/* ── Top instruction banner (premium styling) ── */}

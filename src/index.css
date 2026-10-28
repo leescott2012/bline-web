@@ -66,6 +66,19 @@ body,
   --bline-nav-space: calc(4rem + max(0.6rem, env(safe-area-inset-bottom)));
 }
 
+/* Map credits (OSM / CARTO / Esri / OpenTopoMap) are a licence requirement, so
+   they must never sit under our own bars. A screen sets these vars on (or
+   above) its map to push MapLibre's corner controls clear of its overlays;
+   the default just clears the notch / home indicator. */
+.maplibregl-ctrl-bottom-left,
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--bline-map-ctrl-bottom, env(safe-area-inset-bottom));
+}
+.maplibregl-ctrl-top-left,
+.maplibregl-ctrl-top-right {
+  top: var(--bline-map-ctrl-top, env(safe-area-inset-top));
+}
+
 body {
   background: #0b0b0f;
   color: #fff;
