@@ -6,13 +6,12 @@ import Screen from "@/components/Screen";
 import RealMapEnhanced from "@/components/RealMapEnhanced";
 import { navRoute, navSteps, distM, nearestPointOnSegment } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
-import { fetchRoute, cumulative, bearing, posAt, type RouteResult, type RouteStep } from "@/lib/routing";
+import { fetchRoute, cumulative, bearing, type RouteResult, type RouteStep } from "@/lib/routing";
 import { useLiveLocation } from "@/lib/useLiveLocation";
 
 const DEFAULT_DEST_ID = "krog-street";
 const TOTAL_MI = 1.4,
-  TOTAL_MIN = 28,
-  DUR_MS = 40000;
+  TOTAL_MIN = 28;
 
 
 function progressAlong(
@@ -56,7 +55,6 @@ export default function NavigateEnhanced() {
   // also run when MapLibre finishes loading after route data is available.
   const [mapGeneration, setMapGeneration] = useState(0);
   const follow = useRef(true);
-  const raf = useRef(0);
   const prev = useRef({ si: -1, mi: "", min: -1 });
   const lastFix = useRef<[number, number] | null>(null);
 
@@ -253,50 +251,6 @@ export default function NavigateEnhanced() {
     if (p >= 0.97) setArrived(true);
   }, [live.position, route, routeCoords]);
 
-  // Scripted fallback
-  useEffect(() => {
-    if (route !== null) return;
-    const map = mapRef.current;
-    if (!map || !puckRef.current) return;
-
-    const t0 = performance.now();
-    const tick = (t: number) => {
-      const p = Math.min((t - t0) / DUR_MS, 1);
-      setProgress(p);
-
-      const { pos, brg } = posAt(p, navRoute, cum.current);
-      puckRef.current!.setLngLat(pos);
-      if (follow.current)
-        map.easeTo({
-          center: pos,
-          ...(brg == null ? {} : { bearing: brg }),
-          duration: 120,
-          easing: (x) => x,
-        });
-
-      let si = 0;
-      for (let k = 0; k < navSteps.length; k++) if (navSteps[k].at <= p) si = k;
-      if (si !== prev.current.si) {
-        prev.current.si = si;
-        setStep(navSteps[si]);
-        setStepIdx(si);
-      }
-
-      const mi = ((1 - p) * TOTAL_MI).toFixed(1);
-      const min = Math.max(0, Math.round((1 - p) * TOTAL_MIN));
-      if (mi !== prev.current.mi || min !== prev.current.min) {
-        prev.current.mi = mi;
-        prev.current.min = min;
-        setEta({ mi, min, arr: fmtClock(Date.now() + min * 60000) });
-      }
-
-      if (p < 1) raf.current = requestAnimationFrame(tick);
-      else setArrived(true);
-    };
-
-    raf.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf.current);
-  }, [route]);
 
   const recenter = () => {
     follow.current = true;
@@ -309,6 +263,23 @@ export default function NavigateEnhanced() {
 
   // Progress bar (0-100%)
   const progressPercent = Math.round(progress * 100);
+
+  // No real route (directions service down / offline): say so. This used to
+  // play a scripted demo walk with made-up turns, which a walker can't tell
+  // apart from real navigation.
+  if (route === null)
+    return (
+      <Screen className="flex flex-col items-center justify-center gap-4 px-8 text-center">
+        <Navigation2 size={32} className="text-zinc-500" />
+        <p className="text-lg font-bold">Directions unavailable</p>
+        <p className="text-sm text-zinc-400">
+          We couldn't get walking directions right now. Check your connection and try again.
+        </p>
+        <button onClick={() => window.history.back()} className="rounded-full border border-line px-5 py-2 text-sm">
+          Go back
+        </button>
+      </Screen>
+    );
 
   return (
     <Screen className="overflow-hidden bg-[#bcd9ea]">
