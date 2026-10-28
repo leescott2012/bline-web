@@ -1,4 +1,5 @@
 import { distM } from "@/lib/data";
+import { supabase } from "./supabase";
 // Real turn-by-turn directions via OpenRouteService (free API key, foot-walking
 // profile -- routes on actual trail/path data, not just roads). Falls back to
 // null (caller decides what to show instead) when no key is configured or the
@@ -34,7 +35,6 @@ interface OrsResponse {
   }[];
 }
 
-const ORS_KEY = import.meta.env.VITE_ORS_API_KEY as string | undefined;
 const M_TO_MI = 0.000621371;
 
 // ORS maneuver types -> our icon set. Anything not a clear left/right/arrival
@@ -52,12 +52,15 @@ function formatDist(m: number): string {
 }
 
 export async function fetchRoute(from: [number, number], to: [number, number]): Promise<RouteResult | null> {
-  if (!ORS_KEY) return null;
   try {
-    const res = await fetch("https://api.openrouteservice.org/v2/directions/foot-walking/geojson", {
+    // ORS key stays server-side; the proxy needs the signed-in user's token.
+    const { data: session } = await supabase.auth.getSession();
+    const token = session.session?.access_token;
+    if (!token) return null;
+    const res = await fetch("https://bline-web.vercel.app/api/route", {
       method: "POST",
-      headers: { Authorization: ORS_KEY, "Content-Type": "application/json" },
-      body: JSON.stringify({ coordinates: [from, to] }),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from, to }),
     });
     if (!res.ok) return null;
     const data: OrsResponse = await res.json();

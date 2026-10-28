@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import Screen from "@/components/Screen";
 import { useFavorites } from "@/lib/favorites";
 import { useSpots } from "@/lib/spots";
-import { useAuth, signOut, attachPassword, hasLogin, addPasskey, passkeysAvailable } from "@/lib/auth";
+import { useAuth, signOut, deleteAccount, attachPassword, hasLogin, addPasskey, passkeysAvailable } from "@/lib/auth";
 import { useProfile } from "@/lib/profile";
 import { ProfileAvatar } from "@/components/ProfileCard";
 import TellUsSheet from "@/components/TellUsSheet";
@@ -46,6 +46,16 @@ export default function Profile() {
             className="flex items-center gap-1.5 rounded-full border border-line px-4 py-1.5 text-xs text-zinc-400"
           >
             <LogOut size={13} /> Sign out
+          </button>
+          <button
+            onClick={async () => {
+              if (!window.confirm("Permanently delete your B-line account? Your profile, friends, favorites and shared locations are erased and can't be recovered.")) return;
+              const err = await deleteAccount();
+              if (err) window.alert(err);
+            }}
+            className="text-[11px] text-zinc-500 underline"
+          >
+            Delete account
           </button>
         </header>
 

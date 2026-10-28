@@ -91,6 +91,22 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
+/** Permanently delete the signed-in account and its data (server side), then sign out. */
+export async function deleteAccount(): Promise<string | null> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return "Sign in first.";
+  const res = await fetch("https://bline-web.vercel.app/api/delete-account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ confirm: "DELETE" }),
+  }).catch(() => null);
+  if (!res) return "No connection. Try again.";
+  if (!res.ok) return ((await res.json().catch(() => ({}))) as { error?: string }).error || "Couldn't delete your account.";
+  await supabase.auth.signOut();
+  return null;
+}
+
 const identifierFor = (username: string) => `${username.trim().toLowerCase()}@bline.local`;
 
 /** Legacy username/PIN migration helpers; do not use for new accounts. */
