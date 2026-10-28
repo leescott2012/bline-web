@@ -17,11 +17,16 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { createHash, timingSafeEqual } from "crypto";
+
+// Constant-time compare (hash first so lengths always match).
+const sameSecret = (a: string, b: string) =>
+  timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const adminSecret = process.env.ADMIN_SECRET;
   if (!adminSecret) return res.status(503).json({ error: "ADMIN_SECRET not set." });
-  if (req.headers["x-admin-key"] !== adminSecret) {
+  if (!sameSecret(String(req.headers["x-admin-key"] ?? ""), adminSecret)) {
     return res.status(403).json({ error: "Forbidden." });
   }
 
@@ -65,7 +70,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (typeof status === "string") patch.status = status;
     if (typeof admin_note === "string") patch.admin_note = admin_note.slice(0, 2000);
 
-    const { error } = await supabaseAdmin.from("bug_reports").update(patch).eq("id", id);
+    // Same scope as GET: only bline's own reports.
+    const { error } = await supabaseAdmin.from("bug_reports").update(patch).eq("id", id).like("source", "bline-%");
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ ok: true });
   }

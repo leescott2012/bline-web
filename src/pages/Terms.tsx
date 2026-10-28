@@ -134,9 +134,8 @@ export default function Terms() {
 
       <H2>9. Account termination</H2>
       <P>
-        You can delete your account at any time by emailing
-        <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
-        We honor deletion within 7 days. We may terminate accounts that
+        You can delete your account at any time with <em>Delete account</em> on
+        your Profile; it takes effect immediately. We may terminate accounts that
         violate the Acceptable Use rules above, with notice when possible.
       </P>
 
@@ -154,8 +153,8 @@ export default function Terms() {
       <P>
         If we make a material change, we'll update the "last updated" date
         above. Continued use of B-line after a change means you accept the
-        new terms. If you don't agree, stop using the service and email us
-        to delete your account.
+        new terms. If you don't agree, stop using the service and delete your
+        account from your Profile.
       </P>
 
       <H2>12. Contact</H2>
