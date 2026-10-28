@@ -7,6 +7,7 @@ export interface MapStyleDef {
   key: MapStyleKey;
   name: string;
   description: string;
+  // URL styles (CARTO) declare their own OSM/CARTO attribution; inline styles must set it per source.
   style: string | StyleSpecification;
   filter?: string; // cheap CSS-filter variant when there's no distinct free vector style
 }
@@ -19,6 +20,7 @@ const esriImagery: StyleSpecification = {
       type: "raster",
       tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
       tileSize: 256,
+      attribution: "Tiles &copy; Esri &mdash; Esri, Maxar, Earthstar Geographics",
     },
   },
   layers: [{ id: "esri-imagery", type: "raster", source: "esri" }],
@@ -36,6 +38,7 @@ const openTopo: StyleSpecification = {
         "https://c.tile.opentopomap.org/{z}/{x}/{y}.png",
       ],
       tileSize: 256,
+      attribution: "&copy; OpenStreetMap contributors, SRTM | Style &copy; OpenTopoMap (CC-BY-SA)",
     },
   },
   layers: [{ id: "otm", type: "raster", source: "otm" }],

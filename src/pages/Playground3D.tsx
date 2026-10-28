@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getMapStyleDef } from "@/lib/mapStyle";
 import Screen from "@/components/Screen";
@@ -82,6 +82,7 @@ export default function Playground3D() {
       zoom: PONCE_SCENE.camera.zoom,
       pitch: PONCE_SCENE.camera.pitch,
       bearing: PONCE_SCENE.camera.bearing,
+      attributionControl: { compact: true },
     });
     mapRef.current = map;
     // The route view must remain full-bleed while Screen completes its mobile
@@ -206,7 +207,7 @@ export default function Playground3D() {
 
   return (
     <Screen className="overflow-hidden bg-[#1e2722]" style={{ height: "100dvh" }}>
-      <div ref={mapContainerRef} className="absolute inset-0" style={{ height: "100dvh" }} />
+      <div ref={mapContainerRef} className="absolute inset-0 [--bline-map-ctrl-bottom:calc(6.5rem+max(1rem,env(safe-area-inset-bottom)))]" style={{ height: "100dvh" }} />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(5,12,8,.18)_100%)]" />
 
       <button

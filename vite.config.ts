@@ -8,6 +8,8 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
+  // MapLibre 6's worker is an ES module (see setWorkerUrl in main.tsx).
+  worker: { format: "es" },
   server: {
     allowedHosts: true,
   },

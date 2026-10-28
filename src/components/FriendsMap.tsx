@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 import { BatteryMedium } from "lucide-react";
 import RealMap from "@/components/RealMap";
 import { useFriendLocations, timeAgo } from "@/lib/location";
