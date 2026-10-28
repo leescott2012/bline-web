@@ -260,17 +260,18 @@ export default function NavigateEnhanced() {
       map.on("dragstart", onDragStart);
     };
 
-    if (map.isStyleLoaded()) draw();
-    else map.once("load", draw);
+    // onMap only fires from the map's "load" handler, so the style is ready.
+    // Don't gate on isStyleLoaded(): it's false while tiles stream in, and
+    // waiting for another "load" (already fired) meant the route never drew.
+    draw();
     return () => {
-      map.off("load", draw);
       map.off("dragstart", onDragStart);
     };
   }, [route, routeCoords, mapGeneration]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map?.isStyleLoaded()) return;
+    if (!map?.getSource("route")) return;
     const src = map.getSource("route") as maplibregl.GeoJSONSource | undefined;
     src?.setData({
       type: "Feature",
