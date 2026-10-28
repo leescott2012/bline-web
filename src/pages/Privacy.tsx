@@ -62,8 +62,8 @@ export default function Privacy() {
           that receives your start and end coordinates to calculate the route.</LI>
         <LI><Strong>Your real contacts are never read or uploaded.</Strong> The Friends
           "invite" feature only opens your phone's text-message app.</LI>
-        <LI><Strong>You can delete everything.</Strong> Email us and your account and all
-          associated data are gone within 7 days.</LI>
+        <LI><Strong>You can delete everything.</Strong> Tap <em>Delete account</em> on your
+          Profile and your account and associated data are erased right away.</LI>
       </UL>
 
       <H2>1. Account information</H2>
@@ -221,7 +221,7 @@ export default function Privacy() {
         <LI><Strong>Live location:</Strong> only your current position is kept, and it's
           deleted the moment you turn sharing off. There is no location
           history table.</LI>
-        <LI><Strong>Account and profile data:</Strong> kept until you ask us to delete your
+        <LI><Strong>Account and profile data:</Strong> kept until you delete your
           account.</LI>
         <LI><Strong>Friendships and favorites:</Strong> kept until you remove them.</LI>
         <LI><Strong>Reservations:</Strong> kept as a record of the request.</LI>
@@ -239,8 +239,8 @@ export default function Privacy() {
           the app at any time.</LI>
         <LI><Strong>Turn off location sharing</Strong> at any time from Friends settings —
           this immediately deletes your stored live position.</LI>
-        <LI><Strong>Delete</Strong> your entire account and associated data by emailing us.
-          We honor deletion requests within 7 days.</LI>
+        <LI><Strong>Delete</Strong> your entire account and associated data yourself with
+          <em> Delete account</em> on your Profile. It takes effect immediately.</LI>
       </UL>
       <P>
         If you're in the EU, UK, or California, applicable regional privacy

@@ -4,7 +4,7 @@ android {
     namespace = "com.bline.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.bline.app"
+        applicationId "com.blineatlanta.app" // matches capacitor.config.ts + iOS; namespace stays for the Java package
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

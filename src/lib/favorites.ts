@@ -18,9 +18,13 @@ import { supabase } from "@/lib/supabase";
 // mapStyle.ts so every heart and the Saved tab stay in sync without a
 // React context.
 
-const LS_KEY = "bline:favs";
+// The cache is per account: one shared key used to merge user A's hearts into
+// whoever signed in next on the same device. The old shared key is dropped.
+const lsKey = (userId: string | null) => `bline:favs:${userId ?? "guest"}`;
+try { localStorage.removeItem("bline:favs"); } catch { /* storage unavailable */ }
 
 // ── In-memory state ──────────────────────────────────────────────────────
+let currentUserId: string | null = null;
 let favs: string[] = loadLocal();
 const listeners = new Set<() => void>();
 
@@ -36,7 +40,7 @@ function subscribe(cb: () => void) {
 // ── localStorage helpers ─────────────────────────────────────────────────
 function loadLocal(): string[] {
   try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(lsKey(currentUserId)) || "[]");
   } catch {
     return [];
   }
@@ -44,7 +48,7 @@ function loadLocal(): string[] {
 
 function saveLocal(ids: string[]) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(ids));
+    localStorage.setItem(lsKey(currentUserId), JSON.stringify(ids));
   } catch {
     // storage quota exceeded — ignore
   }
@@ -52,14 +56,14 @@ function saveLocal(ids: string[]) {
 
 // ── Auth-aware init ──────────────────────────────────────────────────────
 // On load, check whether the user is already signed in. If so, fetch their
-// Supabase favorites and merge with any localStorage ones (so spots they
-// hearted as a guest aren't lost on first sign-in).
-let currentUserId: string | null = null;
+// Supabase favorites and merge with this account's own offline cache.
 
 supabase.auth.getSession().then(({ data }) => {
   const user = data.session?.user ?? null;
   if (user) {
     currentUserId = user.id;
+    favs = loadLocal(); // this account's cache only, until Supabase answers
+    emit();
     loadFromSupabase(user.id);
   }
 });
@@ -70,6 +74,8 @@ supabase.auth.onAuthStateChange((_event, session) => {
   if (user && user.id !== currentUserId) {
     // Signed in (or switched user) — fetch from Supabase and merge.
     currentUserId = user.id;
+    favs = loadLocal(); // this account's cache only, until Supabase answers
+    emit();
     loadFromSupabase(user.id);
   } else if (!user && currentUserId) {
     // Signed out — revert to localStorage.
@@ -84,6 +90,7 @@ async function loadFromSupabase(userId: string) {
     .from("favorites")
     .select("spot_id")
     .eq("user_id", userId);
+  if (currentUserId !== userId) return; // account switched while this was in flight
 
   if (error) {
     // Table doesn't exist yet or network error — keep localStorage state.
