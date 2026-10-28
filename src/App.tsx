@@ -25,6 +25,9 @@ import BugBin from "@/pages/BugBin";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Playground3D from "@/pages/Playground3D";
+import { lazy, Suspense } from "react";
+// PlayCanvas is ~1 MB -- only load it when someone opens a walkthrough.
+const Walkthrough = lazy(() => import("@/pages/Walkthrough"));
 
 // Nobody reaches the app without an identity, so the crowd heatmap sees every
 // user rather than the fraction who happened to open the Friends tab.
@@ -72,6 +75,7 @@ export default function App() {
             <Route path="/privacy" component={Privacy} />
             <Route path="/terms" component={Terms} />
             <Route path="/playground-3d" component={Playground3D} />
+            <Route path="/walkthrough/:id">{() => <Suspense fallback={null}><Walkthrough /></Suspense>}</Route>
             <Route>404</Route>
           </Switch>
           <FloatingNav />

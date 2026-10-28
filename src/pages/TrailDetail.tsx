@@ -70,6 +70,9 @@ export default function TrailDetail() {
         <Link href="/navigate-3d/ponce-city" className="block w-full rounded-full bg-accent py-4 text-center text-lg font-semibold text-on-brand shadow-lg shadow-accent/20">
           3D Preview
         </Link>
+        <Link href="/walkthrough/ponce-krog" className="block w-full rounded-full border border-white/25 py-4 text-center text-lg font-semibold text-white">
+          Virtual Walk
+        </Link>
       </div>
     </Screen>
   );

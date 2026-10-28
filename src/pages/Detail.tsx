@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronLeft, Share, Heart, Star, ChevronRight, ExternalLink, Store } from "lucide-react";
+import { ChevronLeft, Share, Heart, Star, ChevronRight, ExternalLink, Store, Footprints } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
 import { getBookingProvider, hasVerifiedRating, isOpenNow, hoursStatusLabel } from "@/lib/data";
@@ -9,6 +9,7 @@ import PhotoCarousel from "@/components/PhotoCarousel";
 import TellUsSheet from "@/components/TellUsSheet";
 import { useFavorites, toggleFav } from "@/lib/favorites";
 import { openExternalLink } from "@/lib/external";
+import { walkthroughForSpot } from "@/lib/walkthroughs";
 
 async function shareSpot(name: string) {
   const data = { title: name, text: `Check out ${name} on B-line`, url: location.href };
@@ -29,6 +30,7 @@ export default function Detail() {
   const [claiming, setClaiming] = useState(false);
   // A park or a mural has no owner to claim it, so don't offer.
   const isBusiness = !/^park|public art|trail access/i.test(spot.category);
+  const walk = walkthroughForSpot(spot.id);
   return (
     <Screen className="pb-28">
       <div className="relative h-80">
@@ -100,6 +102,17 @@ export default function Detail() {
             <p className="mt-1 text-[15px] text-zinc-400">{spot.walk} · Eastside Trail</p>
           </div>
         </Link>
+
+        {walk && (
+          <Link href={`/walkthrough/${walk.id}`} className="mt-4 flex items-center gap-3 rounded-2xl border border-line px-4 py-3">
+            <Footprints size={20} className="shrink-0 text-accent" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-semibold">Virtual walk in 3D</span>
+              <span className="block truncate text-sm text-zinc-400">{walk.title}</span>
+            </span>
+            <ChevronRight size={16} className="shrink-0 text-zinc-400" />
+          </Link>
+        )}
 
         {/* "Menu picks" removed. `menuPicks` is a single shared list, so every
             venue that showed it advertised the same wood-fired pizza and New
