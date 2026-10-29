@@ -34,14 +34,22 @@ looks good on your phone, do the next piece.
 - Ponce City Market's trail entrance (the stairs/ramp and the trail in front)
 - The Krog Street Tunnel (murals both walls — walk the middle, sweep wall to wall)
 
-## Sending it to me
-- [ ] In Scaniverse: open the scan → Share/Export → **PLY** (or SPZ) → save to Files
-- [ ] AirDrop the file to the Mac and tell me where it is
+## Getting it into the app (2 steps)
+- [ ] In Scaniverse: open the scan → Share/Export → **PLY** → **AirDrop to your Mac** (it lands in Downloads)
+- [ ] Tell Claude **"add my walk"** — or run it yourself in the `bline-web` folder:
 
-I then trim the edges and shrink it in SuperSplat (free, runs on the Mac),
-upload only the finished 3D file to the app's storage (with your OK), and put
-its link in `src/lib/walkthroughs.ts`. The test-scan banner disappears on its own.
+```bash
+npm run add-walk
+```
+
+That one command takes the newest scan in Downloads, shrinks it about 10× on the
+Mac, and uploads **only the finished 3D file** (never video) to the app's
+storage. It's live in the app straight away — no app update, and the
+test-scan banner disappears on its own. Re-filming? Run it again; it replaces
+the old one.
 
 ## Why not Matterport / Polycam / Luma?
 - **Matterport** — paid, built for indoor rooms, and plays in its own viewer, not inside B-line.
 - **Luma / Polycam** — good, but they process in their cloud, which means uploading your raw video. Scaniverse doesn't.
+- **Apple Maps Look Around** — fine as a *reference* for what to film, but its imagery can't be copied into B-line (Apple's terms), and its spaced-out photos don't make a good 3D scan anyway.
+- **n8n** — not needed; the shrinking has to run on the Mac, and one command already does the whole job.

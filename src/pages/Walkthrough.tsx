@@ -4,10 +4,10 @@ import { useParams } from "wouter";
 import {
   AppBase, AppOptions, Asset, CameraComponentSystem, Color, Entity, GSplatComponentSystem,
   GSplatHandler, Mouse, RESOLUTION_AUTO, FILLMODE_NONE, ScriptComponentSystem, ScriptHandler,
-  TouchDevice, Vec3, createGraphicsDevice,
+  TextureHandler, TouchDevice, Vec3, createGraphicsDevice,
 } from "playcanvas";
 import { CameraControls } from "playcanvas/scripts/esm/camera-controls.mjs";
-import { SAMPLE_SPLAT, WALKTHROUGHS } from "@/lib/walkthroughs";
+import { SAMPLE_SPLAT, WALKTHROUGHS, scanUrl } from "@/lib/walkthroughs";
 
 // In-app 3D walkthrough: a Gaussian splat rendered with PlayCanvas (already a
 // dependency, open source, no per-load billing). Route is lazy-loaded so the
@@ -15,9 +15,9 @@ import { SAMPLE_SPLAT, WALKTHROUGHS } from "@/lib/walkthroughs";
 export default function Walkthrough() {
   const { id } = useParams<{ id: string }>();
   const walk = WALKTHROUGHS.find((w) => w.id === id) ?? WALKTHROUGHS[0];
-  const url = walk.scan ?? SAMPLE_SPLAT;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [isSample, setIsSample] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -37,7 +37,8 @@ export default function Walkthrough() {
         opts.mouse = new Mouse(canvas);
         opts.touch = new TouchDevice(canvas);
         opts.componentSystems = [CameraComponentSystem, ScriptComponentSystem, GSplatComponentSystem];
-        opts.resourceHandlers = [ScriptHandler, GSplatHandler];
+        // .sog scans are packed as webp textures, so the texture handler is required.
+        opts.resourceHandlers = [TextureHandler, ScriptHandler, GSplatHandler];
         app = new AppBase(canvas);
         app.init(opts);
         // The canvas lives inside the phone shell on desktop, so size it to its box, not the window.
@@ -49,6 +50,12 @@ export default function Walkthrough() {
         fit();
         app.start();
 
+        // Real capture if one has been uploaded, otherwise the labelled sample.
+        const real = scanUrl(walk.id);
+        const hasScan = await fetch(real, { method: "HEAD" }).then((r) => r.ok, () => false);
+        if (dead) return;
+        setIsSample(!hasScan);
+        const url = hasScan ? real : SAMPLE_SPLAT;
         const asset = new Asset("scan", "gsplat", { url });
         app.assets.add(asset);
         await new Promise<void>((resolve, reject) => {
@@ -84,7 +91,7 @@ export default function Walkthrough() {
       ro?.disconnect();
       app?.destroy();
     };
-  }, [url]);
+  }, [walk.id]);
 
   return (
     <main className="relative h-full w-full overflow-hidden bg-[#0f1219] text-white">
@@ -101,7 +108,7 @@ export default function Walkthrough() {
         </div>
       </header>
 
-      {!walk.scan && (
+      {isSample && (
         <div className="absolute inset-x-4 top-[calc(max(1rem,env(safe-area-inset-top))+3.75rem)] rounded-2xl bg-amber-400/15 px-3 py-2 text-xs text-amber-200 ring-1 ring-amber-300/30">
           <b className="font-bold uppercase tracking-wider">Test scan</b> — a sample 3D capture, not the trail. The real walk appears here once this stretch is filmed.
         </div>
