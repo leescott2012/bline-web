@@ -12,7 +12,8 @@
     "sync": "vite build && cap sync",
     "ios:prepare": "npm ci && vite build && cap sync ios",
     "ios": "vite build && cap sync ios && cap open ios",
-    "android": "vite build && cap sync android && cap open android"
+    "android": "vite build && cap sync android && cap open android",
+    "add-walk": "node scripts/add-walk.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.6.0",
