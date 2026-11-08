@@ -36,6 +36,21 @@ function subscribe(cb: () => void) {
   return () => listeners.delete(cb);
 }
 
+// Database rows can carry an empty `img` ("") and an empty `imgs` ({}) for
+// spots that have no photo yet. Drop blanks and duplicates, and fall back to
+// `img` when `imgs` is empty, so consumers get only real URLs (or []).
+function cleanImgs(imgs: unknown, img: unknown): string[] {
+  const list = Array.isArray(imgs) ? imgs : [];
+  const all = list.concat(typeof img === "string" ? [img] : []);
+  const out: string[] = [];
+  for (const v of all) {
+    if (typeof v !== "string") continue;
+    const s = v.trim();
+    if (s && out.indexOf(s) === -1) out.push(s);
+  }
+  return out;
+}
+
 // Track whether a fetch is already in flight so multiple hook instances
 // don't trigger duplicate requests.
 let fetchStarted = false;
@@ -85,7 +100,7 @@ async function fetchSpots() {
       lng: typeof row.lng === "string" ? parseFloat(row.lng) : row.lng,
       lat: typeof row.lat === "string" ? parseFloat(row.lat) : row.lat,
       badges: Array.isArray(row.badges) ? row.badges : [],
-      imgs: Array.isArray(row.imgs) ? row.imgs : [row.img],
+      imgs: cleanImgs(row.imgs, row.img),
     }));
 
     console.info(`[spots] Loaded ${coerced.length} spots from Supabase`);

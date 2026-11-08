@@ -380,7 +380,7 @@ export const spots: Spot[] = [
     "lat": 33.768943,
     "address": "820 Ralph McGill Blvd. NE, Atlanta",
     "walk": "On the Eastside Trail",
-    "reservation_link": "http://www.opentable.com/rest_profile.aspx?rid=3431&restref=3431",
+    "reservation_link": "https://www.opentable.com/rest_profile.aspx?rid=3431&restref=3431",
     "website": "https://www.twourbanlicks.com/"
   },
   {

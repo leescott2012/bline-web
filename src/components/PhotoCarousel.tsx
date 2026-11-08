@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import SafeImage from "@/components/SafeImage";
 
 // Sliding carousel: swipe manually, auto-advances, HT-style dots pill.
-export default function PhotoCarousel({ imgs, alt, className = "", auto = false }: { imgs: string[]; alt: string; className?: string; auto?: boolean }) {
+// A spot with no usable photo renders one placeholder slide, never a blank box.
+export default function PhotoCarousel({ imgs: rawImgs, alt, className = "", auto = false }: { imgs: string[]; alt: string; className?: string; auto?: boolean }) {
   const [i, setI] = useState(0);
+  const cleaned = (rawImgs || []).filter((s) => typeof s === "string" && s.trim() !== "");
+  const imgs = cleaned.length > 0 ? cleaned : [""];
   const n = imgs.length;
 
   useEffect(() => {
@@ -26,8 +30,8 @@ export default function PhotoCarousel({ imgs, alt, className = "", auto = false 
           else if (info.offset.x > 50 || info.velocity.x > 400) setI(Math.max(0, i - 1));
         }}
       >
-        {imgs.map((src) => (
-          <img key={src} src={src} alt={alt} draggable={false} className="h-full w-full shrink-0 object-cover" />
+        {imgs.map((src, idx) => (
+          <SafeImage key={src || `empty-${idx}`} src={src} alt={alt} draggable={false} className="h-full w-full shrink-0 object-cover" />
         ))}
       </motion.div>
       {n > 1 && (
