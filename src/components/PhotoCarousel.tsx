@@ -26,8 +26,12 @@ export default function PhotoCarousel({ imgs, alt, className = "", auto = false 
           else if (info.offset.x > 50 || info.velocity.x > 400) setI(Math.max(0, i - 1));
         }}
       >
-        {imgs.map((src) => (
-          <img key={src} src={src} alt={alt} draggable={false} className="h-full w-full shrink-0 object-cover" />
+        {imgs.map((src, k) => (
+          <img key={src} src={src} alt={alt} draggable={false}
+            loading={k === 0 ? "eager" : "lazy"} decoding="async"
+            // retry once if a photo fails (flaky mobile networks) instead of leaving a blank card
+            onError={(e) => { const t = e.currentTarget; if (!t.dataset.retried) { t.dataset.retried = "1"; setTimeout(() => { t.src = src; }, 1500); } }}
+            className="h-full w-full shrink-0 bg-white/5 object-cover" />
         ))}
       </motion.div>
       {n > 1 && (
