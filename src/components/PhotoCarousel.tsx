@@ -30,8 +30,10 @@ export default function PhotoCarousel({ imgs: rawImgs, alt, className = "", auto
           else if (info.offset.x > 50 || info.velocity.x > 400) setI(Math.max(0, i - 1));
         }}
       >
-        {imgs.map((src, idx) => (
-          <SafeImage key={src || `empty-${idx}`} src={src} alt={alt} draggable={false} className="h-full w-full shrink-0 object-cover" />
+        {imgs.map((src, k) => (
+          <SafeImage key={src || `empty-${k}`} src={src} alt={alt} draggable={false}
+            loading={k === 0 ? "eager" : "lazy"} decoding="async"
+            className="h-full w-full shrink-0 bg-white/5 object-cover" />
         ))}
       </motion.div>
       {n > 1 && (
