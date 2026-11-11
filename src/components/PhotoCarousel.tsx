@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import SafeImage from "@/components/SafeImage";
 
 // Sliding carousel: swipe manually, auto-advances, HT-style dots pill.
-export default function PhotoCarousel({ imgs, alt, className = "", auto = false }: { imgs: string[]; alt: string; className?: string; auto?: boolean }) {
+// A spot with no usable photo renders one placeholder slide, never a blank box.
+export default function PhotoCarousel({ imgs: rawImgs, alt, className = "", auto = false }: { imgs: string[]; alt: string; className?: string; auto?: boolean }) {
   const [i, setI] = useState(0);
+  const cleaned = (rawImgs || []).filter((s) => typeof s === "string" && s.trim() !== "");
+  const imgs = cleaned.length > 0 ? cleaned : [""];
   const n = imgs.length;
 
   useEffect(() => {
@@ -27,10 +31,8 @@ export default function PhotoCarousel({ imgs, alt, className = "", auto = false 
         }}
       >
         {imgs.map((src, k) => (
-          <img key={src} src={src} alt={alt} draggable={false}
+          <SafeImage key={src || `empty-${k}`} src={src} alt={alt} draggable={false}
             loading={k === 0 ? "eager" : "lazy"} decoding="async"
-            // retry once if a photo fails (flaky mobile networks) instead of leaving a blank card
-            onError={(e) => { const t = e.currentTarget; if (!t.dataset.retried) { t.dataset.retried = "1"; setTimeout(() => { t.src = src; }, 1500); } }}
             className="h-full w-full shrink-0 bg-white/5 object-cover" />
         ))}
       </motion.div>

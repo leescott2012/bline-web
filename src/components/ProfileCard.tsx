@@ -3,6 +3,7 @@ import { Camera, Heart } from "lucide-react";
 import { Link } from "wouter";
 import { updateProfile, uploadAvatar, listFavoriteSpotIds, type Profile } from "@/lib/friends";
 import { useSpots } from "@/lib/spots";
+import SafeImage from "@/components/SafeImage";
 
 // Avatar that falls back to the initial when there's no picture -- shared by
 // the profile card, friend rows and map pins so one person looks the same
@@ -101,7 +102,7 @@ export default function ProfileCard({ profile, onChange }: { profile: Profile; o
           <div className="no-scrollbar -mx-1 mt-2 flex gap-2 overflow-x-auto px-1">
             {saved.map((s) => (
               <Link key={s.id} href={`/spot/${s.id}`} className="w-28 shrink-0">
-                <img src={s.img} alt="" className="h-20 w-full rounded-lg object-cover" loading="lazy" />
+                <SafeImage src={s.img || s.imgs?.[0]} alt={s.name} className="h-20 w-full rounded-lg object-cover" loading="lazy" />
                 <p className="mt-1 truncate text-[12px] font-medium text-zinc-800">{s.name}</p>
                 <p className="flex items-center gap-1 text-[11px] text-zinc-500">
                   <Heart size={10} className="fill-accent text-hot" /> {s.rating}

@@ -1,6 +1,7 @@
 import { ChevronLeft, ExternalLink, Star } from "lucide-react";
 import { Link, useParams } from "wouter";
 import Screen from "@/components/Screen";
+import SafeImage from "@/components/SafeImage";
 import { getBookingProvider, hasVerifiedRating } from "@/lib/data";
 import { useSpots } from "@/lib/spots";
 import { openExternalLink } from "@/lib/external";
@@ -27,7 +28,7 @@ export default function Reserve() {
       </header>
 
       <div className="flex items-center gap-4 border-y border-line px-4 py-4">
-        <img src={spot.img} alt="" className="size-20 rounded-xl object-cover" />
+        <SafeImage src={spot.img} alt={spot.name} className="size-20 shrink-0 rounded-xl object-cover" />
         <div className="min-w-0">
           <h2 className="truncate text-lg font-bold">{spot.name}</h2>
           <p className="mt-1 flex items-center gap-1 text-zinc-400">
