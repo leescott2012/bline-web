@@ -23,7 +23,7 @@ export default function Terms() {
         B-line is operated by <Strong>Chamillion Collective</Strong> ("B-line," "we,"
         "us"). By using B-line you agree to these terms. They're written in
         plain English — if something's unclear, email
-        <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
+        <A href="mailto:support@chamillioncollective.com"> support@chamillioncollective.com</A>.
       </P>
 
       <H2>1. Who can use B-line</H2>
@@ -160,7 +160,7 @@ export default function Terms() {
       <H2>12. Contact</H2>
       <P>
         Questions or concerns:
-        <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
+        <A href="mailto:support@chamillioncollective.com"> support@chamillioncollective.com</A>.
       </P>
     </LegalLayout>
   );
