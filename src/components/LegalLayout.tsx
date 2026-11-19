@@ -52,7 +52,7 @@ export default function LegalLayout({ title, lastUpdated, children }: LegalLayou
         <div className="mt-12 flex gap-[18px] border-t border-line pt-6 text-[13px] text-zinc-500">
           <Link href="/privacy" className="text-zinc-400 no-underline">Privacy</Link>
           <Link href="/terms" className="text-zinc-400 no-underline">Terms</Link>
-          <a href="mailto:ariyaonellc@outlook.com" className="ml-auto text-zinc-400 no-underline">
+          <a href="mailto:support@chamillioncollective.com" className="ml-auto text-zinc-400 no-underline">
             Contact
           </a>
         </div>

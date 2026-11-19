@@ -37,7 +37,7 @@ export default function Privacy() {
       <P>
         B-line is operated by <Strong>Ariya One LLC</Strong>, d/b/a <Strong>Chamillion
         Collective</Strong>, a Georgia limited liability company ("B-line," "we," "us").
-        Contact: <A href="mailto:ariyaonellc@outlook.com">ariyaonellc@outlook.com</A>.
+        Contact: <A href="mailto:support@chamillioncollective.com">support@chamillioncollective.com</A>.
         This page describes exactly what we collect, why, where it lives, and
         how to delete it.
       </P>
@@ -246,7 +246,7 @@ export default function Privacy() {
         If you're in the EU, UK, or California, applicable regional privacy
         laws (GDPR, UK GDPR, CCPA) give you additional rights, including
         portability and objection. To exercise any of these, email
-        <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
+        <A href="mailto:support@chamillioncollective.com"> support@chamillioncollective.com</A>.
       </P>
 
       <H2>Children</H2>
@@ -265,7 +265,7 @@ export default function Privacy() {
       <H2>Contact</H2>
       <P>
         Questions, deletion requests, or anything else:
-        <A href="mailto:ariyaonellc@outlook.com"> ariyaonellc@outlook.com</A>.
+        <A href="mailto:support@chamillioncollective.com"> support@chamillioncollective.com</A>.
       </P>
     </LegalLayout>
   );
